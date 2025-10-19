@@ -1,0 +1,2841 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Opencv LIVE</title>
+    <style>
+        html,
+        body {
+            height: 100%;
+            margin: 0;
+            padding: 0;
+            background-color: #1a1a1a;
+            color: #eee;
+            font-family: sans-serif;
+            overflow: hidden;
+            user-select: none;
+        }
+
+        #main-container {
+            display: flex;
+            height: 100%;
+        }
+
+        #node-palette {
+            width: 200px;
+            background-color: #282828;
+            box-sizing: border-box;
+            z-index: 800;
+            height: 100%;
+            text-align: center;
+            font-size: small;
+            overflow-x: hidden;
+            margin-top: 75px;
+        }
+
+        .palette-title {
+            cursor: pointer;
+            color: #aaa;
+        }
+
+        .palette-title:hover {
+            transform: scale(1.5);
+        }
+
+        .palette-node {
+            padding: 10px;
+            margin-bottom: 5px;
+            background-color: #4a4a4a;
+            border-radius: 5px;
+            cursor: grab;
+            display: none;
+        }
+
+        #graph-container {
+            flex-grow: 1;
+            position: relative;
+        }
+
+        .node {
+            position: absolute;
+            background-color: #333;
+            border: 2px solid #888;
+            width: 200px;
+        }
+
+        .node.selected {
+            border-color: #aef;
+        }
+
+        .node-header {
+            padding: 5px;
+            background-color: #555;
+            cursor: move;
+            font-weight: bold;
+        }
+
+        .node-content {
+            padding: 5px;
+        }
+
+        .node-ports-content {
+            padding: 5px;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        canvas {
+            background-color: #000;
+        }
+
+        .media-preview {
+            width: 100%;
+            margin-top: 10px;
+        }
+
+        .inner-canvas {
+            display: none;
+        }
+
+        .name-input-field {
+            background-color: #222;
+            border: 1px solid #666;
+            color: #eee;
+            padding: 5px;
+            position: absolute;
+            top: 0;
+            z-index: 700;
+        }
+
+        .node-input-field {
+            width: 100%;
+            box-sizing: border-box;
+            background-color: #222;
+            border: 1px solid #666;
+            color: #eee;
+            padding: 5px;
+        }
+
+        .node-input-range {
+            width: 96%;
+            height: 1px;
+            vertical-align: middle;
+        }
+
+        .node-input-check {
+            margin-left: 5px;
+        }
+
+        .node-input-color {
+            width: 25px;
+            float: left;
+            margin: 6px;
+        }
+
+        .node-input-file {
+            color: rgba(0, 0, 0, 0);
+            margin-bottom: 5px;
+        }
+
+        .node-input-file::file-selector-button {
+            font-weight: bold;
+            width: 190px;
+        }
+
+        .load-save-button {
+            font-weight: bold;
+            position: absolute;
+            top: 0;
+            z-index: 700;
+            background-color: #000;
+            border: 0;
+            cursor: pointer;
+            font-size: large;
+        }
+
+        .node-fullscreen-button {
+            font-weight: bold;
+            width: 100%;
+        }
+
+        .node-select-field {
+            width: 100%;
+            box-sizing: border-box;
+            background-color: #222;
+            border: 1px solid #666;
+            color: #eee;
+            padding: 5px;
+            margin-bottom: 5px;
+        }
+
+        .custom-kernel-field {
+            min-width: 100%;
+            max-width: 100%;
+            overflow: hidden;
+        }
+
+        .ports {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .port {
+            width: 10px;
+            height: 10px;
+            background-color: #ddd;
+            border: 1px solid #888;
+            border-radius: 10px;
+            margin: 5px;
+            cursor: pointer;
+        }
+
+        .port:hover {
+            background-color: white;
+        }
+
+        .port-label {
+            font-size: x-small;
+        }
+
+        #wire-svg {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+        }
+
+        .wire {
+            stroke-width: 3;
+            fill: none;
+        }
+
+        #opencv-status {
+            position: fixed;
+            bottom: 10px;
+            right: 10px;
+            background-color: goldenrod;
+            color: white;
+            padding: 5px 10px;
+            border-radius: 5px;
+            z-index: 600;
+        }
+
+        #logo {
+            position: absolute;
+            top: 0;
+            left: 0;
+            z-index: 900;
+            color: white;
+            width: 144px;
+            height: 67px;
+            background-color: #282828;
+            padding-left: 56px;
+            padding-top: 8px;
+        }
+    </style>
+
+    <script src="js/three.js"></script>
+    <script src="js/OrbitControls.js"></script>
+    <script src="js/DragControls.js"></script>
+    <script src="js/GLTFLoader.js"></script>
+    <script src="js/FontLoader.js"></script>
+    <script src="js/TextGeometry.js"></script>
+    <script src="js/three-vrm.js"></script>
+    <script async defer src="js/opencv.js"></script>
+    <script src="js/camera_utils.js" crossorigin="anonymous"></script>
+    <script src="js/drawing_utils.js" crossorigin="anonymous"></script>
+    <script src="js/pose.js" crossorigin="anonymous"></script>
+    <script src="js/holistic.js" crossorigin="anonymous"></script>
+    <script src="js/kalidokit.umd.js"></script>
+    <script src="js/gsap.min.js"></script>
+</head>
+
+<body>
+    <a href="docs/manual.pdf" target="_blank" title="Help" class="load-save-button"
+        style="right:0;text-decoration:none;padding:2px">&#10067;</a>
+    <button onclick="document.getElementById('projectPath').click();" title="Open" class="load-save-button"
+        style="right:20px">&#x1F4C2;</button>
+    <button onclick="saveProject();" title="Save" class="load-save-button" style="right:48px">&#128190;</button>
+    <input tabIndex="-1" type="file" id="projectPath" accept=".olive" onchange="loadProjectFromJSON(event);"
+        style="display:none">
+    <input type="text" id="projectName" class="name-input-field" value="Untitled project" style="right:84px">
+    <div id="main-container">
+        <div id="node-palette" style="display: none;"> </div>
+        <div id="graph-container">
+            <svg id="wire-svg"></svg>
+        </div>
+        <div id="opencv-status">Loading OpenCV...</div>
+    </div>
+    <div id="logo">
+        <strong style="font-size: 50px;">O</strong>
+        <div style="font-size: 17px; margin-top: -30px;margin-left: 40px;">LIVE</div>
+        <div style="font-size: 12px; color: #666; margin-top: -35px;margin-left: 40px;">penCV</div>
+    </div>
+
+    <script>
+        let nodes = [];
+        let connections = [];
+        let pendingWire = null;
+        let activeNode = null;
+        let openCvReady = false;
+
+        const fontCache = {};
+        const fontLoader = new THREE.FontLoader();
+
+        function cartesian2polar(x, y) {
+            let R = Math.sqrt(x * x + y * y)
+            let theta = Math.atan2(y, x)
+            return [R, theta]
+        }
+        function polar2cartesian(R, theta) {
+            let x = R * Math.cos(theta);
+            let y = R * Math.sin(theta);
+            return [x, y];
+        }
+
+        function getInputData(node, portIndex) {
+            const conn = connections.find(c => c.toNode === node.id && c.toPort === portIndex);
+            if (!conn) return null;
+            const fromNode = nodes.find(n => n.id === conn.fromNode);
+            if (!fromNode) return null;
+            return fromNode.outputValues[fromNode.outputs[conn.fromPort].name];
+        }
+
+        function createNodeData(id, title, type, x, y) {
+            const node = { id, title, type, x, y, inputs: [], outputs: [], outputValues: {} };
+
+            if (type === 'Input') {
+                node.outputs.push({ name: 'output' });
+
+                if (title === 'Image') {
+                    node.imageUrl = '';
+                    node.mediaElement = document.createElement('img');
+                }
+                else {
+                    node.mediaElement = document.createElement('video');
+
+                    if (title === 'Video') {
+                        node.videoUrl = '';
+                        node.mediaElement.controls = true;
+                        node.mediaElement.playsInline = true;
+                        node.mediaElement.crossOrigin = 'anonymous';
+                    }
+                    node.mediaElement.loop = true;
+                    node.mediaElement.muted = true;
+                    node.mediaElement.autoplay = true;
+                    node.mediaElement.playsInline = true;
+                    node.mediaElement.className = 'media-preview';
+                }
+                node.mediaElement.crossOrigin = 'anonymous';
+                node.onExecute = () => {
+                    node.outputValues.output = node.mediaElement;
+                    node.mediaElement.style.zoom = 1;
+                    if (!document.fullscreenElement) node.mediaElement.style.zoom = 190 / node.mediaElement.naturalWidth;
+                };
+            }
+            else if (type === 'Text') {
+                node.outputs.push({ name: 'output' });
+
+                node.text = 'OLIVE';
+                node.textColor = '#ffffff';
+                node.textSize = 30;
+                node.textHeight = 10;
+                node.fontName = 'helvetiker_regular';
+                node.font = null;
+                node.needsUpdate = true;
+
+                const scene = new THREE.Scene();
+                node.camera = new THREE.OrthographicCamera(screen.width / -2, screen.width / 2, screen.height / 2, screen.height / -2, 1, 1000);
+                node.camera.position.z = 100;
+
+                const renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true, alpha: true });
+                renderer.setSize(screen.width, screen.height);
+                renderer.setClearColor(0x000000, 0);
+
+                const controls = new THREE.OrbitControls(node.camera, renderer.domElement);
+                controls.enableZoom = true;
+
+                function loadFont(fontName) {
+                    if (fontCache[fontName]) {
+                        node.font = fontCache[fontName];
+                        node.needsUpdate = true;
+                        return;
+                    }
+                    const fontUrls = {
+                        'helvetiker_regular': 'fonts/helvetiker_regular.typeface.json',
+                        'gentilis_regular': 'fonts/gentilis_regular.typeface.json',
+                        'droid_sans_regular': 'fonts//droid_sans_regular.typeface.json',
+                        'optimer_regular': 'fonts/optimer_regular.typeface.json'
+                    };
+                    fontLoader.load(fontUrls[fontName], (loadedFont) => {
+                        fontCache[fontName] = loadedFont;
+                        node.font = loadedFont;
+                        node.needsUpdate = true;
+                    });
+                }
+                loadFont(node.fontName);
+
+                node.changeFont = (newFontName) => {
+                    node.fontName = newFontName;
+                    loadFont(newFontName);
+                };
+
+                let textMesh = null;
+                function updateText() {
+                    if (textMesh) {
+                        scene.remove(textMesh);
+                        textMesh.geometry.dispose();
+                        textMesh.material.dispose();
+                    }
+                    if (!node.font || !node.text) return;
+
+                    const geometry = new THREE.TextGeometry(node.text, {
+                        font: node.font,
+                        size: node.textSize,
+                        height: node.textHeight
+                    });
+                    geometry.computeBoundingBox();
+                    geometry.center();
+
+                    const material = new THREE.MeshBasicMaterial({ color: new THREE.Color(node.textColor) });
+                    textMesh = new THREE.Mesh(geometry, material);
+                    scene.add(textMesh);
+                }
+                node.three = { scene, renderer, controls, updateText };
+
+                node.onExecute = () => {
+                    if (node.needsUpdate) {
+                        updateText();
+                        node.needsUpdate = false;
+                    }
+                    controls.update();
+                    renderer.render(scene, node.camera);
+                    node.outputValues.output = renderer.domElement;
+
+                    renderer.domElement.style.display = "none";
+                    if (document.fullscreenElement === renderer.domElement) renderer.domElement.style.display = "block";
+                };
+            }
+            else if (type === 'Parametric') {
+                node.outputs.push({ name: 'output' });
+                node.canvas = document.createElement('canvas');
+                node.canvas.className = 'inner-canvas';
+                node.canvas.width = 600;
+                node.canvas.height = 600;
+                node.ctx = node.canvas.getContext('2d', { willReadFrequently: true });
+
+                let A = [283, 433, 161, 544, 379, 232, 117, 61, 256, 583, 272, 253, 101, 456];
+                let B = [528, 142, 613, 282, 494, 430, 419, 87, 183, 604, 299, 167, 434, 369];
+                let rand = Math.floor(Math.random() * A.length);
+
+                node.curveColor = '#faf0a0';
+                node.paramA = A[rand];
+                node.paramB = B[rand];
+                node.curveName = 'combined';
+                if (rand > 0) node.curveName = 'astroid';
+                if (rand > 3) node.curveName = 'rhodonea';
+                node.curveType = ["", "", "checked"];
+                if (rand < 9) node.curveType = ["", "checked", ""];
+                node.timeIndex = 0;
+
+                function curve(t) {
+                    let x, y;
+                    if (node.curveName === "rhodonea") {
+                        x = Math.sin(t) * Math.sin(Math.sqrt(node.paramA) * t);
+                        y = Math.cos(t) * Math.sin(Math.sqrt(node.paramA) * t);
+                    }
+                    else if (node.curveName === "astroid") {
+                        x = Math.pow(Math.cos(node.paramA * t), node.paramA % 3 * 2 + 3);
+                        y = Math.pow(Math.sin(node.paramA * t), node.paramA % 3 * 2 + 3);
+                    }
+                    else if (node.curveName === "combined") {
+                        x = Math.cos(node.paramA * t) - Math.pow(Math.cos(node.paramA * t), node.paramA % 10 * 2 + 3);
+                        y = Math.sin(node.paramA * t) - Math.pow(Math.sin(node.paramA * t), node.paramA % 10 * 2 + 3);
+                    }
+                    return [x, y];
+                }
+                node.onExecute = () => {
+                    let scale = 2 * 10000;
+                    let step = scale * Math.sqrt(node.paramB);
+                    let start = node.timeIndex++ / step;
+
+                    if (node.curveName === "rhodonea") start *= 100;
+                    let end = start + 1000 * scale * 2 * Math.PI;
+
+                    let i = curve(start);
+                    let x, y, z;
+
+                    node.ctx.clearRect(0, 0, node.canvas.width, node.canvas.width);
+                    node.ctx.beginPath();
+                    node.ctx.moveTo(node.canvas.width / 2 * (1 + i[0]), node.canvas.width / 2 * (1 + i[1]));
+
+                    node.ctx.strokeStyle = node.curveColor;
+                    node.ctx.fillStyle = node.curveColor;
+
+                    for (var t = start; t < end; t += step) {
+                        z = curve(t);
+                        x = node.canvas.width / 2 * (1 + z[0]);
+                        y = node.canvas.width / 2 * (1 + z[1]);
+
+                        if (node.curveType[0] === "checked") node.ctx.fillRect(x - 1, y - 1, 3, 3);
+                        else {
+                            if (node.curveType[1] === "checked") node.ctx.lineTo(x, y);
+                            else node.ctx.quadraticCurveTo(node.canvas.width / 2, node.canvas.width / 2, x, y);
+                        }
+                    }
+                    if (node.curveType[0] !== "checked") node.ctx.stroke();
+
+                    node.outputValues.output = node.canvas;
+                };
+            }
+            else if (type === '3DScene') {
+                node.inputs.push({ name: 'input' });
+                node.outputs.push({ name: 'output' });
+
+                const scene = new THREE.Scene();
+                node.camera = new THREE.PerspectiveCamera(45, screen.width / screen.height, 1, 1000);
+                const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+
+                renderer.setSize(screen.width, screen.height);
+                renderer.setClearColor(0x000000, 0);
+
+                const controls = new THREE.OrbitControls(node.camera, renderer.domElement);
+                controls.enableZoom = true;
+
+                node.projectorCamera = new THREE.PerspectiveCamera(45, 1, 1, 1000);
+                node.projectorCamera.lookAt(0, 0, 0);
+                scene.add(node.projectorCamera);
+
+                node.ambientLight = new THREE.AmbientLight(0xffffff, 1);
+                scene.add(node.ambientLight);
+                node.pointLight = new THREE.PointLight(0xff0000, 2);
+
+                const pointSphere = new THREE.SphereGeometry(0.1, 16, 16);
+                const pointColor = new THREE.MeshStandardMaterial({ color: 0x0077ff });
+                node.pointHelper = new THREE.Mesh(pointSphere, pointColor);
+                node.pointHelper.visible = false;
+
+                const dragControls = new THREE.DragControls([node.pointHelper], node.camera, renderer.domElement);
+                dragControls.addEventListener('hoveron', (event) => {
+                    event.object.material.emissive.set(0x333333);
+                    controls.enabled = false;
+                });
+                dragControls.addEventListener('hoveroff', (event) => {
+                    event.object.material.emissive.set(0x000000);
+                    controls.enabled = true;
+                });
+                dragControls.addEventListener('drag', (event) => {
+                    node.projectorCamera.position.set(node.pointHelper.position.x, node.pointHelper.position.y, node.pointHelper.position.z);
+                    node.pointLight.position.set(node.pointHelper.position.x, node.pointHelper.position.y, node.pointHelper.position.z);
+                });
+                renderer.domElement.addEventListener('mouseenter', (event) => { node.pointHelper.visible = true; });
+                renderer.domElement.addEventListener('mouseleave', (event) => { node.pointHelper.visible = false; });
+
+                node.isCustomModel = false;
+                node.primitiveType = 'Plane';
+
+                const loader = new THREE.GLTFLoader();
+                let currentModel;
+
+                const geometries = {
+                    Plane: new THREE.PlaneGeometry(1, 1),
+                    Cube: new THREE.BoxGeometry(1, 1, 1),
+                    Sphere: new THREE.SphereGeometry(0.5, 32, 32),
+                    Cone: new THREE.ConeGeometry(0.5, 1, 128),
+                    Cylinder: new THREE.CylinderGeometry(0.5, 0.5, 1, 64),
+                    Torus: new THREE.TorusGeometry(0.5, 0.2, 16, 128),
+                    Circle: new THREE.CircleGeometry(1, 64)
+                };
+                node.primitiveNames = ['Plane', 'Cube', 'Sphere', 'Cone', 'Cylinder', 'Torus', 'Circle'];
+
+                const texture = new THREE.Texture();
+                const standardMaterial = new THREE.MeshStandardMaterial({ map: texture, metalness: 0.2, roughness: 0.5 });
+
+                const projectionMaterial = new THREE.ShaderMaterial({
+                    uniforms: {
+                        projectedTexture: { value: texture },
+                        viewMatrixProjector: { value: node.projectorCamera.matrixWorldInverse },
+                        projectionMatrixProjector: { value: node.projectorCamera.projectionMatrix },
+                    },
+                    vertexShader: `
+                        uniform mat4 viewMatrixProjector;
+                        uniform mat4 projectionMatrixProjector;
+
+                        varying vec4 vProjectedTexCoords;
+                        varying vec3 vNormal;
+                        varying vec3 vWorldPosition;
+
+                        void main() {
+                            vWorldPosition = (modelMatrix * vec4(position, 1.0)).xyz;
+                            vProjectedTexCoords = projectionMatrixProjector * viewMatrixProjector * vec4(vWorldPosition, 1.0);
+                            vNormal = normalize(normalMatrix * normal);
+                            gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+                        }
+                    `,
+                    fragmentShader: `
+                        uniform sampler2D projectedTexture;
+                        varying vec4 vProjectedTexCoords;
+                        varying vec3 vNormal;
+                        varying vec3 vWorldPosition;
+
+                        void main() {
+                            float light = 1.0;
+                            vec2 projCoords = vProjectedTexCoords.xy / vProjectedTexCoords.w;
+                            projCoords = projCoords * 0.5 + 0.5;
+
+                            if (projCoords.x >= 0.0 && projCoords.x <= 1.0 && projCoords.y >= 0.0 && projCoords.y <= 1.0) {
+                                gl_FragColor = texture2D(projectedTexture, projCoords) * light;
+                            } else {
+                                gl_FragColor = vec4(0.25, 0.25, 0.25, 0.0) * light;
+                            }
+                        }
+                    `
+                });
+                if (title !== 'Projection') scene.add(node.pointLight);
+                scene.add(node.pointHelper);
+
+                function updateObject() {
+                    if (currentModel) scene.remove(currentModel);
+
+                    let material = standardMaterial;
+                    if (title === 'Projection') material = projectionMaterial;
+
+                    if (node.isCustomModel && node.loadedModel) {
+                        currentModel = node.loadedModel;
+                        currentModel.traverse(child => { if (child.isMesh) child.material = material; });
+                    } else {
+                        currentModel = new THREE.Mesh(geometries[node.primitiveType], material);
+                    }
+                    scene.add(currentModel);
+
+                    node.camera.position.set(0, 0, 20);
+                    node.pointLight.position.set(0, 0, 11);
+                    node.pointHelper.position.set(0, 0, 11);
+                    node.projectorCamera.position.set(0, 0, 11);
+                }
+                updateObject();
+
+                node.three = { scene, renderer, controls, standardMaterial, projectionMaterial, loader, updateObject };
+
+                node.onExecute = () => {
+                    const sourceElement = getInputData(node, 0);
+                    const sourceIsValid = sourceElement && (sourceElement.naturalWidth > 0 || sourceElement.videoWidth > 0 || sourceElement.width > 0);
+                    if (sourceIsValid) {
+                        standardMaterial.map.image = sourceElement;
+                        standardMaterial.map.needsUpdate = true;
+
+                        projectionMaterial.uniforms.projectedTexture.value.image = sourceElement;
+                        projectionMaterial.uniforms.projectedTexture.value.needsUpdate = true;
+
+                        const width = sourceElement.naturalWidth || sourceElement.videoWidth || sourceElement.width;
+                        const height = sourceElement.naturalHeight || sourceElement.videoHeight || sourceElement.height;
+
+                        if (currentModel && !node.isCustomModel) {
+                            if (currentModel.scale.x !== width / 100 || currentModel.scale.y !== height / 100) {
+                                const originalScale = new THREE.Vector3(1, 1, 1);
+                                currentModel.scale.set(originalScale);
+                                currentModel.scale.set(10, 10 * height / width, 10);
+
+                                node.projectorCamera.aspect = width / height;
+                                node.projectorCamera.updateProjectionMatrix();
+                            }
+                        }
+                    }
+                    controls.update();
+                    renderer.render(scene, node.camera);
+
+                    node.outputValues.output = renderer.domElement;
+
+                    renderer.domElement.style.display = "none";
+                    if (document.fullscreenElement === renderer.domElement) renderer.domElement.style.display = "block";
+                };
+            }
+            else if (type === 'Viewer') {
+                node.inputs.push({ name: 'input' });
+                node.canvas = document.createElement('canvas');
+                node.canvas.width = 190;
+                node.ctx = node.canvas.getContext('2d', { willReadFrequently: true });
+
+                node.canvas.addEventListener("fullscreenchange", function () { for (var i = 0; i < 10; i++) setTimeout(renderWires, i * 100); });
+
+                node.onExecute = () => {
+                    if (!openCvReady) return;
+                    const sourceElement = getInputData(node, 0);
+                    const sourceIsValid = sourceElement && (sourceElement.naturalWidth > 0 || sourceElement.videoWidth > 0 || sourceElement.tagName === 'CANVAS');
+                    if (sourceIsValid) {
+                        node.canvas.width = sourceElement.naturalWidth || sourceElement.videoWidth || sourceElement.width;
+                        node.canvas.height = sourceElement.naturalHeight || sourceElement.videoHeight || sourceElement.height;
+
+                        if (!document.fullscreenElement) {
+                            node.canvas.height = 190 * node.canvas.height / node.canvas.width;
+                            node.canvas.width = 190;
+                        }
+                        node.ctx.drawImage(sourceElement, 0, 0, node.canvas.width, node.canvas.height);
+                    }
+                    else {
+                        node.ctx.fillStyle = '#000000';
+                        node.ctx.fillRect(0, 0, node.canvas.width, node.canvas.height);
+                    }
+                };
+            }
+            else if (type === 'Throughput') {
+                node.inputs.push({ name: 'input' });
+                node.outputs.push({ name: 'output' });
+                node.canvas = document.createElement('canvas');
+                node.canvas.className = 'inner-canvas';
+                node.ctx = node.canvas.getContext('2d', { willReadFrequently: true });
+
+                node.checkFirstFrame = true;
+
+                if (title === 'Histogram Equalization') {
+                    node.gridSize = 8;
+                }
+                else if (title === 'Gamma Correction') {
+                    node.gammaValue = 1.0;
+                }
+                else if (title === 'Color Adjustment') {
+                    node.selectedColor = "#80ffff";
+                    node.oldHSV = [90.0, 128.0];
+                    node.newHSV = [0.0, 0.0];
+
+                    node.fullRangeChecked = "checked";
+                    node.colorRangeChecked = "";
+                    node.colorInvertChecked = "";
+                }
+                else if (title === 'Convolution') {
+                    node.convolutionType = 'Gaussian Blur';
+                    node.convolutionalFilters = ['Gaussian Blur', 'Bilateral Smoothing', 'Sobel Edges', 'Custom Filter'];
+                    node.convolutionalFilterSize = 13;
+                    node.customKernel = [];
+                }
+                else if (title === 'Morphology / Rank') {
+                    node.morphologyType = 'Erosion (Min)';
+                    node.morphologicalFilters = ['Erosion (Min)', 'Dilation (Max)', 'Opening', 'Closing', 'Gradient', 'Tophat', 'Blackhat', 'Median'];
+                    node.morphologicalFilterName = [cv.MORPH_ERODE, cv.MORPH_DILATE, cv.MORPH_OPEN, cv.MORPH_CLOSE, cv.MORPH_GRADIENT, cv.MORPH_TOPHAT, cv.MORPH_BLACKHAT];
+                    node.morphologicalFilterSize = 9;
+                    node.morphologyKernelType = ["checked", "", ""];
+                }
+                else if (title === 'Polar Transformation') {
+                    node.polarEffectSize = 100.0;
+                    node.polarEffectType = 'Polar Coordinates';
+                    node.polarEffects = ['Polar Coordinates', 'Fish Eye Effect', 'Cone Effect', 'Swirl Effect'];
+                }
+                else if (title === 'Glitch Effects') {
+                    node.glitchEffectSize = 5;
+                    node.glitchEffectType = 'Shaking';
+                    node.glitchEffects = ['Shaking', 'Abberation', 'Fade', 'Glass'];
+                }
+                else if (title === 'Channel Mixer') {
+                    node.channelMixerValues = [1, 0, 0, 0, 1, 0, 0, 0, 1];
+                }
+                else if (title === 'Optical Flow') {
+                    node.opticalFlowSize = 5;
+                }
+                else if (title === 'Thresholding') {
+                    node.thresholdValue = 128;
+                    node.thresholdingChecked = ["checked", "", ""];
+                }
+                else if (title === 'Connected Components') {
+                    node.connectedComponentsSize = 128;
+                }
+                node.onExecute = () => {
+                    if (!openCvReady) return;
+                    const sourceElement = getInputData(node, 0);
+                    const sourceIsValid = sourceElement && (sourceElement.naturalWidth > 0 || sourceElement.videoWidth > 0 || sourceElement.tagName === 'CANVAS');
+                    if (sourceIsValid) {
+                        let previousWidth = node.canvas.width;
+                        let previousHeight = node.canvas.height;
+                        let src;
+                        try { src = cv.imread(sourceElement); }
+                        catch {
+                            node.canvas.width = sourceElement.naturalWidth || sourceElement.videoWidth || sourceElement.width;
+                            node.canvas.height = sourceElement.naturalHeight || sourceElement.videoHeight || sourceElement.height;
+                            node.ctx.drawImage(sourceElement, 0, 0, node.canvas.width, node.canvas.height);
+                            src = cv.imread(node.canvas);
+                        }
+                        try {
+                            if (node.canvas.width !== previousWidth || node.canvas.height !== previousHeight) node.checkFirstFrame = true;
+                            let dst = new cv.Mat();
+
+                            if (title === 'Histogram Equalization') {
+                                if (node.gridSize > 0) {
+                                    let tileGridSize = new cv.Size(node.gridSize, node.gridSize);
+                                    let clahe = new cv.CLAHE(40, tileGridSize);
+                                    let tmp1 = new cv.MatVector();
+                                    let tmp2 = new cv.MatVector();
+                                    cv.split(src, tmp1);
+                                    let dst0 = tmp1.get(0);
+                                    clahe.apply(dst0, dst0);
+                                    tmp2.push_back(dst0);
+                                    let dst1 = tmp1.get(1);
+                                    clahe.apply(dst1, dst1);
+                                    tmp2.push_back(dst1);
+                                    let dst2 = tmp1.get(2);
+                                    clahe.apply(dst2, dst2);
+                                    tmp2.push_back(dst2);
+                                    dst0.delete(); dst1.delete(); dst2.delete();
+                                    cv.merge(tmp2, dst);
+                                    tmp1.delete(); tmp2.delete(); clahe.delete();
+                                }
+                                else src.copyTo(dst);
+                            }
+                            else if (title === 'Color Adjustment') {
+                                document.getElementById('fullRange' + node.id).checked = node.fullRangeChecked;
+                                document.getElementById('colorRange' + node.id).checked = node.colorRangeChecked;
+
+                                if (node.colorInvertChecked) cv.bitwise_not(src, src);
+                                let adjusted = new cv.Mat();
+                                cv.cvtColor(src, adjusted, cv.COLOR_RGB2HSV);
+
+                                let low = [node.oldHSV[0], node.oldHSV[1], 0, 0];
+                                let high = [node.oldHSV[0], node.oldHSV[1], 255, 255];
+                                let low2, high2;
+
+                                if (node.fullRangeChecked || node.oldHSV[1] < 50) {
+                                    node.fullRangeChecked = true;
+                                    low = [0, 0, 0, 0];
+                                    high = [180, 255, 255, 255];
+                                }
+                                else if (node.colorRangeChecked) {
+                                    node.colorRangeChecked = true;
+                                    if (node.oldHSV[0] < 10 || node.oldHSV[0] > 158) { //red
+                                        low = [159, 50, 70, 0];
+                                        high = [180, 255, 255, 255];
+                                        low2 = [0, 50, 70, 0];
+                                        high2 = [9, 255, 255, 255];
+                                    }
+                                    else if (node.oldHSV[0] < 25 && node.oldHSV[0] > 9) { //orange
+                                        low = [10, 50, 70, 0];
+                                        high = [24, 255, 255, 255];
+                                    }
+                                    else if (node.oldHSV[0] < 36 && node.oldHSV[0] > 24) { //yellow
+                                        low = [25, 50, 70, 0];
+                                        high = [35, 255, 255, 255];
+                                    }
+                                    else if (node.oldHSV[0] < 90 && node.oldHSV[0] > 35) { //green
+                                        low = [36, 50, 70, 0];
+                                        high = [89, 255, 255, 255];
+                                    }
+                                    else if (node.oldHSV[0] < 129 && node.oldHSV[0] > 89) { //blue
+                                        low = [90, 50, 70, 0];
+                                        high = [128, 255, 255, 255];
+                                    }
+                                    else if (node.oldHSV[0] < 159 && node.oldHSV[0] > 128) { //purple
+                                        low = [129, 50, 70, 0];
+                                        high = [158, 255, 255, 255];
+                                    }
+                                }
+                                else {
+                                    low = [node.oldHSV[0], node.oldHSV[1], 0, 0];
+                                    high = [node.oldHSV[0], node.oldHSV[1], 255, 255];
+                                }
+                                let lowerBound = new cv.Mat(adjusted.rows, adjusted.cols, adjusted.type(), low);
+                                let upperBound = new cv.Mat(adjusted.rows, adjusted.cols, adjusted.type(), high);
+                                let mask = new cv.Mat();
+                                cv.inRange(adjusted, lowerBound, upperBound, mask);
+                                lowerBound.delete(); upperBound.delete();
+
+                                if (low2) {
+                                    let lowerBound2 = new cv.Mat(adjusted.rows, adjusted.cols, adjusted.type(), low2);
+                                    let upperBound2 = new cv.Mat(adjusted.rows, adjusted.cols, adjusted.type(), high2);
+                                    let mask2 = new cv.Mat();
+                                    cv.inRange(adjusted, lowerBound2, upperBound2, mask2);
+                                    cv.bitwise_or(mask, mask2, mask);
+                                    lowerBound2.delete(); upperBound2.delete(); mask2.delete();
+                                }
+                                let result = new cv.Mat();
+                                let final = new cv.Mat();
+                                let step = new cv.Mat();
+                                let temp = new cv.Mat();
+
+                                let newHue = new cv.Mat(adjusted.rows, adjusted.cols, adjusted.type(), new cv.Scalar(Math.abs(node.newHSV[0]), 0, 0, 0));
+                                cv.bitwise_and(newHue, newHue, result, mask);
+                                newHue.delete();
+
+                                if (node.newHSV[0] >= 0) cv.add(adjusted, result, step, temp, -1);
+                                else cv.subtract(adjusted, result, step, temp, -1);
+                                adjusted.delete();
+
+                                let newSat = new cv.Mat(step.rows, step.cols, step.type(), new cv.Scalar(0, Math.abs(node.newHSV[1]), 0, 0));
+                                cv.bitwise_and(newSat, newSat, result, mask);
+                                newSat.delete(); mask.delete();
+
+                                if (node.newHSV[1] >= 0) cv.add(step, result, final, temp, -1);
+                                else cv.subtract(step, result, final, temp, -1);
+                                step.delete(); result.delete(); temp.delete();
+
+                                cv.cvtColor(final, dst, cv.COLOR_HSV2RGB);
+                                final.delete();
+                            }
+                            else if (title === 'Gamma Correction') {
+                                let lut = new cv.Mat(1, 256, cv.CV_8UC1);
+                                for (let i = 0; i < 256; i++) {
+                                    lut.ucharPtr(0, i)[0] = Math.min(255, Math.pow(i / 255.0, node.gammaValue) * 255.0);
+                                }
+                                cv.LUT(src, lut, dst);
+                                lut.delete();
+                            }
+                            else if (title === 'Convolution') {
+                                let anchor = new cv.Point(-1, -1);
+                                let ksize = new cv.Size(node.convolutionalFilterSize, node.convolutionalFilterSize);
+                                let index = node.convolutionalFilters.indexOf(node.convolutionType);
+
+                                document.getElementById('convolutionRange' + node.id).disabled = false;
+                                document.getElementById('kernelInput' + node.id).style.opacity = 0;
+                                switch (index) {
+                                    case 0: cv.GaussianBlur(src, dst, ksize, 0, 0, cv.BORDER_DEFAULT);
+                                        break;
+                                    case 1:
+                                        cv.cvtColor(src, src, cv.COLOR_RGBA2RGB);
+                                        cv.bilateralFilter(src, dst, node.convolutionalFilterSize, 75, 75, cv.BORDER_DEFAULT);
+                                        break;
+                                    case 2:
+                                        let channels = new cv.MatVector();
+                                        cv.split(src, channels);
+                                        let R = channels.get(0);
+                                        let G = channels.get(1);
+                                        let B = channels.get(2);
+                                        channels.delete();
+
+                                        let final = new cv.MatVector();
+
+                                        let gradXR = new cv.Mat();
+                                        let gradYR = new cv.Mat();
+                                        let absGradXR = new cv.Mat();
+                                        let absGradYR = new cv.Mat();
+                                        cv.Sobel(R, gradXR, cv.CV_16S, 1, 0, 3, 1, 0, cv.BORDER_DEFAULT);
+                                        cv.Sobel(R, gradYR, cv.CV_16S, 0, 1, 3, 1, 0, cv.BORDER_DEFAULT);
+                                        R.delete();
+                                        cv.convertScaleAbs(gradXR, absGradXR);
+                                        cv.convertScaleAbs(gradYR, absGradYR);
+                                        gradXR.delete(); gradYR.delete();
+                                        let tmpR = new cv.Mat();
+                                        cv.addWeighted(absGradXR, node.convolutionalFilterSize / 25, absGradYR, 1 - node.convolutionalFilterSize / 25, 0, tmpR);
+                                        absGradXR.delete(); absGradYR.delete();
+                                        final.push_back(tmpR);
+                                        tmpR.delete();
+
+                                        let gradXG = new cv.Mat();
+                                        let gradYG = new cv.Mat();
+                                        let absGradXG = new cv.Mat();
+                                        let absGradYG = new cv.Mat();
+                                        cv.Sobel(G, gradXG, cv.CV_16S, 1, 0, 3, 1, 0, cv.BORDER_DEFAULT);
+                                        cv.Sobel(G, gradYG, cv.CV_16S, 0, 1, 3, 1, 0, cv.BORDER_DEFAULT);
+                                        G.delete();
+                                        cv.convertScaleAbs(gradXG, absGradXG);
+                                        cv.convertScaleAbs(gradYG, absGradYG);
+                                        gradXG.delete(); gradYG.delete();
+                                        let tmpG = new cv.Mat();
+                                        cv.addWeighted(absGradXG, 0.5, absGradYG, 0.5, 0, tmpG);
+                                        absGradXG.delete(); absGradYG.delete();
+                                        final.push_back(tmpG);
+                                        tmpG.delete();
+
+                                        let gradXB = new cv.Mat();
+                                        let gradYB = new cv.Mat();
+                                        let absGradXB = new cv.Mat();
+                                        let absGradYB = new cv.Mat();
+                                        cv.Sobel(B, gradXB, cv.CV_16S, 1, 0, 3, 1, 0, cv.BORDER_DEFAULT);
+                                        cv.Sobel(B, gradYB, cv.CV_16S, 0, 1, 3, 1, 0, cv.BORDER_DEFAULT);
+                                        B.delete();
+                                        cv.convertScaleAbs(gradXB, absGradXB);
+                                        cv.convertScaleAbs(gradYB, absGradYB);
+                                        gradXB.delete(); gradYB.delete();
+                                        let tmpB = new cv.Mat();
+                                        cv.addWeighted(absGradXB, 0.5, absGradYB, 0.5, 0, tmpB);
+                                        absGradXB.delete(); absGradYB.delete();
+                                        final.push_back(tmpB);
+                                        tmpB.delete();
+
+                                        cv.merge(final, dst);
+                                        final.delete();
+                                        break;
+                                    default:
+                                        document.getElementById('convolutionRange' + node.id).disabled = true;
+                                        document.getElementById('kernelInput' + node.id).style.opacity = 1;
+                                        try {
+                                            cv.cvtColor(src, src, cv.COLOR_RGBA2RGB);
+                                            let block = parseInt(Math.sqrt(node.customKernel.length));
+                                            let kernel = cv.matFromArray(block, block, cv.CV_32F, node.customKernel);
+                                            cv.filter2D(src, dst, cv.CV_8U, kernel);
+                                        }
+                                        catch { src.copyTo(dst); }
+                                }
+                            }
+                            else if (title === 'Morphology / Rank') {
+                                let ksize = new cv.Size(node.morphologicalFilterSize, node.morphologicalFilterSize);
+                                let kernel;
+                                if (node.morphologyKernelType[1] === "checked")
+                                    kernel = cv.getStructuringElement(cv.MORPH_ELLIPSE, ksize);
+                                else if (node.morphologyKernelType[2] === "checked")
+                                    kernel = cv.getStructuringElement(cv.MORPH_CROSS, ksize);
+                                else kernel = cv.Mat.ones(node.morphologicalFilterSize, node.morphologicalFilterSize, cv.CV_8U);
+
+                                let index = node.morphologicalFilters.indexOf(node.morphologyType);
+                                if (index > 6) cv.medianBlur(src, dst, node.morphologicalFilterSize);
+                                else {
+                                    if (index > 3) cv.cvtColor(src, src, cv.COLOR_RGBA2RGB);
+                                    cv.morphologyEx(src, dst, node.morphologicalFilterName[index], kernel);
+                                }
+                            }
+                            else if (title === 'Polar Transformation') {
+                                let p = new cv.Mat.zeros(src.rows / 2, src.cols / 2, cv.CV_8UC3);
+
+                                document.getElementById('polarRange' + node.id).style.opacity = 1;
+                                if (node.polarEffectType === "Polar Coordinates")
+                                    document.getElementById('polarRange' + node.id).style.opacity = 0;
+
+                                for (var x = 0; x < p.cols; x++) {
+                                    for (var y = 0; y < p.rows; y++) {
+                                        let cart, polar = cartesian2polar(x - p.cols / 2, y - p.rows / 2);
+
+                                        if (node.polarEffectType === "Polar Coordinates") cart = [polar[0], polar[1]];
+                                        else if (node.polarEffectType === "Fish Eye Effect")
+                                            cart = polar2cartesian(polar[0] * polar[0] / node.polarEffectSize, polar[1]);
+                                        else if (node.polarEffectType === "Cone Effect")
+                                            cart = polar2cartesian(Math.sqrt(polar[0] * node.polarEffectSize), polar[1]);
+                                        else cart = polar2cartesian(polar[0], polar[1] + polar[0] / node.polarEffectSize);
+
+                                        let pixel = src.ucharPtr(Math.round(cart[1]) + p.rows / 2 + src.rows / 4, Math.round(cart[0]) + p.cols / 2 + src.cols / 4);
+                                        p.data[y * p.cols * p.channels() + x * p.channels()] = pixel[0];
+                                        p.data[y * p.cols * p.channels() + x * p.channels() + 1] = pixel[1];
+                                        p.data[y * p.cols * p.channels() + x * p.channels() + 2] = pixel[2];
+                                    }
+                                }
+                                p.copyTo(dst);
+                                p.delete();
+                            }
+                            else if (title === 'Glitch Effects') {
+                                let dsize = new cv.Size(src.cols, src.rows);
+                                let M1 = cv.matFromArray(2, 3, cv.CV_64FC1, [1, 0, 2 * (2 * Math.random() - 1) * node.glitchEffectSize, 0, 1, 2 * (2 * Math.random() - 1) * node.glitchEffectSize]);
+                                let M3 = cv.matFromArray(2, 3, cv.CV_64FC1, [1, 0, 2 * (2 * Math.random() - 1) * node.glitchEffectSize, 0, 1, 2 * (2 * Math.random() - 1) * node.glitchEffectSize]);
+
+                                if (node.glitchEffectType === 'Shaking') {
+                                    let tmp = new cv.Mat();
+                                    cv.warpAffine(src, tmp, M1, dsize, cv.INTER_LINEAR, cv.BORDER_CONSTANT, new cv.Scalar());
+                                    cv.warpAffine(tmp, dst, M3, dsize, cv.INTER_LINEAR, cv.BORDER_CONSTANT, new cv.Scalar());
+                                    tmp.delete();
+                                }
+                                else if (node.glitchEffectType === 'Abberation') {
+                                    let channels = new cv.MatVector(), planes = new cv.MatVector();
+                                    cv.split(src, channels);
+                                    let c1 = channels.get(0), c2 = channels.get(1), c3 = channels.get(2);
+
+                                    cv.warpAffine(c1, c1, M1, dsize, cv.INTER_LINEAR, cv.BORDER_CONSTANT, new cv.Scalar());
+                                    cv.warpAffine(c3, c3, M3, dsize, cv.INTER_LINEAR, cv.BORDER_CONSTANT, new cv.Scalar());
+
+                                    planes.push_back(c1), planes.push_back(c2), planes.push_back(c3);
+                                    cv.merge(planes, dst);
+                                    channels.delete(); planes.delete(); c1.delete(); c2.delete(); c3.delete();
+                                }
+                                else if (node.glitchEffectType === 'Fade') {
+                                    if (node.checkFirstFrame) {
+                                        node.blackImage = new cv.Mat.zeros(node.canvas.height, node.canvas.width, src.type());
+                                        node.checkFirstFrame = false;
+                                    }
+                                    else {
+                                        try { cv.addWeighted(src, 1 - (node.glitchEffectSize / 2 - 1) / 10, node.blackImage, (node.glitchEffectSize / 2 - 1) / 10, 0, node.blackImage); }
+                                        catch { }
+                                    }
+                                    node.blackImage.copyTo(dst);
+                                }
+                                else {
+                                    cv.cvtColor(src, dst, cv.COLOR_RGBA2RGB, 0);
+                                    for (var x = 0; x < src.cols; x++) {
+                                        for (var y = 0; y < src.rows; y++) {
+                                            let randx = Math.round(Math.random() * node.glitchEffectSize * 2 - node.glitchEffectSize);
+                                            let randy = Math.round(Math.random() * node.glitchEffectSize * 2 - node.glitchEffectSize);
+                                            try {
+                                                let pixel = src.ucharPtr(y + randy, x + randx);
+                                                dst.data[y * dst.cols * dst.channels() + x * dst.channels()] = pixel[0];
+                                                dst.data[y * dst.cols * dst.channels() + x * dst.channels() + 1] = pixel[1];
+                                                dst.data[y * dst.cols * dst.channels() + x * dst.channels() + 2] = pixel[2];
+                                            }
+                                            catch { }
+                                        }
+                                    }
+                                }
+                                M1.delete(); M3.delete();
+                            }
+                            else if (title === 'Channel Mixer') {
+                                let channels = new cv.MatVector();
+                                let newRGB = new cv.MatVector();
+                                cv.split(src, channels);
+
+                                let Rchannel = channels.get(0);
+                                let Gchannel = channels.get(1);
+                                let Bchannel = channels.get(2);
+                                channels.delete();
+
+                                let scalar, temp = new cv.Mat();
+                                let matrix = new cv.Mat(Rchannel.rows, Rchannel.cols, Rchannel.type());
+                                let newR = new cv.Mat.zeros(Rchannel.rows, Rchannel.cols, Rchannel.type());
+                                scalar = new cv.Scalar(node.channelMixerValues[0]);
+                                matrix.setTo(scalar);
+                                cv.multiply(Rchannel, matrix, temp);
+                                cv.add(newR, temp, newR);
+                                scalar = new cv.Scalar(node.channelMixerValues[3]);
+                                matrix.setTo(scalar);
+                                cv.multiply(Gchannel, matrix, temp);
+                                cv.add(newR, temp, newR);
+                                scalar = new cv.Scalar(node.channelMixerValues[6]);
+                                matrix.setTo(scalar);
+                                cv.multiply(Bchannel, matrix, temp);
+                                cv.add(newR, temp, newR);
+                                cv.normalize(newR, newR, 0, 255, cv.NORM_MINMAX);
+                                newRGB.push_back(newR);
+                                newR.delete();
+
+                                let newG = new cv.Mat.zeros(Gchannel.rows, Gchannel.cols, Gchannel.type());
+                                scalar = new cv.Scalar(node.channelMixerValues[1]);
+                                matrix.setTo(scalar);
+                                cv.multiply(Rchannel, matrix, temp);
+                                cv.add(newG, temp, newG);
+                                scalar = new cv.Scalar(node.channelMixerValues[4]);
+                                matrix.setTo(scalar);
+                                cv.multiply(Gchannel, matrix, temp);
+                                cv.add(newG, temp, newG);
+                                scalar = new cv.Scalar(node.channelMixerValues[7]);
+                                matrix.setTo(scalar);
+                                cv.multiply(Bchannel, matrix, temp);
+                                cv.add(newG, temp, newG);
+                                cv.normalize(newG, newG, 0, 255, cv.NORM_MINMAX);
+                                newRGB.push_back(newG);
+                                newG.delete();
+
+                                let newB = new cv.Mat.zeros(Bchannel.rows, Bchannel.cols, Bchannel.type());
+                                scalar = new cv.Scalar(node.channelMixerValues[2]);
+                                matrix.setTo(scalar);
+                                cv.multiply(Rchannel, matrix, temp);
+                                cv.add(newB, temp, newB);
+                                scalar = new cv.Scalar(node.channelMixerValues[5]);
+                                matrix.setTo(scalar);
+                                cv.multiply(Gchannel, matrix, temp);
+                                cv.add(newB, temp, newB);
+                                scalar = new cv.Scalar(node.channelMixerValues[8]);
+                                matrix.setTo(scalar);
+                                cv.multiply(Bchannel, matrix, temp);
+                                cv.add(newB, temp, newB);
+                                cv.normalize(newB, newB, 0, 255, cv.NORM_MINMAX);
+                                newRGB.push_back(newB);
+                                newB.delete();
+
+                                Rchannel.delete(); Gchannel.delete(); Bchannel.delete();
+                                temp.delete(); matrix.delete();
+                                cv.merge(newRGB, dst);
+                                newRGB.delete();
+                            }
+                            else if (title === 'Thresholding') {
+                                let channels = new cv.MatVector();
+                                cv.split(src, channels);
+                                let R = channels.get(0);
+                                let G = channels.get(1);
+                                let B = channels.get(2);
+                                channels.delete();
+
+                                let final = new cv.MatVector();
+                                let block = node.thresholdValue * 2 + 1;
+
+                                let tmpR = new cv.Mat();
+                                if (node.thresholdingChecked[0] === "checked") cv.threshold(R, tmpR, node.thresholdValue, 255, cv.THRESH_BINARY);
+                                else if (node.thresholdingChecked[1] === "checked") cv.threshold(R, tmpR, 0, node.thresholdValue, cv.THRESH_OTSU);
+                                else cv.adaptiveThreshold(R, tmpR, 255, cv.ADAPTIVE_THRESH_GAUSSIAN_C, cv.THRESH_BINARY, block, 0);
+                                R.delete();
+                                final.push_back(tmpR);
+                                tmpR.delete();
+
+                                tmpG = new cv.Mat();
+                                if (node.thresholdingChecked[0] === "checked") cv.threshold(G, tmpG, node.thresholdValue, 255, cv.THRESH_BINARY);
+                                else if (node.thresholdingChecked[1] === "checked") cv.threshold(G, tmpG, 0, node.thresholdValue, cv.THRESH_OTSU);
+                                else cv.adaptiveThreshold(G, tmpG, 255, cv.ADAPTIVE_THRESH_GAUSSIAN_C, cv.THRESH_BINARY, block, 0);
+                                G.delete();
+                                final.push_back(tmpG);
+                                tmpG.delete();
+
+                                tmpB = new cv.Mat();
+                                if (node.thresholdingChecked[0] === "checked") cv.threshold(B, tmpB, node.thresholdValue, 255, cv.THRESH_BINARY);
+                                else if (node.thresholdingChecked[1] === "checked") cv.threshold(B, tmpB, 0, node.thresholdValue, cv.THRESH_OTSU);
+                                else cv.adaptiveThreshold(B, tmpB, 255, cv.ADAPTIVE_THRESH_GAUSSIAN_C, cv.THRESH_BINARY, block, 0);
+                                B.delete();
+                                final.push_back(tmpB);
+                                tmpB.delete();
+
+                                cv.merge(final, dst);
+                                final.delete();
+                            }
+                            else if (title === 'Skeleton') {
+                                let channels = new cv.MatVector();
+                                cv.split(src, channels);
+                                let R = channels.get(0);
+                                let G = channels.get(1);
+                                let B = channels.get(2);
+                                channels.delete();
+
+                                let final = new cv.MatVector();
+                                let block = node.thresholdValue * 2 + 1;
+
+                                let tmpR = new cv.Mat(), dstR = new cv.Mat();
+                                cv.threshold(R, tmpR, 0, 255, cv.THRESH_BINARY_INV + cv.THRESH_OTSU);
+                                R.delete();
+                                cv.distanceTransform(tmpR, dstR, cv.DIST_L2, 5);
+                                tmpR.delete();
+                                cv.normalize(dstR, dstR, 1, 0, cv.NORM_INF);
+                                final.push_back(dstR);
+                                dstR.delete();
+
+                                let tmpG = new cv.Mat(), dstG = new cv.Mat();
+                                cv.threshold(G, tmpG, 0, 255, cv.THRESH_BINARY_INV + cv.THRESH_OTSU);
+                                G.delete();
+                                cv.distanceTransform(tmpG, dstG, cv.DIST_L2, 5);
+                                tmpG.delete();
+                                cv.normalize(dstG, dstG, 1, 0, cv.NORM_INF);
+                                final.push_back(dstG);
+                                dstG.delete();
+
+                                let tmpB = new cv.Mat(), dstB = new cv.Mat();
+                                cv.threshold(B, tmpB, 0, 255, cv.THRESH_BINARY_INV + cv.THRESH_OTSU);
+                                B.delete();
+                                cv.distanceTransform(tmpB, dstB, cv.DIST_L2, 5);
+                                tmpB.delete();
+                                cv.normalize(dstB, dstB, 1, 0, cv.NORM_INF);
+                                final.push_back(dstB);
+                                dstB.delete();
+
+                                cv.merge(final, dst);
+                                final.delete();
+                            }
+                            else if (title === 'Connected Components') {
+                                let gray = new cv.Mat();
+                                cv.cvtColor(src, src, cv.COLOR_RGBA2RGB, 0);
+                                cv.cvtColor(src, gray, cv.COLOR_RGB2GRAY, 0);
+                                let binary = new cv.Mat();
+                                cv.threshold(gray, binary, node.connectedComponentsSize, 255, cv.THRESH_BINARY);
+                                gray.delete();
+                                let contours = new cv.MatVector();
+                                let hierarchy = new cv.Mat();
+                                cv.findContours(binary, contours, hierarchy, cv.RETR_CCOMP, cv.CHAIN_APPROX_SIMPLE);
+                                binary.delete();
+                                dst = cv.Mat.zeros(src.rows, src.cols, cv.CV_8UC3);
+                                for (let i = 0; i < contours.size(); ++i) {
+                                    let mask = cv.Mat.zeros(src.rows, src.cols, cv.CV_8UC1);
+                                    cv.drawContours(mask, contours, i, new cv.Scalar(255), -1, cv.LINE_8, hierarchy, 100);
+                                    let meanColor = cv.mean(src, mask);
+                                    mask.delete();
+                                    let color = new cv.Scalar(meanColor[0], meanColor[1], meanColor[2]);
+                                    cv.drawContours(dst, contours, i, color, -1, cv.LINE_8, hierarchy, 100);
+                                }
+                                contours.delete(); hierarchy.delete();
+                            }
+                            else if (title === 'Background Subtraction') {
+                                if (node.checkFirstFrame) {
+                                    node.fgbg = new cv.BackgroundSubtractorMOG2(500, 16, false);
+                                    node.checkFirstFrame = false;
+                                }
+                                let tmp = new cv.Mat();
+                                node.fgbg.apply(src, tmp);
+
+                                let contours = new cv.MatVector();
+                                let hierarchy = new cv.Mat();
+                                cv.findContours(tmp, contours, hierarchy, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE);
+                                tmp.delete();
+
+                                let mask = cv.Mat.zeros(src.rows, src.cols, cv.CV_8UC4);
+                                for (let i = 0; i < contours.size(); ++i) {
+                                    cv.drawContours(mask, contours, i, new cv.Scalar(255, 255, 255, 255), -1, cv.LINE_8, hierarchy, 100);
+                                }
+                                contours.delete(); hierarchy.delete();
+
+                                cv.bitwise_and(src, mask, dst);
+                                mask.delete();
+                            }
+                            else if (title === 'Optical Flow') {
+                                if (node.checkFirstFrame) {
+                                    node.previousImage = new cv.Mat();
+                                    cv.cvtColor(src, node.previousImage, cv.COLOR_RGBA2GRAY);
+                                    node.checkFirstFrame = false;
+                                    return;
+                                }
+                                let next = new cv.Mat(src.rows, src.cols, cv.CV_8UC1);
+                                let flow = new cv.Mat(src.rows, src.cols, cv.CV_32FC2);
+                                let flowVec = new cv.MatVector();
+                                let win = node.opticalFlowSize;
+
+                                cv.cvtColor(src, next, cv.COLOR_RGBA2GRAY);
+                                cv.calcOpticalFlowFarneback(node.previousImage, next, flow, 0.5, 3, win + 1, 3, 5, 1.2, 0);
+                                next.copyTo(node.previousImage);
+                                next.delete();
+
+                                cv.split(flow, flowVec);
+                                flow.delete();
+
+                                let u = flowVec.get(0);
+                                let v = flowVec.get(1);
+                                flowVec.delete();
+
+                                dst = new cv.Mat(src.rows, src.cols, cv.CV_8UC3, new cv.Scalar(0, 0, 0));
+
+                                for (var i = 0; i < src.cols; i += win) {
+                                    for (var j = 0; j < src.rows; j += win) {
+                                        let pixel = src.ucharPtr(j, i);
+                                        let x = u.data32F[j * src.cols + i];
+                                        let y = v.data32F[j * src.cols + i];
+                                        let p1 = new cv.Point(i, j);
+                                        let p2 = new cv.Point(i + x, j + y);
+
+                                        cv.line(dst, p1, p2, pixel, win / 3);
+                                    }
+                                }
+                                u.delete(); v.delete();
+                            }
+                            cv.imshow(node.canvas, dst);
+                            src.delete(); dst.delete();
+                        }
+                        catch (err) {
+                            alert("OpenCV Error:", err);
+                        }
+                    }
+                    node.outputValues.output = node.canvas;
+                };
+            }
+            else if (type === 'Transition') {
+                node.inputs.push({ name: 'input1' }, { name: 'input2' });
+                node.outputs.push({ name: 'output' });
+
+                node.canvas = document.createElement('canvas');
+                node.canvas.className = 'inner-canvas';
+                node.canvas.width = 256;
+                node.canvas.height = 256;
+
+                node.transitionTypes = ['Fade', 'Wipe', 'Upwards', 'Diagonal', 'Iris', 'Radial', 'Dissolve'];
+                node.transitionType = 'Fade';
+                node.progress = 0;
+                node.transitionDuration = 1;
+
+                const scene = new THREE.Scene();
+                const camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
+                const renderer = new THREE.WebGLRenderer({ canvas: node.canvas, antialias: true });
+
+                const shaders = {
+                    Fade: `
+                        uniform sampler2D tex1; uniform sampler2D tex2; uniform float progress; varying vec2 vUv;
+                        void main() { gl_FragColor = mix(texture2D(tex1, vUv), texture2D(tex2, vUv), progress); }`,
+                    Wipe: `
+                        uniform sampler2D tex1; uniform sampler2D tex2; uniform float progress; varying vec2 vUv;
+                        void main() { gl_FragColor = mix(texture2D(tex1, vUv), texture2D(tex2, vUv), step(vUv.x, progress)); }`,
+                    Upwards: `
+                        uniform sampler2D tex1; uniform sampler2D tex2; uniform float progress; varying vec2 vUv;
+                        void main() { gl_FragColor = mix(texture2D(tex1, vUv), texture2D(tex2, vUv), step(vUv.y, progress)); }`,
+                    Diagonal: `
+                        uniform sampler2D tex1; uniform sampler2D tex2; uniform float progress; varying vec2 vUv;
+                        void main() { 
+                            float d = vUv.x + vUv.y;
+                            gl_FragColor = mix(texture2D(tex1, vUv), texture2D(tex2, vUv), step(d, progress * 2.0));
+                        }`,
+                    Iris: `
+                        uniform sampler2D tex1; uniform sampler2D tex2; uniform float progress; varying vec2 vUv;
+                        void main() { 
+                            float dist = distance(vUv, vec2(0.5));
+                            gl_FragColor = mix(texture2D(tex1, vUv), texture2D(tex2, vUv), step(dist, progress * 0.707)); // 0.707 is sqrt(2)/2
+                        }`,
+                    Radial: `
+                        uniform sampler2D tex1; uniform sampler2D tex2; uniform float progress; varying vec2 vUv;
+                        const float PI = 3.141592653589793;
+                        void main() {
+                            float angle = atan(vUv.y - 0.5, vUv.x - 0.5);
+                            float p = (angle + PI) / (2.0 * PI);
+                            gl_FragColor = mix(texture2D(tex1, vUv), texture2D(tex2, vUv), step(p, progress));
+                        }`,
+                    Dissolve: `
+                        uniform sampler2D tex1; uniform sampler2D tex2; uniform float progress; varying vec2 vUv;
+                        float random(vec2 st) { return fract(sin(dot(st.xy, vec2(12.9898,78.233))) * 43758.5453123); }
+                        void main() { 
+                            gl_FragColor = mix(texture2D(tex1, vUv), texture2D(tex2, vUv), step(random(vUv), progress));
+                        }`
+                };
+
+                const material = new THREE.ShaderMaterial({
+                    uniforms: {
+                        tex1: { value: null },
+                        tex2: { value: null },
+                        progress: { value: 0 }
+                    },
+                    vertexShader: 'varying vec2 vUv; void main() { vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }',
+                    fragmentShader: shaders.fade
+                });
+
+                const plane = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), material);
+                scene.add(plane);
+
+                node.playTransition = () => {
+                    node.progress = 0;
+                    gsap.to(node, { progress: 1.0, duration: node.transitionDuration, ease: "power2.inOut", yoyo: true, repeat: 0 });
+                };
+
+                node.onExecute = () => {
+                    const source1 = getInputData(node, 0);
+                    const source2 = getInputData(node, 1);
+                    const sourceIsValid = source1 && source2 && (source1.width > 0 || source1.videoWidth > 0) && (source2.width > 0 || source2.videoWidth > 0);
+
+                    if (sourceIsValid) {
+                        const newWidth = source1.naturalWidth || source1.videoWidth || source1.width;
+                        const newHeight = source1.naturalHeight || source1.videoHeight || source1.height;
+                        if (node.canvas.width !== newWidth || node.canvas.height !== newHeight) {
+                            renderer.setSize(newWidth, newHeight, false);
+                        }
+
+                        material.uniforms.tex1.value = new THREE.CanvasTexture(source1);
+                        material.uniforms.tex2.value = new THREE.CanvasTexture(source2);
+                        material.uniforms.progress.value = node.progress;
+                        material.fragmentShader = shaders[node.transitionType];
+                        material.needsUpdate = true;
+                    }
+
+                    renderer.render(scene, camera);
+                    node.outputValues.output = node.canvas;
+                };
+            }
+            else if (type === 'Mixer') {
+                node.inputs.push({ name: 'input1' });
+                node.inputs.push({ name: 'input2' });
+                node.outputs.push({ name: 'output' });
+                node.canvas = document.createElement('canvas');
+                node.canvas.className = 'inner-canvas';
+                node.ctx = node.canvas.getContext('2d', { willReadFrequently: true });
+
+                if (title === 'Matrix Operations') {
+                    node.operationType = 'Min';
+                    node.matrixOperations = ['Min', 'Max', 'Add', 'Subtract', 'Multiply', 'Divide'];
+                    node.operationWeight = 0.5;
+                }
+                else if (title === 'Color Blending') {
+                    node.hueBlendChecked = "checked";
+                    node.satBlendChecked = "checked";
+                    node.valBlendChecked = "";
+                }
+                else if (title === 'Concatenation') {
+                    node.concatenationAlignment = 1;
+                    node.concatenationChecked = ["checked", ""];
+                }
+                node.onExecute = () => {
+                    if (!openCvReady) return;
+                    const sourceElement1 = getInputData(node, 0);
+                    const sourceElement2 = getInputData(node, 1);
+                    const sourceIsValid1 = sourceElement1 && (sourceElement1.naturalWidth > 0 || sourceElement1.videoWidth > 0 || sourceElement1.tagName === 'CANVAS');
+                    const sourceIsValid2 = sourceElement2 && (sourceElement2.naturalWidth > 0 || sourceElement2.videoWidth > 0 || sourceElement2.tagName === 'CANVAS');
+                    if (sourceIsValid1 && sourceIsValid2) {
+                        let src1, temp;
+                        try { src1 = cv.imread(sourceElement1); }
+                        catch {
+                            node.canvas.width = sourceElement1.naturalWidth || sourceElement1.videoWidth || sourceElement1.width;
+                            node.canvas.height = sourceElement1.naturalHeight || sourceElement1.videoHeight || sourceElement1.height;
+                            node.ctx.drawImage(sourceElement1, 0, 0, node.canvas.width, node.canvas.height);
+                            src1 = cv.imread(node.canvas);
+                        }
+                        try { temp = cv.imread(sourceElement2); }
+                        catch {
+                            node.canvas.width = sourceElement2.naturalWidth || sourceElement2.videoWidth || sourceElement2.width;
+                            node.canvas.height = sourceElement2.naturalHeight || sourceElement2.videoHeight || sourceElement2.height;
+                            node.ctx.drawImage(sourceElement2, 0, 0, node.canvas.width, node.canvas.height);
+                            temp = cv.imread(node.canvas);
+                        }
+                        try {
+                            let src2 = new cv.Mat();
+                            cv.resize(temp, src2, new cv.Size(src1.cols, src1.rows), 0, 0, cv.INTER_CUBIC);
+                            temp.delete();
+
+                            let dst = new cv.Mat();
+
+                            if (title === 'Matrix Operations') {
+                                temp1 = new cv.Mat(), temp2 = new cv.Mat();
+                                src1.convertTo(temp1, cv.CV_32F);
+                                src2.convertTo(temp2, cv.CV_32F);
+
+                                let weight1 = new cv.Scalar(1 - node.operationWeight, 1 - node.operationWeight, 1 - node.operationWeight, 1 - node.operationWeight);
+                                let matrix1 = new cv.Mat(temp1.rows, temp1.cols, temp1.type(), weight1);
+                                cv.multiply(temp1, matrix1, temp1);
+                                matrix1.delete();
+
+                                let weight2 = new cv.Scalar(node.operationWeight, node.operationWeight, node.operationWeight, node.operationWeight);
+                                let matrix2 = new cv.Mat(temp2.rows, temp2.cols, temp2.type(), weight2);
+                                cv.multiply(temp2, matrix2, temp2);
+                                matrix2.delete();
+
+                                if (node.operationType === 'Min') cv.min(temp1, temp2, dst);
+                                else if (node.operationType === 'Max') cv.max(temp1, temp2, dst);
+                                else if (node.operationType === 'Add') cv.add(temp1, temp2, dst);
+                                else if (node.operationType === 'Subtract') cv.absdiff(temp1, temp2, dst);
+                                else if (node.operationType === 'Multiply') cv.multiply(temp1, temp2, dst);
+
+                                temp1.delete(); temp2.delete();
+
+                                if (node.operationType === 'Divide') {
+                                    cv.threshold(src2, src2, 1, 255, cv.THRESH_BINARY);
+                                    cv.divide(src1, src2, dst);
+                                    cv.normalize(dst, dst, 0, 255, cv.NORM_MINMAX);
+                                }
+                                else cv.normalize(dst, dst, 0, 1, cv.NORM_MINMAX, -1);
+                            }
+                            else if (title === 'Color Blending') {
+                                let hsv1 = new cv.Mat(), hsv2 = new cv.Mat();
+                                cv.cvtColor(src1, hsv1, cv.COLOR_RGB2HSV);
+                                cv.cvtColor(src2, hsv2, cv.COLOR_RGB2HSV);
+
+                                let channels1 = new cv.MatVector(), channels2 = new cv.MatVector();
+                                cv.split(hsv1, channels1); cv.split(hsv2, channels2);
+                                hsv1.delete(); hsv2.delete();
+
+                                let hue1 = channels1.get(0), sat1 = channels1.get(1), val1 = channels1.get(2);
+                                let hue2 = channels2.get(0), sat2 = channels2.get(1), val2 = channels2.get(2);
+                                channels1.delete(); channels2.delete();
+
+                                let final = new cv.MatVector();
+                                if (node.hueBlendChecked) final.push_back(hue2); else final.push_back(hue1);
+                                if (node.satBlendChecked) final.push_back(sat2); else final.push_back(sat1);
+                                if (node.valBlendChecked) final.push_back(val2); else final.push_back(val1);
+                                hue1.delete(); sat1.delete(); val1.delete(); hue2.delete(); sat2.delete(); val2.delete();
+
+                                cv.merge(final, dst);
+                                final.delete();
+                                cv.cvtColor(dst, dst, cv.COLOR_HSV2RGB);
+                            }
+                            else if (title === 'Concatenation') {
+                                let roi;
+                                if (node.concatenationChecked[0] === "checked") {
+                                    let pad = Math.round(node.concatenationAlignment * src1.cols);
+                                    cv.copyMakeBorder(src1, dst, 0, 0, 0, pad, cv.BORDER_REPLICATE);
+                                    let rect = new cv.Rect(pad, 0, src2.cols, src2.rows);
+                                    roi = dst.roi(rect);
+                                }
+                                else {
+                                    let pad = Math.round(node.concatenationAlignment * src1.rows);
+                                    cv.copyMakeBorder(src1, dst, 0, pad, 0, 0, cv.BORDER_REPLICATE);
+                                    let rect = new cv.Rect(0, pad, src2.cols, src2.rows);
+                                    roi = dst.roi(rect);
+                                }
+                                src2.copyTo(roi);
+                                roi.delete();
+                            }
+                            src1.delete(); src2.delete();
+                            cv.imshow(node.canvas, dst);
+                            dst.delete();
+                        }
+                        catch (err) {
+                            alert("OpenCV Error:", err);
+                        }
+                    }
+                    node.outputValues.output = node.canvas;
+                };
+            }
+            else if (type === 'MediaPipe') {
+                node.inputs.push({ name: 'input' });
+                node.outputs.push({ name: 'output' });
+                node.canvas = document.createElement('canvas');
+                node.canvas.className = 'inner-canvas';
+                node.ctx = node.canvas.getContext('2d', { willReadFrequently: true });
+
+                node.checkFirstFrame = true;
+                node.detectionConfidence = 0.5;
+
+                const statusEl = document.getElementById('opencv-status');
+                statusEl.textContent = 'Loading MediaPipe...';
+                statusEl.style.backgroundColor = 'goldenrod';
+
+                node.pose = new Pose({
+                    locateFile: (file) => {
+                        return `js/pose/${file}`;
+                    }
+                });
+                function onResults(results) {
+                    if (statusEl.style.display == 'block') {
+                        statusEl.textContent = 'MediaPipe Ready';
+                        statusEl.style.backgroundColor = 'darkolivegreen';
+                        setTimeout(() => statusEl.style.display = 'none', 1500);
+                    }
+                    if (!results.poseLandmarks) return;
+                    node.ctx.save();
+                    node.ctx.clearRect(0, 0, node.canvas.width, node.canvas.height);
+                    node.ctx.drawImage(results.image, 0, 0);
+                    node.ctx.globalCompositeOperation = 'destination-in';
+                    node.ctx.drawImage(results.segmentationMask, 0, 0);
+                    node.ctx.restore();
+                }
+                node.pose.onResults(onResults);
+
+                node.onExecute = () => {
+                    const sourceElement = getInputData(node, 0);
+                    const sourceIsValid = sourceElement && (sourceElement.naturalWidth > 0 || sourceElement.videoWidth > 0 || sourceElement.tagName === 'CANVAS');
+                    if (sourceIsValid) {
+                        let width = sourceElement.naturalWidth || sourceElement.videoWidth || sourceElement.width;
+                        let height = sourceElement.naturalHeight || sourceElement.videoHeight || sourceElement.height;
+
+                        if (node.canvas.width !== width) node.canvas.width = width;
+                        if (node.canvas.height !== height) node.canvas.height = height;
+
+                        try {
+                            if (node.checkFirstFrame) {
+                                node.pose.setOptions({
+                                    modelComplexity: 1,
+                                    smoothLandmarks: true,
+                                    enableSegmentation: true,
+                                    smoothSegmentation: true,
+                                    minDetectionConfidence: node.detectionConfidence,
+                                    minTrackingConfidence: 0.5
+                                });
+                                document.getElementById('confidenceRange' + node.id).disabled = true;
+
+                                async function mediaP() {
+                                    await node.pose.send({ image: sourceElement });
+                                    setTimeout(mediaP, 100);
+                                }
+                                mediaP();
+                                node.checkFirstFrame = false;
+                                statusEl.style.display = "block";
+                            }
+                        }
+                        catch (err) { alert(err); }
+                    }
+                    node.outputValues.output = node.canvas;
+                };
+            }
+            else if (type === 'Character') {
+                node.inputs.push({ name: 'input' });
+                node.outputs.push({ name: 'output' });
+
+                node.checkFirstFrame = true;
+                node.buttonDisabled = "";
+
+                const scene = new THREE.Scene();
+                const renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true, alpha: true });
+                node.camera = new THREE.PerspectiveCamera(45, screen.width / screen.height, 1, 100);
+                node.camera.position.set(0, 1.5, 2);
+
+                renderer.domElement.style.display = "none";
+                renderer.setSize(screen.width, screen.height);
+                renderer.setClearColor(0x000000, 0);
+
+                const light = new THREE.DirectionalLight(0xffffff);
+                light.position.set(1, 1, 1).normalize();
+                scene.add(light);
+
+                const controls = new THREE.OrbitControls(node.camera, renderer.domElement);
+                controls.screenSpacePanning = true;
+                controls.target.set(0, 1, 0);
+                controls.enableZoom = true;
+                controls.update();
+
+                node.currentVrm = null;
+                const clock = new THREE.Clock();
+                const lerp = Kalidokit.Vector.lerp;
+
+                const statusEl = document.getElementById('opencv-status');
+                statusEl.textContent = 'Loading MediaPipe...';
+                statusEl.style.backgroundColor = 'goldenrod';
+
+                node.holistic = new Holistic({
+                    locateFile: file => {
+                        return `js/holistic/${file}`;
+                    }
+                });
+                node.holistic.setOptions({
+                    modelComplexity: 1,
+                    smoothLandmarks: true,
+                    minDetectionConfidence: 0.5,
+                    minTrackingConfidence: 0.5,
+                    refineFaceLandmarks: false
+                });
+                const onResults = (results) => {
+                    if (statusEl.style.display == 'block') {
+                        statusEl.textContent = 'MediaPipe Ready';
+                        statusEl.style.backgroundColor = 'darkolivegreen';
+                        setTimeout(() => statusEl.style.display = 'none', 1500);
+                    }
+                    animateVRM(node.currentVrm, results);
+                };
+                node.holistic.onResults(onResults);
+
+                const rigRotation = (
+                    name,
+                    rotation = { x: 0, y: 0, z: 0 },
+                    dampener = 1,
+                    lerpAmount = 0.3
+                ) => {
+                    if (!node.currentVrm) { return }
+                    const Part = node.currentVrm.humanoid.getBoneNode(
+                        THREE.VRMSchema.HumanoidBoneName[name]
+                    );
+                    if (!Part) { return }
+
+                    let euler = new THREE.Euler(
+                        rotation.x * dampener,
+                        rotation.y * dampener,
+                        rotation.z * dampener
+                    );
+                    let quaternion = new THREE.Quaternion().setFromEuler(euler);
+                    Part.quaternion.slerp(quaternion, lerpAmount);
+                };
+                const rigPosition = (
+                    name,
+                    position = { x: 0, y: 0, z: 0 },
+                    dampener = 1,
+                    lerpAmount = 0.3
+                ) => {
+                    if (!node.currentVrm) { return }
+                    const Part = node.currentVrm.humanoid.getBoneNode(
+                        THREE.VRMSchema.HumanoidBoneName[name]
+                    );
+                    if (!Part) { return }
+                    let vector = new THREE.Vector3(
+                        position.x * dampener,
+                        position.y * dampener,
+                        position.z * dampener
+                    );
+                    Part.position.lerp(vector, lerpAmount);
+                };
+
+                let oldLookTarget = new THREE.Euler()
+                const rigFace = (riggedFace) => {
+                    if (!node.currentVrm) { return }
+                    rigRotation("Neck", riggedFace.head, 0.7);
+
+                    const Blendshape = node.currentVrm.blendShapeProxy;
+                    const PresetName = THREE.VRMSchema.BlendShapePresetName;
+
+                    riggedFace.eye.l = lerp(clamp(1 - riggedFace.eye.l, 0, 1), Blendshape.getValue(PresetName.Blink), .5)
+                    riggedFace.eye.r = lerp(clamp(1 - riggedFace.eye.r, 0, 1), Blendshape.getValue(PresetName.Blink), .5)
+                    riggedFace.eye = Kalidokit.Face.stabilizeBlink(riggedFace.eye, riggedFace.head.y)
+                    Blendshape.setValue(PresetName.Blink, riggedFace.eye.l);
+
+                    Blendshape.setValue(PresetName.I, lerp(riggedFace.mouth.shape.I, Blendshape.getValue(PresetName.I), .5));
+                    Blendshape.setValue(PresetName.A, lerp(riggedFace.mouth.shape.A, Blendshape.getValue(PresetName.A), .5));
+                    Blendshape.setValue(PresetName.E, lerp(riggedFace.mouth.shape.E, Blendshape.getValue(PresetName.E), .5));
+                    Blendshape.setValue(PresetName.O, lerp(riggedFace.mouth.shape.O, Blendshape.getValue(PresetName.O), .5));
+                    Blendshape.setValue(PresetName.U, lerp(riggedFace.mouth.shape.U, Blendshape.getValue(PresetName.U), .5));
+
+                    let lookTarget =
+                        new THREE.Euler(
+                            lerp(oldLookTarget.x, riggedFace.pupil.y, .4),
+                            lerp(oldLookTarget.y, riggedFace.pupil.x, .4),
+                            0,
+                            "XYZ"
+                        )
+                    oldLookTarget.copy(lookTarget)
+                    node.currentVrm.lookAt.applyer.lookAt(lookTarget);
+                }
+                const animateVRM = (vrm, results) => {
+                    if (!vrm) return;
+
+                    let riggedPose, riggedLeftHand, riggedRightHand, riggedFace;
+
+                    const faceLandmarks = results.faceLandmarks;
+                    const pose3DLandmarks = results.ea;
+                    const pose2DLandmarks = results.poseLandmarks;
+                    const leftHandLandmarks = results.rightHandLandmarks;
+                    const rightHandLandmarks = results.leftHandLandmarks;
+
+                    if (faceLandmarks) {
+                        riggedFace = Kalidokit.Face.solve(faceLandmarks, {
+                            runtime: "mediapipe"
+                        });
+                        rigFace(riggedFace);
+                    }
+
+                    if (pose2DLandmarks && pose3DLandmarks) {
+                        riggedPose = Kalidokit.Pose.solve(pose3DLandmarks, pose2DLandmarks, {
+                            runtime: "mediapipe"
+                        });
+                        rigRotation("Hips", riggedPose.Hips.rotation, 0.7);
+                        rigPosition(
+                            "Hips",
+                            {
+                                x: -riggedPose.Hips.position.x, // Reverse direction
+                                y: riggedPose.Hips.position.y + 1, // Add a bit of height
+                                z: -riggedPose.Hips.position.z // Reverse direction
+                            },
+                            1,
+                            0.07
+                        );
+
+                        rigRotation("Chest", riggedPose.Spine, 0.25, .3);
+                        rigRotation("Spine", riggedPose.Spine, 0.45, .3);
+                        rigRotation("RightUpperArm", riggedPose.RightUpperArm, 1, .3);
+                        rigRotation("RightLowerArm", riggedPose.RightLowerArm, 1, .3);
+                        rigRotation("LeftUpperArm", riggedPose.LeftUpperArm, 1, .3);
+                        rigRotation("LeftLowerArm", riggedPose.LeftLowerArm, 1, .3);
+                        rigRotation("LeftUpperLeg", riggedPose.LeftUpperLeg, 1, .3);
+                        rigRotation("LeftLowerLeg", riggedPose.LeftLowerLeg, 1, .3);
+                        rigRotation("RightUpperLeg", riggedPose.RightUpperLeg, 1, .3);
+                        rigRotation("RightLowerLeg", riggedPose.RightLowerLeg, 1, .3);
+                    }
+
+                    if (leftHandLandmarks) {
+                        riggedLeftHand = Kalidokit.Hand.solve(leftHandLandmarks, "Left");
+                        rigRotation("LeftHand", {
+                            z: riggedPose.LeftHand.z,
+                            y: riggedLeftHand.LeftWrist.y,
+                            x: riggedLeftHand.LeftWrist.x
+                        });
+                        rigRotation("LeftRingProximal", riggedLeftHand.LeftRingProximal);
+                        rigRotation("LeftRingIntermediate", riggedLeftHand.LeftRingIntermediate);
+                        rigRotation("LeftRingDistal", riggedLeftHand.LeftRingDistal);
+                        rigRotation("LeftIndexProximal", riggedLeftHand.LeftIndexProximal);
+                        rigRotation("LeftIndexIntermediate", riggedLeftHand.LeftIndexIntermediate);
+                        rigRotation("LeftIndexDistal", riggedLeftHand.LeftIndexDistal);
+                        rigRotation("LeftMiddleProximal", riggedLeftHand.LeftMiddleProximal);
+                        rigRotation("LeftMiddleIntermediate", riggedLeftHand.LeftMiddleIntermediate);
+                        rigRotation("LeftMiddleDistal", riggedLeftHand.LeftMiddleDistal);
+                        rigRotation("LeftThumbProximal", riggedLeftHand.LeftThumbProximal);
+                        rigRotation("LeftThumbIntermediate", riggedLeftHand.LeftThumbIntermediate);
+                        rigRotation("LeftThumbDistal", riggedLeftHand.LeftThumbDistal);
+                        rigRotation("LeftLittleProximal", riggedLeftHand.LeftLittleProximal);
+                        rigRotation("LeftLittleIntermediate", riggedLeftHand.LeftLittleIntermediate);
+                        rigRotation("LeftLittleDistal", riggedLeftHand.LeftLittleDistal);
+                    }
+                    if (rightHandLandmarks) {
+                        riggedRightHand = Kalidokit.Hand.solve(rightHandLandmarks, "Right");
+                        rigRotation("RightHand", {
+                            z: riggedPose.RightHand.z,
+                            y: riggedRightHand.RightWrist.y,
+                            x: riggedRightHand.RightWrist.x
+                        });
+                        rigRotation("RightRingProximal", riggedRightHand.RightRingProximal);
+                        rigRotation("RightRingIntermediate", riggedRightHand.RightRingIntermediate);
+                        rigRotation("RightRingDistal", riggedRightHand.RightRingDistal);
+                        rigRotation("RightIndexProximal", riggedRightHand.RightIndexProximal);
+                        rigRotation("RightIndexIntermediate", riggedRightHand.RightIndexIntermediate);
+                        rigRotation("RightIndexDistal", riggedRightHand.RightIndexDistal);
+                        rigRotation("RightMiddleProximal", riggedRightHand.RightMiddleProximal);
+                        rigRotation("RightMiddleIntermediate", riggedRightHand.RightMiddleIntermediate);
+                        rigRotation("RightMiddleDistal", riggedRightHand.RightMiddleDistal);
+                        rigRotation("RightThumbProximal", riggedRightHand.RightThumbProximal);
+                        rigRotation("RightThumbIntermediate", riggedRightHand.RightThumbIntermediate);
+                        rigRotation("RightThumbDistal", riggedRightHand.RightThumbDistal);
+                        rigRotation("RightLittleProximal", riggedRightHand.RightLittleProximal);
+                        rigRotation("RightLittleIntermediate", riggedRightHand.RightLittleIntermediate);
+                        rigRotation("RightLittleDistal", riggedRightHand.RightLittleDistal);
+                    }
+                };
+
+                const loader = new THREE.GLTFLoader();
+                loader.crossOrigin = "anonymous";
+                node.loadModel = (url) => {
+                    loader.load(url, gltf => {
+                        THREE.VRMUtils.removeUnnecessaryJoints(gltf.scene);
+                        THREE.VRM.from(gltf).then(vrm => {
+                            scene.add(vrm.scene);
+                            node.currentVrm = vrm;
+                            node.currentVrm.scene.rotation.y = Math.PI;
+                        });
+                        URL.revokeObjectURL(url);
+                    }, undefined, (err) => { alert(err); URL.revokeObjectURL(url); });
+                };
+
+                node.three = { scene, renderer, controls };
+                node.onExecute = () => {
+                    if (!node.currentVrm) return;
+                    const sourceElement = getInputData(node, 0);
+                    const sourceIsValid = sourceElement && (sourceElement.naturalWidth > 0 || sourceElement.videoWidth > 0 || sourceElement.tagName === 'CANVAS');
+                    if (sourceIsValid) {
+                        try {
+                            if (node.checkFirstFrame) {
+                                statusEl.style.display = "block";
+                                async function mediaP() {
+                                    await node.holistic.send({ image: sourceElement });
+                                    setTimeout(mediaP, 100);
+                                }
+                                mediaP();
+                                node.checkFirstFrame = false;
+                            }
+                            node.currentVrm.update(clock.getDelta());
+                        }
+                        catch (err) { alert(err); }
+                        controls.update();
+                        renderer.render(scene, node.camera);
+                    }
+                    node.outputValues.output = renderer.domElement;
+
+                    renderer.domElement.style.display = "none";
+                    if (document.fullscreenElement === renderer.domElement) renderer.domElement.style.display = "block";
+                };
+            }
+            return node;
+        }
+
+        function renderGraph() {
+            const graphContainer = document.getElementById('graph-container');
+            const wireSVG = document.getElementById('wire-svg');
+            graphContainer.innerHTML = '';
+            graphContainer.appendChild(wireSVG);
+
+            nodes.forEach(nodeData => {
+                const nodeEl = document.createElement('div');
+                nodeEl.className = 'node';
+                nodeEl.style.left = nodeData.x + 'px';
+                nodeEl.style.top = nodeData.y + 'px';
+                nodeEl.dataset.nodeId = nodeData.id;
+
+                if (activeNode && activeNode.id === nodeData.id) { nodeEl.classList.add('selected'); }
+
+                const inputsHTML = nodeData.inputs.map((port, i) => `<div style="display: flex; align-items: center;"><div class="port port-input" data-node-id="${nodeData.id}" data-port-index="${i}"></div><span class="port-label">${port.name}</span></div>`).join('');
+                const outputsHTML = nodeData.outputs.map((port, i) => `<div style="display: flex; align-items: center;"><span class="port-label">${port.name}</span><div class="port port-output" data-node-id="${nodeData.id}" data-port-index="${i}"></div></div>`).join('');
+                const portsHTML = `<div class="node-ports-content"><div class="ports">${inputsHTML}</div><div class="ports">${outputsHTML}</div></div>`;
+
+                let primitiveOptions = '', morphologyOptions = '', convolutionOptions = '', polarOptions = '';
+                let glitchOptions = '', matrixOptions = '', transitionOptions = '';
+                let specificContentHTML = '';
+
+                switch (nodeData.title) {
+                    case 'Image':
+                        specificContentHTML = `
+                            <div class="node-content">
+                                <input tabIndex="-1" type="file" title="Upload Image" class="node-input-file image-loader" data-node-id="${nodeData.id}" accept=".bmp, .jpg, .png, .webp">
+                                <input type="text" class="node-input-field" data-property="imageUrl" placeholder="Image URL..." value="${nodeData.imageUrl}">
+                            </div>`;
+                        break;
+                    case 'Video':
+                        specificContentHTML = `
+                            <div class="node-content">
+                                <input tabIndex="-1" type="file" title="Upload Video" class="node-input-file video-loader" data-node-id="${nodeData.id}" accept=".avi, .wmv, .mp4, .mkv, .mov, .webm">
+                                <input type="text" class="node-input-field" data-property="videoUrl" placeholder="Video URL..." value="${nodeData.videoUrl}">
+                            </div>`;
+                        break;
+                    case '3D Text':
+                        const fontOptions = [
+                            { value: 'helvetiker_regular', name: 'Helvetiker' },
+                            { value: 'gentilis_regular', name: 'Gentilis' },
+                            { value: 'droid_sans_regular', name: 'Droid Sans' },
+                            { value: 'optimer_regular', name: 'Optimer' }
+                        ];
+                        let optionsHTML = fontOptions.map(font =>
+                            `<option value="${font.value}" ${nodeData.fontName === font.value ? 'selected' : ''}>${font.name}</option>`
+                        ).join('');
+                        specificContentHTML = `
+                            <div class="node-content">
+                                <select class="node-select-field text-font-selector" data-node-id="${nodeData.id}">${optionsHTML}</select>
+                                <input type="text" class="node-input-field text-input" data-node-id="${nodeData.id}" value="${nodeData.text}">
+                                <input type="color" class="node-input-color text-color-input" data-node-id="${nodeData.id}" value="${nodeData.textColor}">
+                                <input type="range" class="node-input-range text-size-input" data-node-id="${nodeData.id}" min="10" max="100" value="${nodeData.textSize}" title="Font-size: ${nodeData.textSize}" style="width:144px">
+                                <input type="range" class="node-input-range text-size-height" data-node-id="${nodeData.id}" min="1" max="50" value="${nodeData.textHeight}" title="Thickness: ${nodeData.textHeight}" style="width:144px">
+                                <br><br>
+                                <button class="node-fullscreen-button" onclick="this.nextElementSibling.requestFullscreen();">Render 3D Scene</button>
+                            </div>`;
+                        break;
+                    case 'Parametric Lines':
+                        const curveOptions = [
+                            { value: 'rhodonea', name: 'Rhodonea' },
+                            { value: 'astroid', name: 'Astroid' },
+                            { value: 'combined', name: 'Combined' }
+                        ];
+                        let curvesHTML = curveOptions.map(curve =>
+                            `<option value="${curve.value}" ${nodeData.curveName === curve.value ? 'selected' : ''}>${curve.name}</option>`
+                        ).join('');
+                        specificContentHTML = `
+                            <div class="node-content">
+                                <select class="node-select-field curve-type-selector" data-node-id="${nodeData.id}">${curvesHTML}</select>
+                                <input type="color" class="node-input-color curve-color-input" data-node-id="${nodeData.id}" value="${nodeData.curveColor}">
+                                <input type="range" class="node-input-range curve-A-input" data-node-id="${nodeData.id}" min="1" max="1000" value="${nodeData.paramA}" title="A: ${nodeData.paramA}" style="width:144px">
+                                <input type="range" class="node-input-range curve-B-input" data-node-id="${nodeData.id}" min="1" max="1000" value="${nodeData.paramB}" title="B: ${nodeData.paramB}" style="width:144px">
+                                <p><input type="radio" id="curvePoints${nodeData.id}" data-node-id="${nodeData.id}" class="node-input-check curve-style" name="curveStyle${nodeData.id}" ${nodeData.curveType[0]}><small>Points</small>
+                                <input type="radio" id="curveLines${nodeData.id}" data-node-id="${nodeData.id}" class="node-input-check curve-style" name="curveStyle${nodeData.id}" ${nodeData.curveType[1]}><small>Lines</small>
+                                <input type="radio" data-node-id="${nodeData.id}" class="node-input-check curve-style" name="curveStyle${nodeData.id}" ${nodeData.curveType[2]}><small>Curves</small></p>
+                            </div>`;
+                        break;
+                    case 'Histogram Equalization':
+                        specificContentHTML = `
+                            <div class="node-content node-viewer-content-container">
+                                <input type="range" data-node-id="${nodeData.id}" title="CLAHE grid size: ${nodeData.gridSize}" class="node-input-range hist-range" min="0" max="16" value="${nodeData.gridSize}">
+                            </div>`;
+                        break;
+                    case 'Color Adjustment':
+                        specificContentHTML = `
+                            <div class="node-content node-viewer-content-container">
+                                <input type="color" class="node-input-color color-picker" title="Selected Color" data-node-id="${nodeData.id}" value="${nodeData.selectedColor}">
+                                <input type="range" class="node-input-range hue-adjustment" id="hueValue${nodeData.id}" title="Adjust Color Hue" data-node-id="${nodeData.id}" min="-180" max="180" value="${nodeData.newHSV[0]}" style="width:144px">
+                                <input type="range" class="node-input-range saturation-adjustment" id="satValue${nodeData.id}" title="Adjust Color Saturation" data-node-id="${nodeData.id}" min="-255" max="255" value="${nodeData.newHSV[1]}" style="width:144px">
+                                <p><input type="checkbox" class="node-input-check full-range" id="fullRange${nodeData.id}" data-node-id="${nodeData.id}" ${nodeData.fullRangeChecked}><small>Apply to all the colors</small><br>
+                                <input type="checkbox" class="node-input-check color-range" id="colorRange${nodeData.id}" data-node-id="${nodeData.id}" ${nodeData.colorRangeChecked}><small>Select a range of colors</small><br>
+                                <input type="checkbox" class="node-input-check color-invert" id="colorInvert${nodeData.id}" data-node-id="${nodeData.id}" ${nodeData.colorInvertChecked}><small>Invert the image colors</small></p>
+                            </div>`;
+                        break;
+                    case 'Gamma Correction':
+                        specificContentHTML = `
+                            <div class="node-content node-viewer-content-container">
+                                <input type="range" data-node-id="${nodeData.id}" title="Gamma value: ${nodeData.gammaValue}" class="node-input-range gamma-range" min="0.01" max="10" step="0.01" value="${nodeData.gammaValue}">
+                            </div>`;
+                        break;
+                    case 'Convolution':
+                        nodeData.convolutionalFilters.forEach(name => { convolutionOptions += `<option value="${name}" ${nodeData.convolutionType === name ? 'selected' : ''}>${name}</option>`; });
+                        specificContentHTML = `
+                            <div class="node-content">
+                                <select class="node-select-field convolutional-filter-selector" data-node-id="${nodeData.id}">${convolutionOptions}</select>
+                                <input type="range" id="convolutionRange${nodeData.id}" data-node-id="${nodeData.id}" title="Kernel size: ${nodeData.convolutionalFilterSize}X${nodeData.convolutionalFilterSize}" class="node-input-range convolution-range" min="3" max="25" step="2" value="${nodeData.convolutionalFilterSize}">
+                                <p><textarea id="kernelInput${nodeData.id}" type="text" class="node-input-field custom-kernel-field" data-node-id="${nodeData.id}">${nodeData.customKernel.toString()}</textarea></p>
+                            </div>`;
+                        break;
+                    case 'Morphology / Rank':
+                        nodeData.morphologicalFilters.forEach(name => { morphologyOptions += `<option value="${name}" ${nodeData.morphologyType === name ? 'selected' : ''}>${name}</option>`; });
+                        specificContentHTML = `
+                            <div class="node-content">
+                                <select class="node-select-field morphological-filter-selector" data-node-id="${nodeData.id}">${morphologyOptions}</select>
+                                <input type="range" data-node-id="${nodeData.id}" title="Kernel size: ${nodeData.morphologicalFilterSize}X${nodeData.morphologicalFilterSize}" class="node-input-range morphology-range" min="3" max="25" step="2" value="${nodeData.morphologicalFilterSize}">
+                                <p><input type="radio" id="squareKernel${nodeData.id}" data-node-id="${nodeData.id}" class="node-input-check morphology-kernel-type" name="morphKernel${nodeData.id}" ${nodeData.morphologyKernelType[0]}><small>Square</small>
+                                <input type="radio" data-node-id="${nodeData.id}" class="node-input-check morphology-kernel-type" name="morphKernel${nodeData.id}" ${nodeData.morphologyKernelType[1]}><small>Disk</small>
+                                <input type="radio" id="crossKernel${nodeData.id}" data-node-id="${nodeData.id}" class="node-input-check morphology-kernel-type" name="morphKernel${nodeData.id}" ${nodeData.morphologyKernelType[2]}><small>Cross</small></p>
+                            </div>`;
+                        break;
+                    case 'Polar Transformation':
+                        nodeData.polarEffects.forEach(name => { polarOptions += `<option value="${name}" ${nodeData.polarEffectType === name ? 'selected' : ''}>${name}</option>`; });
+                        specificContentHTML = `
+                            <div class="node-content">
+                                <select class="node-select-field polar-effect-selector" data-node-id="${nodeData.id}">${polarOptions}</select>
+                                <input type="range" id="polarRange${nodeData.id}" data-node-id="${nodeData.id}" title="Distortion ammount" class="node-input-range polar-range" min="1" max="1000" value="${nodeData.polarEffectSize}">
+                            </div>`;
+                        break;
+                    case 'Glitch Effects':
+                        nodeData.glitchEffects.forEach(name => { glitchOptions += `<option value="${name}" ${nodeData.glitchEffectType === name ? 'selected' : ''}>${name}</option>`; });
+                        specificContentHTML = `
+                            <div class="node-content">
+                                <select class="node-select-field glitch-effect-selector" data-node-id="${nodeData.id}">${glitchOptions}</select>
+                                <input type="range" data-node-id="${nodeData.id}" title="Distortion ammount" class="node-input-range glitch-range" min="1" max="25" value="${nodeData.glitchEffectSize}">
+                            </div>`;
+                        break;
+                    case 'Projection':
+                        nodeData.primitiveNames.forEach(name => { primitiveOptions += `<option value="${name}" ${nodeData.primitiveType === name ? 'selected' : ''}>${name}</option>`; });
+                        specificContentHTML = `
+                            <div class="node-content">
+                                <input tabIndex="-1" type="file" title="Upload GLTF model" class="node-input-file 3d-model-loader" data-node-id="${nodeData.id}" accept=".glb, .gltf">
+                                <select class="node-select-field 3d-primitive-selector" data-node-id="${nodeData.id}">${primitiveOptions}</select>
+                                <button class="node-fullscreen-button" onclick="this.nextElementSibling.requestFullscreen();">Render 3D Scene</button>
+                            </div>`;
+                        break;
+                    case 'Mapping / Lighting':
+                        nodeData.primitiveNames.forEach(name => { primitiveOptions += `<option value="${name}" ${nodeData.primitiveType === name ? 'selected' : ''}>${name}</option>`; });
+                        specificContentHTML = `
+                            <div class="node-content">
+                                <input tabIndex="-1" type="file" title="Upload GLTF model" class="node-input-file 3d-model-loader" data-node-id="${nodeData.id}" accept=".glb, .gltf">
+                                <select class="node-select-field 3d-primitive-selector" data-node-id="${nodeData.id}">${primitiveOptions}</select>
+                                <input type="color" class="node-input-color mapping-light-color" data-node-id="${nodeData.id}" title="Spot Light Color" value="#${nodeData.pointLight.color.getHex().toString(16)}">
+                                <input type="range" class="node-input-range mapping-light-ambient" data-node-id="${nodeData.id}" title="Ambient Light Intensity" min="0" max="2" step="0.1" value="${nodeData.ambientLight.intensity}" style="width:144px">
+                                <input type="range" class="node-input-range mapping-light-value" data-node-id="${nodeData.id}" title="Spot Light Intensity" min="0" max="2" step="0.1" value="${nodeData.pointLight.intensity}" style="width:144px">
+                                <br><br>
+                                <button class="node-fullscreen-button" onclick="this.nextElementSibling.requestFullscreen();">Render 3D Scene</button>
+                            </div>`;
+                        break;
+                    case 'Matrix Operations':
+                        nodeData.matrixOperations.forEach(name => { matrixOptions += `<option value="${name}" ${nodeData.operationType === name ? 'selected' : ''}>${name}</option>`; });
+                        specificContentHTML = `
+                            <div class="node-content">
+                                <select class="node-select-field matrix-operation-selector" data-node-id="${nodeData.id}">${matrixOptions}</select>
+                                <input type="range" data-node-id="${nodeData.id}" title="Weights: ${nodeData.operationWeight}, ${1 - nodeData.operationWeight}" class="node-input-range matrix-operation-range" min="0.01" max="0.99" step="0.01" value="${nodeData.operationWeight}">
+                            </div>`;
+                        break;
+                    case 'Channel Mixer':
+                        specificContentHTML = `
+                            <div class="node-content node-viewer-content-container">
+                                <input type="range" id="channelRR${nodeData.id}" data-node-id="${nodeData.id}" title="R: ${nodeData.channelMixerValues[0] * 100}%" class="node-input-range channel-mixer-range" min="0" max="1" step="0.01" value="${nodeData.channelMixerValues[0]}" style="accent-color:indianred">
+                                <input type="range" id="channelRG${nodeData.id}" data-node-id="${nodeData.id}" title="G: ${nodeData.channelMixerValues[1] * 100}%" class="node-input-range channel-mixer-range" min="0" max="1" step="0.01" value="${nodeData.channelMixerValues[1]}" style="accent-color:indianred">
+                                <input type="range" id="channelRB${nodeData.id}" data-node-id="${nodeData.id}" title="B: ${nodeData.channelMixerValues[2] * 100}%" class="node-input-range channel-mixer-range" min="0" max="1" step="0.01" value="${nodeData.channelMixerValues[2]}" style="accent-color:indianred">
+                                <input type="range" id="channelGR${nodeData.id}" data-node-id="${nodeData.id}" title="R: ${nodeData.channelMixerValues[3] * 100}%" class="node-input-range channel-mixer-range" min="0" max="1" step="0.01" value="${nodeData.channelMixerValues[3]}" style="accent-color:darkolivegreen">
+                                <input type="range" id="channelGG${nodeData.id}" data-node-id="${nodeData.id}" title="G: ${nodeData.channelMixerValues[4] * 100}%" class="node-input-range channel-mixer-range" min="0" max="1" step="0.01" value="${nodeData.channelMixerValues[4]}" style="accent-color:darkolivegreen">
+                                <input type="range" id="channelGB${nodeData.id}" data-node-id="${nodeData.id}" title="B: ${nodeData.channelMixerValues[5] * 100}%" class="node-input-range channel-mixer-range" min="0" max="1" step="0.01" value="${nodeData.channelMixerValues[5]}" style="accent-color:darkolivegreen">
+                                <input type="range" id="channelBR${nodeData.id}" data-node-id="${nodeData.id}" title="R: ${nodeData.channelMixerValues[6] * 100}%" class="node-input-range channel-mixer-range" min="0" max="1" step="0.01" value="${nodeData.channelMixerValues[6]}" style="accent-color:cadetblue">
+                                <input type="range" id="channelBG${nodeData.id}" data-node-id="${nodeData.id}" title="G: ${nodeData.channelMixerValues[7] * 100}%" class="node-input-range channel-mixer-range" min="0" max="1" step="0.01" value="${nodeData.channelMixerValues[7]}" style="accent-color:cadetblue">
+                                <input type="range" id="channelBB${nodeData.id}" data-node-id="${nodeData.id}" title="B: ${nodeData.channelMixerValues[8] * 100}%" class="node-input-range channel-mixer-range" min="0" max="1" step="0.01" value="${nodeData.channelMixerValues[8]}" style="accent-color:cadetblue">
+                            </div>`;
+                        break;
+                    case 'Color Blending':
+                        specificContentHTML = `
+                            <div class="node-content node-viewer-content-container">
+                                <p><input type="checkbox" class="node-input-check hue-blending" id="hueBlend${nodeData.id}" data-node-id="${nodeData.id}" ${nodeData.hueBlendChecked}>Hue<br>
+                                <input type="checkbox" class="node-input-check saturation-blending" id="satBlend${nodeData.id}" data-node-id="${nodeData.id}" ${nodeData.satBlendChecked}>Saturation<br>
+                                <input type="checkbox" class="node-input-check value-blending" id="valBlend${nodeData.id}" data-node-id="${nodeData.id}" ${nodeData.valBlendChecked}>Value</p>
+                            </div>`;
+                        break;
+                    case 'Concatenation':
+                        specificContentHTML = `
+                            <div class="node-content">
+                                <input type="range" data-node-id="${nodeData.id}" title="Overlap" class="node-input-range concatenation-range" min="0" max="1" step="0.01" value="${nodeData.concatenationAlignment}">
+                                <p><input type="radio" id="concatenationCheck${nodeData.id}" data-node-id="${nodeData.id}" class="node-input-check concatenation-check" name="concatenation${nodeData.id}" ${nodeData.concatenationChecked[0]}>Horizontal&nbsp;
+                                <input type="radio" data-node-id="${nodeData.id}" class="node-input-check concatenation-check" name="concatenation${nodeData.id}" ${nodeData.concatenationChecked[1]}>Vertical</p>
+                            </div>`;
+                        break;
+                    case 'Thresholding':
+                        specificContentHTML = `
+                            <div class="node-content">
+                                <input type="range" data-node-id="${nodeData.id}" title="Threshold / Intensity / Block size" class="node-input-range thresholding-range" min="1" max="255" value="${nodeData.thresholdValue}">
+                                <p><input type="radio" data-node-id="${nodeData.id}" class="node-input-check binary-threshold-check" name="thresholdRadio${nodeData.id}" ${nodeData.thresholdingChecked[0]}><small style="margin:-1px">Binary</small>
+                                <input type="radio" data-node-id="${nodeData.id}" class="node-input-check otsu-threshold-check" name="thresholdRadio${nodeData.id}" ${nodeData.thresholdingChecked[1]}><small style="margin:-1px">Otsu</small>
+                                <input type="radio" data-node-id="${nodeData.id}" class="node-input-check adaptive-threshold-check" name="thresholdRadio${nodeData.id}" ${nodeData.thresholdingChecked[2]}><small style="margin:-1px">Adaptive</small></p>
+                            </div>`;
+                        break;
+                    case 'Connected Components':
+                        specificContentHTML = `
+                            <div class="node-content node-viewer-content-container">
+                                <input type="range" data-node-id="${nodeData.id}" title="Threshold: ${nodeData.connectedComponentsSize}" class="node-input-range connected-components-range" min="0" max="255" value="${nodeData.connectedComponentsSize}">
+                            </div>`;
+                        break;
+                    case 'Character Animation':
+                        specificContentHTML = `
+                            <div class="node-content">
+                                <input tabIndex="-1" type="file" title="Upload VRM model" class="node-input-file character-model-loader" data-node-id="${nodeData.id}" accept=".vrm" ${nodeData.buttonDisabled}>
+                                <button class="node-fullscreen-button" onclick="this.nextElementSibling.requestFullscreen();">Render 3D Scene</button>
+                            </div>`;
+                        break;
+                    case 'Human Pose':
+                        specificContentHTML = `
+                            <div class="node-content node-viewer-content-container">
+                                <input type="range" id="confidenceRange${nodeData.id}" data-node-id="${nodeData.id}" title="Detection confidence: ${nodeData.detectionConfidence}" class="node-input-range confidence-range" min="0" max="1" step="0.1" value="${nodeData.detectionConfidence}">
+                            </div>`;
+                        break;
+                    case 'Optical Flow':
+                        specificContentHTML = `
+                            <div class="node-content">
+                                <input type="range" data-node-id="${nodeData.id}" title="Block size: ${nodeData.opticalFlowSize}X${nodeData.opticalFlowSize}" class="node-input-range optical-flow-range" min="3" max="33" value="${nodeData.opticalFlowSize}">
+                            </div>`;
+                        break;
+                    case 'Transitions':
+                        nodeData.transitionTypes.forEach(name => { transitionOptions += `<option value="${name}" ${nodeData.transitionType === name ? 'selected' : ''}>${name}</option>`; });
+                        specificContentHTML = `
+                            <div class="node-content">
+                                <select class="node-select-field transition-type-selector" data-node-id="${nodeData.id}">${transitionOptions}</select>
+                                <button class="node-button transition-play-button" data-node-id="${nodeData.id}" style="width:50px;margin-right:10px;font-weight:bold">Play</button>
+                                <input type="range" data-node-id="${nodeData.id}" title="Duration: ${nodeData.transitionDuration}s" class="node-input-range transition-duration-range" min="0.1" max="10" step="0.1" value="${nodeData.transitionDuration}" style="width:120px">
+                            </div>`;
+                        break;
+                    default:
+                        specificContentHTML = `<div class="node-content node-viewer-content-container"></div>`;
+                        break;
+                }
+                nodeEl.innerHTML = `<div class="node-header">${nodeData.title}</div>${specificContentHTML}${portsHTML}`;
+                makeDraggable(nodeEl, nodeEl.querySelector('.node-header'), nodeData);
+                graphContainer.appendChild(nodeEl);
+
+                if (nodeData.type === 'Input' && nodeData.mediaElement) {
+                    const contentDiv = nodeEl.querySelector('.node-content');
+                    contentDiv.appendChild(nodeData.mediaElement);
+                    if (nodeData.title === 'Camera') {
+                        populateCameraSelector(contentDiv, nodeData);
+                    }
+                }
+                else if ((nodeData.type === '3DScene' || nodeData.type === 'Character' || nodeData.type === 'Text') && nodeData.three) {
+                    nodeEl.querySelector('.node-content').appendChild(nodeData.three.renderer.domElement);
+                }
+                else if ((nodeData.type === 'Viewer' || nodeData.type === 'Throughput' || nodeData.type === 'Mixer' || nodeData.type === 'Parametric') && nodeData.canvas) {
+                    nodeEl.querySelector('.node-content').appendChild(nodeData.canvas);
+                }
+            });
+            styleConnectedPorts();
+            for (var i = 0; i < 10; i++) setTimeout(renderWires, i * 100);
+        }
+
+        async function populateCameraSelector(container, nodeData) {
+            try {
+                await navigator.mediaDevices.getUserMedia({ video: true });
+                const devices = await navigator.mediaDevices.enumerateDevices();
+                const videoDevices = devices.filter(device => device.kind === 'videoinput');
+
+                const selector = document.createElement('select');
+                selector.className = 'node-select-field';
+
+                videoDevices.forEach((device, index) => {
+                    const option = document.createElement('option');
+                    option.value = device.deviceId;
+                    option.text = device.label || `Camera ${index + 1}`;
+                    selector.appendChild(option);
+                });
+                selector.addEventListener('change', () => {
+                    startCamera(nodeData.mediaElement, selector.value);
+                });
+                container.prepend(selector);
+                if (videoDevices.length > 0) {
+                    startCamera(nodeData.mediaElement, videoDevices[0].deviceId);
+                }
+            } catch (err) {
+                alert("Could not enumerate devices:", err);
+            }
+        }
+
+        async function startCamera(videoElement, deviceId) {
+            if (videoElement.srcObject) {
+                videoElement.srcObject.getTracks().forEach(track => track.stop());
+            }
+            const constraints = {
+                video: { deviceId: { exact: deviceId } }
+            };
+            navigator.mediaDevices.getUserMedia(constraints)
+                .then(stream => {
+                    videoElement.srcObject = stream;
+                })
+                .catch(err => {
+                    alert("Error starting camera:", err);
+                });
+        }
+
+        function renderWires() {
+            const wireSVG = document.getElementById('wire-svg');
+            wireSVG.innerHTML = '';
+            connections.forEach(conn => {
+                const fromPortEl = document.querySelector(`.port-output[data-node-id='${conn.fromNode}'][data-port-index='${conn.fromPort}']`);
+                const toPortEl = document.querySelector(`.port-input[data-node-id='${conn.toNode}'][data-port-index='${conn.toPort}']`);
+                if (fromPortEl && toPortEl) {
+                    drawWire(fromPortEl, toPortEl, null, conn.color);
+                }
+            });
+        }
+        function drawWire(port1, port2, wireEl, color = '#aef') {
+            const graphContainer = document.getElementById('graph-container');
+            const wireSVG = document.getElementById('wire-svg');
+            const rect1 = port1.getBoundingClientRect();
+            const rect2 = port2.getBoundingClientRect();
+            const graphRect = graphContainer.getBoundingClientRect();
+            const x1 = rect1.left + rect1.width / 2 - graphRect.left;
+            const y1 = rect1.top + rect1.height / 2 - graphRect.top;
+            const x2 = rect2.left + rect2.width / 2 - graphRect.left;
+            const y2 = rect2.top + rect2.height / 2 - graphRect.top;
+            const controlOffset = Math.abs(x2 - x1) * 0.5;
+            const pathData = `M ${x1},${y1} C ${x1 + controlOffset},${y1} ${x2 - controlOffset},${y2} ${x2},${y2}`;
+            if (wireEl) {
+                wireEl.setAttribute('d', pathData);
+                wireEl.style.stroke = color;
+            }
+            else {
+                const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+                path.setAttribute('d', pathData);
+                path.classList.add('wire');
+                path.style.stroke = color;
+                wireSVG.appendChild(path);
+            }
+        }
+        function styleConnectedPorts() {
+            connections.forEach(conn => {
+                const fromPortEl = document.querySelector(`.port-output[data-node-id='${conn.fromNode}'][data-port-index='${conn.fromPort}']`);
+                const toPortEl = document.querySelector(`.port-input[data-node-id='${conn.toNode}'][data-port-index='${conn.toPort}']`);
+                if (fromPortEl && toPortEl) {
+                    fromPortEl.style.backgroundColor = conn.color;
+                    toPortEl.style.backgroundColor = conn.color;
+                }
+            });
+        }
+        function makeDraggable(element, handle, nodeData) {
+            let offsetX, offsetY;
+            function onMouseMove(event) {
+                nodeData.x = event.clientX - offsetX; nodeData.y = event.clientY - offsetY;
+                element.style.left = nodeData.x + 'px';
+                element.style.top = nodeData.y + 'px';
+                renderWires();
+            }
+            function onMouseUp() {
+                document.removeEventListener('mousemove', onMouseMove);
+                document.removeEventListener('mouseup', onMouseUp);
+            }
+            handle.addEventListener('mousedown', (event) => {
+                const currentlySelected = document.querySelector('.node.selected');
+                if (currentlySelected) currentlySelected.classList.remove('selected');
+                element.classList.add('selected');
+                activeNode = nodeData;
+                offsetX = event.clientX - nodeData.x;
+                offsetY = event.clientY - nodeData.y;
+                document.addEventListener('mousemove', onMouseMove);
+                document.addEventListener('mouseup', onMouseUp);
+            });
+        }
+        function getRandomColor() {
+            const h = Math.random() * 360;
+            const s = 50 + Math.random() * 25;
+            const l = 45 + Math.random() * 10;
+            return `hsl(${h}, ${s}%, ${l}%)`;
+        }
+
+        function initialize() {
+            const paletteContainer = document.getElementById('node-palette');
+            const graphContainer = document.getElementById('graph-container');
+            paletteContainer.style.display = 'block';
+            const paletteNodes = {
+                "Capture": [{ title: "Image", type: "Input" }, { title: "Video", type: "Input" }, { title: "Camera", type: "Input" }],
+                "Generate": [{ title: "3D Text", type: "Text" }, { title: "Parametric Lines", type: "Parametric" }],
+                "Enhance": [{ title: "Gamma Correction", type: "Throughput" }, { title: "Histogram Equalization", type: "Throughput" }, { title: "Color Adjustment", type: "Throughput" }],
+                "Filter": [{ title: "Convolution", type: "Throughput" }, { title: "Morphology / Rank", type: "Throughput" }],
+                "Render": [{ title: "Projection", type: "3DScene" }, { title: "Mapping / Lighting", type: "3DScene" }, { title: "Character Animation", type: "Character" }],
+                "Distort": [{ title: "Polar Transformation", type: "Throughput" }, { title: "Glitch Effects", type: "Throughput" }, { title: "Thresholding", type: "Throughput" }],
+                "Mix": [{ title: "Matrix Operations", type: "Mixer" }, { title: "Channel Mixer", type: "Throughput" }, { title: "Color Blending", type: "Mixer" }],
+                "Merge": [{ title: "Concatenation", type: "Mixer" }, { title: "Transitions", type: "Transition" }],
+                "Detect": [{ title: "Connected Components", type: "Throughput" }, { title: "Human Pose", type: "MediaPipe" }, { title: "Background Subtraction", type: "Throughput" }],
+                "Visualize": [{ title: "Canvas Viewer", type: "Viewer" }, { title: "Optical Flow", type: "Throughput" }, { title: "Skeleton", type: "Throughput" }]
+            };
+            for (const category in paletteNodes) {
+                const categoryBlock = document.createElement("div");
+                paletteContainer.appendChild(categoryBlock);
+                const categoryTitle = document.createElement("h3");
+                categoryTitle.className = "palette-title";
+                categoryTitle.textContent = category;
+                categoryBlock.appendChild(categoryTitle);
+                paletteNodes[category].forEach(nodeDef => {
+                    const nodeElement = document.createElement("div");
+                    nodeElement.className = "palette-node";
+                    nodeElement.textContent = nodeDef.title;
+                    nodeElement.draggable = true;
+                    nodeElement.addEventListener("dragstart", (event) => { event.dataTransfer.setData("text/plain", nodeDef.title + '|' + nodeDef.type); });
+                    categoryBlock.appendChild(nodeElement);
+                });
+            }
+
+            graphContainer.addEventListener('click', (event) => {
+                if (event.target.classList.contains('transition-play-button')) {
+                    const nodeId = parseInt(event.target.dataset.nodeId);
+                    const nodeData = nodes.find(n => n.id === nodeId);
+                    if (nodeData && nodeData.playTransition) {
+                        nodeData.playTransition();
+                    }
+                }
+            });
+
+            graphContainer.addEventListener('change', (event) => {
+                const nodeId = parseInt(event.target.dataset.nodeId);
+                const nodeData = nodes.find(n => n.id === nodeId);
+
+                if (!nodeData) return;
+
+                if (event.target.classList.contains('image-loader')) {
+                    const file = event.target.files[0];
+                    if (!file) return;
+                    nodeData.mediaElement.src = URL.createObjectURL(file);
+                    nodeData.imageUrl = file.name;
+                }
+                else if (event.target.classList.contains('video-loader')) {
+                    const file = event.target.files[0];
+                    if (!file) return;
+                    nodeData.mediaElement.src = URL.createObjectURL(file);
+                    nodeData.videoUrl = file.name;
+                    nodeData.mediaElement.play();
+                }
+                else if (event.target.classList.contains('text-font-selector')) {
+                    if (nodeData.changeFont) {
+                        nodeData.changeFont(event.target.value);
+                    }
+                }
+                else if (event.target.classList.contains('curve-type-selector')) {
+                    nodeData.curveName = event.target.value;
+                }
+                else if (event.target.classList.contains('curve-style')) {
+                    nodeData.curveType = ["", "", "checked"];
+                    if (document.getElementById('curvePoints' + nodeId).checked) nodeData.curveType = ["checked", "", ""];
+                    else if (document.getElementById('curveLines' + nodeId).checked) nodeData.curveType = ["", "checked", ""];
+                }
+                else if (event.target.classList.contains('character-model-loader')) {
+                    const file = event.target.files[0];
+                    if (!file) return;
+                    if (nodeData.loadModel) {
+                        const objectURL = URL.createObjectURL(file);
+                        nodeData.loadModel(objectURL);
+                        nodeData.buttonDisabled = "disabled";
+                    }
+                }
+                else if (event.target.classList.contains('3d-primitive-selector')) {
+                    nodeData.primitiveType = event.target.value;
+                    nodeData.isCustomModel = false;
+                    nodeData.three.updateObject();
+                }
+                else if (event.target.classList.contains('3d-model-loader')) {
+                    const file = event.target.files[0];
+                    if (!file) return;
+
+                    const objectURL = URL.createObjectURL(file);
+                    nodeData.three.loader.load(objectURL, (gltf) => {
+                        nodeData.loadedModel = gltf.scene;
+                        nodeData.isCustomModel = true;
+                        URL.revokeObjectURL(objectURL);
+                        nodeData.three.updateObject();
+                        renderGraph();
+                    }, undefined, (error) => {
+                        alert('Error loading 3D model:', error);
+                        URL.revokeObjectURL(objectURL);
+                    });
+                }
+                else if (event.target.classList.contains('mapping-light-color')) {
+                    nodeData.pointLight.color.set(event.target.value);
+                }
+                else if (event.target.classList.contains('mapping-light-value')) {
+                    nodeData.pointLight.intensity = event.target.value;
+                }
+                else if (event.target.classList.contains('mapping-light-ambient')) {
+                    nodeData.ambientLight.intensity = event.target.value;
+                }
+                else if (event.target.classList.contains('color-picker')) {
+                    nodeData.selectedColor = event.target.value;
+                    let r = parseInt(nodeData.selectedColor.slice(1, 3), 16);
+                    let g = parseInt(nodeData.selectedColor.slice(3, 5), 16);
+                    let b = parseInt(nodeData.selectedColor.slice(5, 7), 16);
+
+                    let tmp = cv.matFromArray(1, 1, cv.CV_8UC3, [r, g, b]);
+                    let hsvColor = new cv.Mat();
+                    cv.cvtColor(tmp, hsvColor, cv.COLOR_RGB2HSV);
+
+                    let temp = hsvColor.ucharPtr(0, 0);
+                    nodeData.oldHSV = [temp[0] * 1.0, temp[1] * 1.0];
+                    hsvColor.delete(); tmp.delete();
+
+                    nodeData.newHSV = [0.0, 0.0];
+                    document.getElementById('hueValue' + nodeId).value = 0;
+                    document.getElementById('satValue' + nodeId).value = 0;
+                }
+                else if (event.target.classList.contains('hue-adjustment')) {
+                    nodeData.newHSV[0] = event.target.value * 1.0;
+                }
+                else if (event.target.classList.contains('saturation-adjustment')) {
+                    nodeData.newHSV[1] = event.target.value * 1.0;
+                }
+                else if (event.target.classList.contains('full-range')) {
+                    if (event.target.checked) {
+                        nodeData.fullRangeChecked = "checked";
+                        nodeData.colorRangeChecked = "";
+                    }
+                    else nodeData.fullRangeChecked = "";
+                }
+                else if (event.target.classList.contains('color-range')) {
+                    if (event.target.checked) {
+                        nodeData.fullRangeChecked = "";
+                        nodeData.colorRangeChecked = "checked";
+                    }
+                    else nodeData.colorRangeChecked = "";
+                }
+                else if (event.target.classList.contains('color-invert')) {
+                    nodeData.colorInvertChecked = "";
+                    if (event.target.checked) nodeData.colorInvertChecked = "checked";
+                }
+                else if (event.target.classList.contains('hist-range')) {
+                    nodeData.gridSize = event.target.value * 1.0;
+                    event.target.title = "CLAHE grid size: " + nodeData.gridSize;
+                }
+                else if (event.target.classList.contains('gamma-range')) {
+                    nodeData.gammaValue = event.target.value * 1.0;
+                    event.target.title = "Gamma value: " + nodeData.gammaValue;
+                }
+                else if (event.target.classList.contains('convolutional-filter-selector')) {
+                    nodeData.convolutionType = event.target.value;
+                }
+                else if (event.target.classList.contains('convolution-range')) {
+                    nodeData.convolutionalFilterSize = event.target.value * 1;
+                    event.target.title = "Kernel size: " + event.target.value + "X" + event.target.value;
+                }
+                else if (event.target.classList.contains('morphological-filter-selector')) {
+                    nodeData.morphologyType = event.target.value;
+                }
+                else if (event.target.classList.contains('morphology-range')) {
+                    nodeData.morphologicalFilterSize = event.target.value * 1;
+                    event.target.title = "Kernel size: " + event.target.value + "X" + event.target.value;
+                }
+                else if (event.target.classList.contains('morphology-kernel-type')) {
+                    nodeData.morphologyKernelType = ["", "checked", ""];
+                    if (document.getElementById('squareKernel' + nodeId).checked) nodeData.morphologyKernelType = ["checked", "", ""];
+                    else if (document.getElementById('crossKernel' + nodeId).checked) nodeData.morphologyKernelType = ["", "", "checked"];
+                }
+                else if (event.target.classList.contains('polar-effect-selector')) {
+                    nodeData.polarEffectType = event.target.value;
+                }
+                else if (event.target.classList.contains('polar-range')) {
+                    nodeData.polarEffectSize = event.target.value * 1.0;
+                }
+                else if (event.target.classList.contains('glitch-effect-selector')) {
+                    nodeData.glitchEffectType = event.target.value;
+                }
+                else if (event.target.classList.contains('glitch-range')) {
+                    nodeData.glitchEffectSize = event.target.value * 1;
+                }
+                else if (event.target.classList.contains('matrix-operation-selector')) {
+                    nodeData.operationType = event.target.value;
+                }
+                else if (event.target.classList.contains('matrix-operation-range')) {
+                    nodeData.operationWeight = event.target.value * 1.0;
+                    event.target.title = "Weights: " + nodeData.operationWeight + ", " + (1 - nodeData.operationWeight);
+                }
+                else if (event.target.classList.contains('channel-mixer-range')) {
+                    let RR = document.getElementById('channelRR' + nodeId).value * 1.0;
+                    let RG = document.getElementById('channelRG' + nodeId).value * 1.0;
+                    let RB = document.getElementById('channelRB' + nodeId).value * 1.0;
+                    let GR = document.getElementById('channelGR' + nodeId).value * 1.0;
+                    let GG = document.getElementById('channelGG' + nodeId).value * 1.0;
+                    let GB = document.getElementById('channelGB' + nodeId).value * 1.0;
+                    let BR = document.getElementById('channelBR' + nodeId).value * 1.0;
+                    let BG = document.getElementById('channelBG' + nodeId).value * 1.0;
+                    let BB = document.getElementById('channelBB' + nodeId).value * 1.0;
+                    nodeData.channelMixerValues = [RR, RG, RB, GR, GG, GB, BR, BG, BB];
+                    document.getElementById('channelRR' + nodeId).title = "R: " + Math.round(RR * 100) + "%";
+                    document.getElementById('channelRG' + nodeId).title = "G: " + Math.round(RG * 100) + "%";
+                    document.getElementById('channelRB' + nodeId).title = "B: " + Math.round(RB * 100) + "%";
+                    document.getElementById('channelGR' + nodeId).title = "R: " + Math.round(GR * 100) + "%";
+                    document.getElementById('channelGG' + nodeId).title = "G: " + Math.round(GG * 100) + "%";
+                    document.getElementById('channelGB' + nodeId).title = "B: " + Math.round(GB * 100) + "%";
+                    document.getElementById('channelBR' + nodeId).title = "R: " + Math.round(BR * 100) + "%";
+                    document.getElementById('channelBG' + nodeId).title = "G: " + Math.round(BG * 100) + "%";
+                    document.getElementById('channelBB' + nodeId).title = "B: " + Math.round(BB * 100) + "%";
+                }
+                else if (event.target.classList.contains('hue-blending')) {
+                    nodeData.hueBlendChecked = "";
+                    if (event.target.checked) nodeData.hueBlendChecked = "checked";
+                }
+                else if (event.target.classList.contains('saturation-blending')) {
+                    nodeData.satBlendChecked = "";
+                    if (event.target.checked) nodeData.satBlendChecked = "checked";
+                }
+                else if (event.target.classList.contains('value-blending')) {
+                    nodeData.valBlendChecked = "";
+                    if (event.target.checked) nodeData.valBlendChecked = "checked";
+                }
+                else if (event.target.classList.contains('concatenation-range')) {
+                    nodeData.concatenationAlignment = event.target.value * 1.0;
+                }
+                else if (event.target.classList.contains('concatenation-check')) {
+                    nodeData.concatenationChecked = ["", "checked"];
+                    if (document.getElementById('concatenationCheck' + nodeId).checked) nodeData.concatenationChecked = ["checked", ""];
+                }
+                else if (event.target.classList.contains('thresholding-range')) {
+                    nodeData.thresholdValue = event.target.value * 1;
+                }
+                else if (event.target.classList.contains('binary-threshold-check')) {
+                    if (event.target.checked) nodeData.thresholdingChecked = ["checked", "", ""];
+                }
+                else if (event.target.classList.contains('otsu-threshold-check')) {
+                    if (event.target.checked) nodeData.thresholdingChecked = ["", "checked", ""];
+                }
+                else if (event.target.classList.contains('adaptive-threshold-check')) {
+                    if (event.target.checked) nodeData.thresholdingChecked = ["", "", "checked"];
+                }
+                else if (event.target.classList.contains('connected-components-range')) {
+                    nodeData.connectedComponentsSize = event.target.value * 1;
+                    event.target.title = "Threshold: " + event.target.value;
+                }
+                else if (event.target.classList.contains('optical-flow-range')) {
+                    nodeData.opticalFlowSize = event.target.value * 1.0;
+                    event.target.title = "Block size: " + event.target.value + "X" + event.target.value;
+                }
+                else if (event.target.classList.contains('transition-type-selector')) {
+                    nodeData.transitionType = event.target.value;
+                }
+                else if (event.target.classList.contains('transition-duration-range')) {
+                    nodeData.transitionDuration = event.target.value * 1.0;
+                    event.target.title = "Duration: " + event.target.value + "s";
+                }
+                else if (event.target.classList.contains('confidence-range')) {
+                    nodeData.detectionConfidence = event.target.value * 1.0;
+                    event.target.title = "Detection confidence: " + nodeData.detectionConfidence;
+                }
+                renderGraph();
+            });
+            graphContainer.addEventListener('dragover', (event) => event.preventDefault());
+            graphContainer.addEventListener('drop', (event) => {
+                event.preventDefault();
+                const nodeData = event.dataTransfer.getData('text/plain').split('|');
+                const nodeTitle = nodeData[0];
+                const nodeType = nodeData[1];
+                if (!nodeType || nodeType === 'undefined') return;
+                const rect = graphContainer.getBoundingClientRect();
+                nodes.push(createNodeData(Math.round(Math.random() * 999999), nodeTitle, nodeType, event.clientX - rect.left - 30, event.clientY - rect.top - 10));
+                renderGraph();
+            });
+            graphContainer.addEventListener('input', (event) => {
+                const target = event.target;
+                const nodeId = parseInt(target.dataset.nodeId);
+                const nodeData = nodes.find(n => n.id === nodeId);
+                if (!nodeData) return;
+
+                if (target.classList.contains('text-color-input')) {
+                    nodeData.textColor = target.value;
+                    nodeData.needsUpdate = true;
+                }
+                if (target.classList.contains('text-size-input')) {
+                    nodeData.textSize = parseInt(target.value);
+                    nodeData.needsUpdate = true;
+                }
+                if (target.classList.contains('text-size-height')) {
+                    nodeData.textHeight = parseInt(target.value);
+                    nodeData.needsUpdate = true;
+                }
+                if (target.classList.contains('curve-color-input')) {
+                    nodeData.curveColor = target.value;
+                }
+                if (target.classList.contains('curve-A-input')) {
+                    nodeData.paramA = parseInt(target.value);
+                }
+                if (target.classList.contains('curve-B-input')) {
+                    nodeData.paramB = parseInt(target.value);
+                }
+            });
+            document.addEventListener('mousedown', (event) => {
+                if (event.target.classList.contains('port-output')) {
+                    const fromNodeId = parseInt(event.target.dataset.nodeId);
+                    const fromPortIndex = parseInt(event.target.dataset.portIndex);
+                    pendingWire = { fromNodeId, fromPortIndex, element: document.createElementNS('http://www.w3.org/2000/svg', 'path') };
+                    pendingWire.element.classList.add('wire');
+                    document.getElementById('wire-svg').appendChild(pendingWire.element);
+                }
+                else if (event.target.classList.contains('palette-title')) {
+                    const groupTitles = document.getElementsByClassName('palette-title');
+                    for (var i = 0; i < groupTitles.length; i++) groupTitles[i].style.color = "#aaa";
+
+                    const nodeTitles = document.getElementsByClassName('palette-node');
+                    for (var i = 0; i < nodeTitles.length; i++) nodeTitles[i].style.display = "none";
+
+                    const catChildren = event.target.parentNode.children;
+                    for (var i = 1; i < catChildren.length; i++) {
+                        catChildren[i].style.display = "block";
+                        catChildren[0].style.color = "white";
+                    }
+                }
+                else if (event.target.classList.contains('node-input-field')) {
+                    const currentlySelected = document.querySelector('.node.selected');
+                    if (currentlySelected) { currentlySelected.classList.remove('selected'); }
+                    activeNode = event.target.parentNode.parentNode;
+                }
+                else if (!event.target.closest('.node')) {
+                    const currentlySelected = document.querySelector('.node.selected');
+                    if (currentlySelected) { currentlySelected.classList.remove('selected'); }
+                    activeNode = null;
+                }
+            });
+            document.addEventListener('mousemove', (event) => {
+                if (pendingWire) {
+                    const fromPortEl = document.querySelector(`.port-output[data-node-id='${pendingWire.fromNodeId}'][data-port-index='${pendingWire.fromPortIndex}']`);
+                    const mousePos = { getBoundingClientRect: () => ({ left: event.clientX, top: event.clientY, width: 0, height: 0 }) };
+                    drawWire(fromPortEl, mousePos, pendingWire.element);
+                }
+            });
+            document.addEventListener('mouseup', (event) => {
+                if (pendingWire) {
+                    const wasConnected = event.target.classList.contains('port-input');
+                    if (wasConnected) {
+                        const toNodeId = parseInt(event.target.dataset.nodeId);
+                        const toPortIndex = parseInt(event.target.dataset.portIndex);
+                        if (!connections.some(c => c.toNode === toNodeId && c.toPort === toPortIndex)) {
+                            connections.push({ id: Math.round(Math.random() * 999999), fromNode: pendingWire.fromNodeId, fromPort: pendingWire.fromPortIndex, toNode: toNodeId, toPort: toPortIndex, color: getRandomColor() });
+                        }
+                    }
+                    pendingWire.element.remove();
+                    pendingWire = null;
+
+                    if (wasConnected) {
+                        setTimeout(renderWires, 100);
+                        styleConnectedPorts();
+                    }
+                }
+            });
+            document.addEventListener('keydown', (event) => {
+                if (event.key === 'Delete') {
+                    if (activeNode) {
+                        nodes = nodes.filter(n => n.id !== activeNode.id);
+                        connections = connections.filter(c => c.fromNode !== activeNode.id && c.toNode !== activeNode.id);
+                        activeNode = null;
+                        renderGraph();
+                    }
+                }
+                else if (event.key === 'Enter' && event.target.classList.contains('node-input-field')) {
+                    for (var i = 0; i < 10; i++) setTimeout(renderWires, i * 100);
+                    const inputEl = event.target;
+                    const nodeEl = inputEl.closest('.node');
+                    const nodeId = parseInt(nodeEl.dataset.nodeId);
+                    const nodeData = nodes.find(n => n.id === nodeId);
+                    if (nodeData && nodeData.title !== 'Convolution') {
+                        const prop = inputEl.dataset.property;
+                        nodeData[prop] = inputEl.value;
+                        nodeData.mediaElement.src = inputEl.value;
+                        if (nodeData.title === 'Video') nodeData.mediaElement.play();
+                    }
+                }
+            });
+            document.addEventListener('keyup', (event) => {
+                if (event.target.classList.contains('custom-kernel-field')) {
+                    const inputEl = event.target;
+                    const nodeEl = inputEl.closest('.node');
+                    const nodeId = parseInt(nodeEl.dataset.nodeId);
+                    const nodeData = nodes.find(n => n.id === nodeId);
+                    nodeData.customKernel = inputEl.value.split(",");
+                }
+                else if (event.target.classList.contains('text-input')) {
+                    const nodeId = parseInt(event.target.dataset.nodeId);
+                    const nodeData = nodes.find(n => n.id === nodeId);
+                    if (nodeData) {
+                        nodeData.text = event.target.value;
+                        nodeData.needsUpdate = true;
+                    }
+                }
+            });
+            graphContainer.addEventListener('contextmenu', (event) => {
+                event.preventDefault();
+                if (event.target.classList.contains('port')) {
+                    const nodeId = parseInt(event.target.dataset.nodeId);
+                    const portIndex = parseInt(event.target.dataset.portIndex);
+                    const isInput = event.target.classList.contains('port-input');
+                    if (isInput) {
+                        connections = connections.filter(c => c.toNode !== nodeId || c.toPort !== portIndex);
+                    }
+                    else {
+                        connections = connections.filter(c => c.fromNode !== nodeId || c.fromPort !== portIndex);
+                    }
+                    renderGraph();
+                }
+            });
+            graphContainer.addEventListener('dblclick', (event) => { const c = event.target; if (c.tagName === 'IMG' || c.tagName === 'VIDEO' || c.tagName === 'CANVAS') c.requestFullscreen(); });
+            requestAnimationFrame(update);
+        }
+
+        function update() {
+            if (!openCvReady) {
+                if (typeof cv !== 'undefined' && cv.imread) {
+                    openCvReady = true;
+                    const statusEl = document.getElementById('opencv-status');
+                    statusEl.textContent = 'OpenCV Ready';
+                    statusEl.style.backgroundColor = 'darkolivegreen';
+                    setTimeout(() => statusEl.style.display = 'none', 1500);
+                }
+            }
+            nodes.forEach(nodeData => {
+                if (nodeData.onExecute) {
+                    nodeData.onExecute();
+                }
+            });
+            requestAnimationFrame(update);
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            initialize();
+        });
+
+        function saveProject() {
+            const payload = {
+                nodes: nodes.map(n => ({
+                    id: n.id, title: n.title, type: n.type, x: n.x, y: n.y,
+                    imageUrl: n.imageUrl, videoUrl: n.videoUrl,
+                    nodeText: n.text, textColor: n.textColor, textSize: n.textSize, textHeight: n.textHeight, fontName: n.fontName,
+                    curveColor: n.curveColor, paramA: n.paramA, paramB: n.paramB, curveName: n.curveName, curveType: n.curveType,
+                    primitiveType: n.primitiveType, isCustomModel: n.isCustomModel, loadedModel: n.loadedModel, currentVrm: n.currentVrm,
+                    camera: n.camera, projectorCamera: n.projectorCamera, ambientLight: n.ambientLight, pointLight: n.pointLight,
+                    checkFirstFrame: n.checkFirstFrame, gridSize: n.gridSize, gammaValue: n.gammaValue,
+                    selectedColor: n.selectedColor, oldHSV: n.oldHSV, newHSV: n.newHSV, fullRangeChecked: n.fullRangeChecked, colorRangeChecked: n.colorRangeChecked, colorInvertChecked: n.colorInvertChecked,
+                    convolutionType: n.convolutionType, convolutionalFilterSize: n.convolutionalFilterSize, customKernel: n.customKernel,
+                    morphologyType: n.morphologyType, morphologicalFilterSize: n.morphologicalFilterSize, morphologyKernelType: n.morphologyKernelType,
+                    polarEffectSize: n.polarEffectSize, polarEffectType: n.polarEffectType, glitchEffectSize: n.glitchEffectSize, glitchEffectType: n.glitchEffectType,
+                    channelMixerValues: n.channelMixerValues, opticalFlowSize: n.opticalFlowSize,
+                    thresholdValue: n.thresholdValue, thresholdingChecked: n.thresholdingChecked, connectedComponentsSize: n.connectedComponentsSize,
+                    operationType: n.operationType, operationWeight: n.operationWeight, detectionConfidence: n.detectionConfidence,
+                    hueBlendChecked: n.hueBlendChecked, satBlendChecked: n.satBlendChecked, valBlendChecked: n.valBlendChecked,
+                    concatenationAlignment: n.concatenationAlignment, concatenationChecked: n.concatenationChecked,
+                    transitionType: n.transitionType, transitionDuration: n.transitionDuration
+                })), connections
+            };
+            try {
+                const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = document.getElementById('projectName').value + '.olive';
+                document.body.appendChild(a);
+                a.click();
+                a.remove();
+                URL.revokeObjectURL(url);
+            }
+            catch (err) { alert(err); }
+        }
+        function loadProjectFromJSON(event) {
+            var reader = new FileReader();
+            reader.onload = onReaderLoad;
+            const file = event.target.files[0];
+            reader.readAsText(file);
+            document.getElementById('projectName').value = file.name.substring(0, file.name.lastIndexOf('.'));
+        }
+        function onReaderLoad(event) {
+            try {
+                const payload = JSON.parse(event.target.result);
+                nodes = [];
+                connections = payload.connections || [];
+                payload.nodes.forEach(n => {
+                    const nd = createNodeData(n.id, n.title, n.type, n.x || 100, n.y || 100);
+                    if (n.imageUrl) { nd.imageUrl = n.imageUrl; if (nd.mediaElement) nd.mediaElement.src = n.imageUrl; }
+                    if (n.videoUrl) { nd.videoUrl = n.videoUrl; if (nd.mediaElement) nd.mediaElement.src = n.videoUrl; }
+                    if (n.currentVrm) {
+                        nd.currentVrm = n.currentVrm;
+                        nd.buttonDisabled = "disabled";
+                        nd.three.scene.add(nd.currentVrm.scene);
+                    }
+                    if (n.primitiveType) { nd.primitiveType = n.primitiveType; nd.three.updateObject(); }
+                    if (n.isCustomModel) {
+                        nd.isCustomModel = n.isCustomModel;
+                        if (n.loadedModel) {
+                            const jsonLoader = new THREE.ObjectLoader();
+                            jsonLoader.parse(n.loadedModel, function (obj) { nd.loadedModel = obj; });
+                        }
+                        nd.three.updateObject();
+                    }
+                    if (n.ambientLight) {
+                        nd.ambientLight.intensity = n.ambientLight.object.intensity;
+                    }
+                    if (n.pointLight) {
+                        nd.pointLight.intensity = n.pointLight.object.intensity;
+                        nd.pointLight.color.set(n.pointLight.object.color);
+                        nd.pointLight.position.set(n.pointLight.object.matrix[12], n.pointLight.object.matrix[13], n.pointLight.object.matrix[14]);
+                        nd.pointHelper.position.set(n.pointLight.object.matrix[12], n.pointLight.object.matrix[13], n.pointLight.object.matrix[14]);
+                    }
+                    if (n.projectorCamera) {
+                        nd.projectorCamera.position.set(n.projectorCamera.object.matrix[12], n.projectorCamera.object.matrix[13], n.projectorCamera.object.matrix[14]);
+                        nd.pointHelper.position.set(n.projectorCamera.object.matrix[12], n.projectorCamera.object.matrix[13], n.projectorCamera.object.matrix[14]);
+                    }
+                    if (n.camera) {
+                        nd.camera.position.set(n.camera.object.matrix[12], n.camera.object.matrix[13], n.camera.object.matrix[14]);
+                        nd.camera.zoom = n.camera.object.zoom;
+                        nd.camera.updateProjectionMatrix();
+                    }
+                    if (n.checkFirstFrame) nd.checkFirstFrame = n.checkFirstFrame;
+                    if (n.gridSize) nd.gridSize = n.gridSize;
+                    if (n.gammaValue) nd.gammaValue = n.gammaValue;
+                    if (n.selectedColor) nd.selectedColor = n.selectedColor;
+                    if (n.oldHSV) nd.oldHSV = n.oldHSV;
+                    if (n.newHSV) nd.newHSV = n.newHSV;
+                    if (n.convolutionType) nd.convolutionType = n.convolutionType;
+                    if (n.convolutionalFilterSize) nd.convolutionalFilterSize = n.convolutionalFilterSize;
+                    if (n.customKernel) nd.customKernel = n.customKernel;
+                    if (n.morphologyType) nd.morphologyType = n.morphologyType;
+                    if (n.morphologicalFilterSize) nd.morphologicalFilterSize = n.morphologicalFilterSize;
+                    if (n.morphologyKernelType) nd.morphologyKernelType = n.morphologyKernelType;
+                    if (n.polarEffectSize) nd.polarEffectSize = n.polarEffectSize;
+                    if (n.polarEffectType) nd.polarEffectType = n.polarEffectType;
+                    if (n.glitchEffectSize) nd.glitchEffectSize = n.glitchEffectSize;
+                    if (n.glitchEffectType) nd.glitchEffectType = n.glitchEffectType;
+                    if (n.channelMixerValues) nd.channelMixerValues = n.channelMixerValues;
+                    if (n.opticalFlowSize) nd.opticalFlowSize = n.opticalFlowSize;
+                    if (n.thresholdValue) nd.thresholdValue = n.thresholdValue;
+                    if (n.connectedComponentsSize) nd.connectedComponentsSize = n.connectedComponentsSize;
+                    if (n.operationType) nd.operationType = n.operationType;
+                    if (n.operationWeight) nd.operationWeight = n.operationWeight;
+                    if (n.concatenationAlignment) nd.concatenationAlignment = n.concatenationAlignment;
+                    if (n.transitionType) nd.transitionType = n.transitionType;
+                    if (n.transitionDuration) nd.transitionDuration = n.transitionDuration;
+                    if (n.nodeText) nd.nodeText = n.nodeText;
+                    if (n.textColor) nd.textColor = n.textColor;
+                    if (n.textSize) nd.textSize = n.textSize;
+                    if (n.textHeight) nd.textHeight = n.textHeight;
+                    if (n.fontName) nd.fontName = n.fontName;
+                    if (n.curveColor) nd.curveColor = n.curveColor;
+                    if (n.paramA) nd.paramA = n.paramA;
+                    if (n.paramB) nd.paramB = n.paramB;
+                    if (n.curveName) nd.curveName = n.curveName;
+                    if (n.curveType) nd.curveType = n.curveType;
+                    if (n.detectionConfidence) nd.detectionConfidence = n.detectionConfidence;
+
+                    nd.fullRangeChecked = n.fullRangeChecked;
+                    nd.colorRangeChecked = n.colorRangeChecked;
+                    nd.colorInvertChecked = n.colorInvertChecked;
+                    nd.thresholdingChecked = n.thresholdingChecked;
+                    nd.hueBlendChecked = n.hueBlendChecked;
+                    nd.satBlendChecked = n.satBlendChecked;
+                    nd.valBlendChecked = n.valBlendChecked;
+                    nd.concatenationChecked = n.concatenationChecked;
+
+                    nodes.push(nd);
+                });
+                renderGraph();
+            }
+            catch (err) { alert(err); }
+        }
+    </script>
+</body>
+
+</html>
