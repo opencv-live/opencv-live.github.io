@@ -1,0 +1,47 @@
+{
+  "nodes": [
+    {
+      "id": 168690,
+      "title": "Image",
+      "type": "Input",
+      "x": 34,
+      "y": 27,
+      "imageUrl": "examples/images/flowers.bmp"
+    },
+    {
+      "id": 420307,
+      "title": "Glitch Effects",
+      "type": "Throughput",
+      "x": 319,
+      "y": 107,
+      "checkFirstFrame": true,
+      "glitchEffectSize": 9,
+      "glitchEffectType": "Glass"
+    },
+    {
+      "id": 366503,
+      "title": "Canvas Viewer",
+      "type": "Viewer",
+      "x": 598,
+      "y": 75
+    }
+  ],
+  "connections": [
+    {
+      "id": 800096,
+      "fromNode": 168690,
+      "fromPort": 0,
+      "toNode": 420307,
+      "toPort": 0,
+      "color": "hsl(238.00438870155727, 67.64849668052246%, 49.235648447241395%)"
+    },
+    {
+      "id": 747082,
+      "fromNode": 420307,
+      "fromPort": 0,
+      "toNode": 366503,
+      "toPort": 0,
+      "color": "hsl(34.159987235645076, 53.62983795500242%, 46.08126181556054%)"
+    }
+  ]
+}

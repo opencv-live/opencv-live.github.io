@@ -1,0 +1,114 @@
+{
+  "nodes": [
+    {
+      "id": 470401,
+      "title": "Image",
+      "type": "Input",
+      "x": 15,
+      "y": 93,
+      "imageUrl": "examples/images/flowers.bmp"
+    },
+    {
+      "id": 836848,
+      "title": "Convolution",
+      "type": "Throughput",
+      "x": 267,
+      "y": 43,
+      "checkFirstFrame": true,
+      "convolutionType": "Sobel Edges",
+      "convolutionalFilterSize": 3,
+      "customKernel": []
+    },
+    {
+      "id": 924852,
+      "title": "Canvas Viewer",
+      "type": "Viewer",
+      "x": 528,
+      "y": 31
+    },
+    {
+      "id": 239037,
+      "title": "Color Adjustment",
+      "type": "Throughput",
+      "x": 526,
+      "y": 301,
+      "checkFirstFrame": true,
+      "selectedColor": "#80ffff",
+      "oldHSV": [
+        90,
+        128
+      ],
+      "newHSV": [
+        0,
+        -255
+      ],
+      "fullRangeChecked": true,
+      "colorRangeChecked": "",
+      "colorInvertChecked": "checked"
+    },
+    {
+      "id": 797598,
+      "title": "Canvas Viewer",
+      "type": "Viewer",
+      "x": 788,
+      "y": 158
+    },
+    {
+      "id": 99457,
+      "title": "Morphology / Rank",
+      "type": "Throughput",
+      "x": 268,
+      "y": 328,
+      "checkFirstFrame": true,
+      "morphologyType": "Gradient",
+      "morphologicalFilterSize": 3,
+      "morphologyKernelType": [
+        "checked",
+        "",
+        ""
+      ]
+    }
+  ],
+  "connections": [
+    {
+      "id": 929845,
+      "fromNode": 470401,
+      "fromPort": 0,
+      "toNode": 836848,
+      "toPort": 0,
+      "color": "hsl(13.910946924070075, 71.8484259248805%, 45.951075321184184%)"
+    },
+    {
+      "id": 988834,
+      "fromNode": 239037,
+      "fromPort": 0,
+      "toNode": 797598,
+      "toPort": 0,
+      "color": "hsl(319.4955892118256, 62.68799789226924%, 48.61447840160279%)"
+    },
+    {
+      "id": 864158,
+      "fromNode": 470401,
+      "fromPort": 0,
+      "toNode": 99457,
+      "toPort": 0,
+      "color": "hsl(237.42787274340853, 66.46132727035844%, 50.491853416049565%)"
+    },
+    {
+      "id": 955673,
+      "fromNode": 836848,
+      "fromPort": 0,
+      "toNode": 924852,
+      "toPort": 0,
+      "color": "hsl(124.3126255838586, 67.37106774380871%, 53.476195565794384%)"
+    },
+    {
+      "id": 167288,
+      "fromNode": 99457,
+      "fromPort": 0,
+      "toNode": 239037,
+      "toPort": 0,
+      "color": "hsl(221.2680574348395, 58.70893279381313%, 45.15082571498159%)"
+    }
+  ]
+}

@@ -1,0 +1,156 @@
+{
+  "nodes": [
+    {
+      "id": 48185,
+      "title": "Image",
+      "type": "Input",
+      "x": 16,
+      "y": 11,
+      "imageUrl": "examples/images/wood.jpg"
+    },
+    {
+      "id": 535610,
+      "title": "3D Text",
+      "type": "Text",
+      "x": 15,
+      "y": 308,
+      "nodeText": "OLIVE",
+      "textColor": "#00ffff",
+      "textSize": 100,
+      "textHeight": 1,
+      "fontName": "helvetiker_regular",
+      "camera": {
+        "metadata": {
+          "version": 4.5,
+          "type": "Object",
+          "generator": "Object3D.toJSON"
+        },
+        "object": {
+          "uuid": "9E762291-B0D2-471D-A983-590AE74D9342",
+          "type": "OrthographicCamera",
+          "layers": 1,
+          "matrix": [
+            0.9997292370481806,
+            2.710505431213761e-20,
+            -0.02326913387005649,
+            0,
+            0.0004061023817437849,
+            0.9998476951563913,
+            0.017447680972200168,
+            0,
+            0.0232655898682615,
+            -0.017452406437283477,
+            0.9995769734430809,
+            0,
+            2.422486469988598,
+            -12.302844653776122,
+            99.77113101612906,
+            1
+          ],
+          "zoom": 3.2722174815352276,
+          "left": -640,
+          "right": 640,
+          "top": 360,
+          "bottom": -360,
+          "near": 1,
+          "far": 1000
+        }
+      }
+    },
+    {
+      "id": 411328,
+      "title": "Canvas Viewer",
+      "type": "Viewer",
+      "x": 800,
+      "y": 116
+    },
+    {
+      "id": 437048,
+      "title": "Matrix Operations",
+      "type": "Mixer",
+      "x": 282,
+      "y": 71,
+      "operationType": "Divide",
+      "operationWeight": 0.01
+    },
+    {
+      "id": 720119,
+      "title": "Matrix Operations",
+      "type": "Mixer",
+      "x": 281,
+      "y": 322,
+      "operationType": "Min",
+      "operationWeight": 0.99
+    },
+    {
+      "id": 5762,
+      "title": "Concatenation",
+      "type": "Mixer",
+      "x": 540,
+      "y": 72,
+      "concatenationAlignment": 1,
+      "concatenationChecked": [
+        "",
+        "checked"
+      ]
+    }
+  ],
+  "connections": [
+    {
+      "id": 282253,
+      "fromNode": 48185,
+      "fromPort": 0,
+      "toNode": 437048,
+      "toPort": 0,
+      "color": "hsl(337.2266199414943, 72.15165874635755%, 48.66010226618265%)"
+    },
+    {
+      "id": 276929,
+      "fromNode": 535610,
+      "fromPort": 0,
+      "toNode": 437048,
+      "toPort": 1,
+      "color": "hsl(118.09640021709383, 53.53607592603886%, 45.475984196528174%)"
+    },
+    {
+      "id": 211297,
+      "fromNode": 48185,
+      "fromPort": 0,
+      "toNode": 720119,
+      "toPort": 0,
+      "color": "hsl(170.4809031473297, 55.228699681451516%, 46.23766341768046%)"
+    },
+    {
+      "id": 90493,
+      "fromNode": 535610,
+      "fromPort": 0,
+      "toNode": 720119,
+      "toPort": 1,
+      "color": "hsl(291.19673736973647, 62.7571772155746%, 45.2926460411498%)"
+    },
+    {
+      "id": 893465,
+      "fromNode": 437048,
+      "fromPort": 0,
+      "toNode": 5762,
+      "toPort": 0,
+      "color": "hsl(227.39082530074754, 67.53741491831704%, 47.87070793730968%)"
+    },
+    {
+      "id": 629350,
+      "fromNode": 720119,
+      "fromPort": 0,
+      "toNode": 5762,
+      "toPort": 1,
+      "color": "hsl(178.59171531376853, 66.41018530247155%, 45.109905992392015%)"
+    },
+    {
+      "id": 329870,
+      "fromNode": 5762,
+      "fromPort": 0,
+      "toNode": 411328,
+      "toPort": 0,
+      "color": "hsl(74.45152977348086, 68.67188177639619%, 50.18908388485447%)"
+    }
+  ]
+}

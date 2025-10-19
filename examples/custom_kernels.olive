@@ -1,0 +1,102 @@
+{
+  "nodes": [
+    {
+      "id": 991847,
+      "title": "Image",
+      "type": "Input",
+      "x": 43,
+      "y": 99,
+      "imageUrl": "examples/images/flowers.bmp"
+    },
+    {
+      "id": 44301,
+      "title": "Convolution",
+      "type": "Throughput",
+      "x": 316,
+      "y": 36,
+      "checkFirstFrame": true,
+      "convolutionType": "Custom Filter",
+      "convolutionalFilterSize": 13,
+      "customKernel": [
+        "-2",
+        "-1",
+        "0",
+        "-1",
+        "1",
+        "1",
+        "0",
+        "1",
+        "2"
+      ]
+    },
+    {
+      "id": 601431,
+      "title": "Canvas Viewer",
+      "type": "Viewer",
+      "x": 594,
+      "y": 26
+    },
+    {
+      "id": 708722,
+      "title": "Convolution",
+      "type": "Throughput",
+      "x": 316,
+      "y": 295,
+      "checkFirstFrame": true,
+      "convolutionType": "Custom Filter",
+      "convolutionalFilterSize": 13,
+      "customKernel": [
+        "-1",
+        "0",
+        "0",
+        "0",
+        "2",
+        "0",
+        "0",
+        "0",
+        "-1"
+      ]
+    },
+    {
+      "id": 98529,
+      "title": "Canvas Viewer",
+      "type": "Viewer",
+      "x": 596,
+      "y": 284
+    }
+  ],
+  "connections": [
+    {
+      "id": 759619,
+      "fromNode": 44301,
+      "fromPort": 0,
+      "toNode": 601431,
+      "toPort": 0,
+      "color": "hsl(186.3129705164777, 74.46072618991502%, 47.82963301271775%)"
+    },
+    {
+      "id": 223044,
+      "fromNode": 991847,
+      "fromPort": 0,
+      "toNode": 44301,
+      "toPort": 0,
+      "color": "hsl(315.15220219330723, 62.896336208192274%, 47.05332316701679%)"
+    },
+    {
+      "id": 40153,
+      "fromNode": 991847,
+      "fromPort": 0,
+      "toNode": 708722,
+      "toPort": 0,
+      "color": "hsl(122.5087555118732, 50.54190560285188%, 45.47146841191325%)"
+    },
+    {
+      "id": 643426,
+      "fromNode": 708722,
+      "fromPort": 0,
+      "toNode": 98529,
+      "toPort": 0,
+      "color": "hsl(224.0273295483437, 58.60390779433975%, 49.655514585216196%)"
+    }
+  ]
+}

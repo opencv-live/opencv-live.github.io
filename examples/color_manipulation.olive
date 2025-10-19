@@ -1,0 +1,85 @@
+{
+  "nodes": [
+    {
+      "id": 981127,
+      "title": "Image",
+      "type": "Input",
+      "x": 34,
+      "y": 35,
+      "imageUrl": "examples/images/flowers.bmp"
+    },
+    {
+      "id": 125619,
+      "title": "Canvas Viewer",
+      "type": "Viewer",
+      "x": 758,
+      "y": 89
+    },
+    {
+      "id": 795867,
+      "title": "Color Adjustment",
+      "type": "Throughput",
+      "x": 276,
+      "y": 100,
+      "checkFirstFrame": true,
+      "selectedColor": "#0000ff",
+      "oldHSV": [
+        120,
+        255
+      ],
+      "newHSV": [
+        -54,
+        -255
+      ],
+      "fullRangeChecked": "",
+      "colorRangeChecked": true,
+      "colorInvertChecked": ""
+    },
+    {
+      "id": 330679,
+      "title": "Color Adjustment",
+      "type": "Throughput",
+      "x": 516,
+      "y": 100,
+      "checkFirstFrame": true,
+      "selectedColor": "#ff0000",
+      "oldHSV": [
+        0,
+        255
+      ],
+      "newHSV": [
+        -180,
+        -80
+      ],
+      "fullRangeChecked": true,
+      "colorRangeChecked": "",
+      "colorInvertChecked": ""
+    }
+  ],
+  "connections": [
+    {
+      "id": 14552,
+      "fromNode": 981127,
+      "fromPort": 0,
+      "toNode": 795867,
+      "toPort": 0,
+      "color": "hsl(220.7206661607549, 73.42798543004548%, 52.51316034827941%)"
+    },
+    {
+      "id": 815214,
+      "fromNode": 795867,
+      "fromPort": 0,
+      "toNode": 330679,
+      "toPort": 0,
+      "color": "hsl(108.54328190943166, 62.436359780583885%, 49.27447482528264%)"
+    },
+    {
+      "id": 168218,
+      "fromNode": 330679,
+      "fromPort": 0,
+      "toNode": 125619,
+      "toPort": 0,
+      "color": "hsl(188.97716661088774, 55.11683403852964%, 47.53583305947896%)"
+    }
+  ]
+}

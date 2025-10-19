@@ -1,0 +1,56 @@
+{
+  "nodes": [
+    {
+      "id": 598198,
+      "title": "Image",
+      "type": "Input",
+      "x": 37,
+      "y": 35,
+      "imageUrl": "examples/images/flowers.bmp"
+    },
+    {
+      "id": 485097,
+      "title": "Channel Mixer",
+      "type": "Throughput",
+      "x": 329,
+      "y": 62,
+      "checkFirstFrame": true,
+      "channelMixerValues": [
+        1,
+        0,
+        0,
+        0,
+        0,
+        1,
+        0,
+        1,
+        0
+      ]
+    },
+    {
+      "id": 530647,
+      "title": "Canvas Viewer",
+      "type": "Viewer",
+      "x": 620,
+      "y": 89
+    }
+  ],
+  "connections": [
+    {
+      "id": 594568,
+      "fromNode": 598198,
+      "fromPort": 0,
+      "toNode": 485097,
+      "toPort": 0,
+      "color": "hsl(86.0774451990776, 53.95467446064275%, 52.70775176633077%)"
+    },
+    {
+      "id": 405058,
+      "fromNode": 485097,
+      "fromPort": 0,
+      "toNode": 530647,
+      "toPort": 0,
+      "color": "hsl(286.30539200238445, 61.93843435131001%, 49.92603875574308%)"
+    }
+  ]
+}

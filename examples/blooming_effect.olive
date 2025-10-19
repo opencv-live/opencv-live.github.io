@@ -1,0 +1,95 @@
+{
+  "nodes": [
+    {
+      "id": 369226,
+      "title": "Image",
+      "type": "Input",
+      "x": 10,
+      "y": 15,
+      "imageUrl": "examples/images/flowers.bmp"
+    },
+    {
+      "id": 990637,
+      "title": "Convolution",
+      "type": "Throughput",
+      "x": 266,
+      "y": 267,
+      "checkFirstFrame": true,
+      "convolutionType": "Gaussian Blur",
+      "convolutionalFilterSize": 21,
+      "customKernel": []
+    },
+    {
+      "id": 169130,
+      "title": "Thresholding",
+      "type": "Throughput",
+      "x": 9,
+      "y": 334,
+      "checkFirstFrame": true,
+      "thresholdValue": 221,
+      "thresholdingChecked": [
+        "checked",
+        "",
+        ""
+      ]
+    },
+    {
+      "id": 341987,
+      "title": "Matrix Operations",
+      "type": "Mixer",
+      "x": 512,
+      "y": 65,
+      "operationType": "Add",
+      "operationWeight": 0.6
+    },
+    {
+      "id": 406277,
+      "title": "Canvas Viewer",
+      "type": "Viewer",
+      "x": 752,
+      "y": 66
+    }
+  ],
+  "connections": [
+    {
+      "id": 940414,
+      "fromNode": 369226,
+      "fromPort": 0,
+      "toNode": 169130,
+      "toPort": 0,
+      "color": "hsl(56.92547423589142, 73.0990326532785%, 50.248738837764066%)"
+    },
+    {
+      "id": 742373,
+      "fromNode": 369226,
+      "fromPort": 0,
+      "toNode": 341987,
+      "toPort": 0,
+      "color": "hsl(229.60014744813597, 68.85689157431455%, 54.00503578061132%)"
+    },
+    {
+      "id": 441018,
+      "fromNode": 169130,
+      "fromPort": 0,
+      "toNode": 990637,
+      "toPort": 0,
+      "color": "hsl(307.00505580247255, 64.67081676878357%, 47.053665486036635%)"
+    },
+    {
+      "id": 546927,
+      "fromNode": 990637,
+      "fromPort": 0,
+      "toNode": 341987,
+      "toPort": 1,
+      "color": "hsl(203.33913043734447, 51.74555495925199%, 52.91362201711156%)"
+    },
+    {
+      "id": 687408,
+      "fromNode": 341987,
+      "fromPort": 0,
+      "toNode": 406277,
+      "toPort": 0,
+      "color": "hsl(222.393941337577, 64.95018201860782%, 52.703029820695924%)"
+    }
+  ]
+}

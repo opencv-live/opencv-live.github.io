@@ -1,0 +1,62 @@
+{
+  "nodes": [
+    {
+      "id": 93361,
+      "title": "Image",
+      "type": "Input",
+      "x": 17,
+      "y": 9,
+      "imageUrl": "examples/images/flowers.bmp"
+    },
+    {
+      "id": 536399,
+      "title": "Image",
+      "type": "Input",
+      "x": 129,
+      "y": 300,
+      "imageUrl": "examples/images/wood.jpg"
+    },
+    {
+      "id": 987484,
+      "title": "Matrix Operations",
+      "type": "Mixer",
+      "x": 426,
+      "y": 111,
+      "operationType": "Subtract",
+      "operationWeight": 0.75
+    },
+    {
+      "id": 101739,
+      "title": "Canvas Viewer",
+      "type": "Viewer",
+      "x": 682,
+      "y": 190
+    }
+  ],
+  "connections": [
+    {
+      "id": 858619,
+      "fromNode": 987484,
+      "fromPort": 0,
+      "toNode": 101739,
+      "toPort": 0,
+      "color": "hsl(6.830954218078693, 61.02572288301096%, 53.39522556791093%)"
+    },
+    {
+      "id": 188766,
+      "fromNode": 536399,
+      "fromPort": 0,
+      "toNode": 987484,
+      "toPort": 1,
+      "color": "hsl(260.3506385940122, 68.82510867095539%, 47.76606350744423%)"
+    },
+    {
+      "id": 496058,
+      "fromNode": 93361,
+      "fromPort": 0,
+      "toNode": 987484,
+      "toPort": 0,
+      "color": "hsl(276.030034429329, 70.05438944248388%, 50.52270235703493%)"
+    }
+  ]
+}

@@ -1,0 +1,63 @@
+{
+  "nodes": [
+    {
+      "id": 421889,
+      "title": "Image",
+      "type": "Input",
+      "x": 131,
+      "y": 307,
+      "imageUrl": "examples/images/flowers.bmp"
+    },
+    {
+      "id": 846537,
+      "title": "Image",
+      "type": "Input",
+      "x": 28,
+      "y": 28,
+      "imageUrl": "examples/images/wood.jpg"
+    },
+    {
+      "id": 415234,
+      "title": "Color Blending",
+      "type": "Mixer",
+      "x": 423,
+      "y": 86,
+      "hueBlendChecked": "",
+      "satBlendChecked": "checked",
+      "valBlendChecked": ""
+    },
+    {
+      "id": 397335,
+      "title": "Canvas Viewer",
+      "type": "Viewer",
+      "x": 719,
+      "y": 214
+    }
+  ],
+  "connections": [
+    {
+      "id": 114342,
+      "fromNode": 415234,
+      "fromPort": 0,
+      "toNode": 397335,
+      "toPort": 0,
+      "color": "hsl(257.9396643592968, 56.247477487376656%, 54.331210136667224%)"
+    },
+    {
+      "id": 852247,
+      "fromNode": 421889,
+      "fromPort": 0,
+      "toNode": 415234,
+      "toPort": 1,
+      "color": "hsl(71.80093418538225, 66.51790216596254%, 45.705668368511894%)"
+    },
+    {
+      "id": 519358,
+      "fromNode": 846537,
+      "fromPort": 0,
+      "toNode": 415234,
+      "toPort": 0,
+      "color": "hsl(351.7910853631099, 68.83830947601633%, 53.39508881859638%)"
+    }
+  ]
+}
