@@ -369,7 +369,7 @@
                 };
                 function loadFont(fontName) {
                     if (node.fontUrls[fontName] === '') return;
-                    
+
                     if (fontCache[fontName]) {
                         node.font = fontCache[fontName];
                         node.needsUpdate = true;
@@ -442,33 +442,59 @@
                 node.curveColor = '#faf0a0';
                 node.paramA = A[rand];
                 node.paramB = B[rand];
+
                 node.curveName = 'combined';
-                if (rand > 0) node.curveName = 'astroid';
-                if (rand > 3) node.curveName = 'rhodonea';
+                node.equationX = "cos(A*t/sqr(B))-pow(cos(A*t/sqr(B)),A%10*2+3)";
+                node.equationY = "sin(A*t/sqr(B))-pow(sin(A*t/sqr(B)),A%10*2+3)";
+                if (rand > 0) {
+                    node.curveName = 'astroid';
+                    node.equationX = "pow(cos(A*t/sqr(B)),A%3*2+3)";
+                    node.equationY = "pow(sin(A*t/sqr(B)),A%3*2+3)";
+                }
+                if (rand > 3) {
+                    node.curveName = 'rhodonea';
+                    node.equationX = "sin(t/sqr(B))*sin(sqr(A)*t/sqr(B))";
+                    node.equationY = "cos(t/sqr(B))*sin(sqr(A)*t/sqr(B))";
+                }
                 node.curveType = ["", "", "checked"];
                 if (rand < 9) node.curveType = ["", "checked", ""];
+
                 node.timeIndex = 0;
+                node.animationSpeed = 1;
+                node.isReadonly = "readonly";
 
                 function curve(t) {
-                    let x, y;
+                    let eqx, eqy;
                     if (node.curveName === "rhodonea") {
-                        x = Math.sin(t) * Math.sin(Math.sqrt(node.paramA) * t);
-                        y = Math.cos(t) * Math.sin(Math.sqrt(node.paramA) * t);
+                        eqx = Math.sin(t) * Math.sin(Math.sqrt(node.paramA) * t);
+                        eqy = Math.cos(t) * Math.sin(Math.sqrt(node.paramA) * t);
                     }
                     else if (node.curveName === "astroid") {
-                        x = Math.pow(Math.cos(node.paramA * t), node.paramA % 3 * 2 + 3);
-                        y = Math.pow(Math.sin(node.paramA * t), node.paramA % 3 * 2 + 3);
+                        eqx = Math.pow(Math.cos(node.paramA * t), node.paramA % 3 * 2 + 3);
+                        eqy = Math.pow(Math.sin(node.paramA * t), node.paramA % 3 * 2 + 3);
                     }
                     else if (node.curveName === "combined") {
-                        x = Math.cos(node.paramA * t) - Math.pow(Math.cos(node.paramA * t), node.paramA % 10 * 2 + 3);
-                        y = Math.sin(node.paramA * t) - Math.pow(Math.sin(node.paramA * t), node.paramA % 10 * 2 + 3);
+                        eqx = Math.cos(node.paramA * t) - Math.pow(Math.cos(node.paramA * t), node.paramA % 10 * 2 + 3);
+                        eqy = Math.sin(node.paramA * t) - Math.pow(Math.sin(node.paramA * t), node.paramA % 10 * 2 + 3);
                     }
-                    return [x, y];
+                    else {
+                        let X = node.equationX.replace(/t/g, t).replace(/A/g, node.paramA).replace(/sqr\(B\)/g, 1);
+                        let Y = node.equationY.replace(/t/g, t).replace(/A/g, node.paramA).replace(/sqr\(B\)/g, 1);
+
+                        X = X.replace(/PI/gi, "Math.PI").replace(/E/gi, "Math.E").replace(/sqr/g, "Math.sqrt").replace(/pow/g, "Math.pow").replace(/log/g, "Math.log").replace(/sin/g, "Math.sin").replace(/cos/g, "Math.cos");
+                        Y = Y.replace(/PI/gi, "Math.PI").replace(/E/gi, "Math.E").replace(/sqr/g, "Math.sqrt").replace(/pow/g, "Math.pow").replace(/log/g, "Math.log").replace(/sin/g, "Math.sin").replace(/cos/g, "Math.cos");
+
+                        eqx = eval(X);
+                        eqy = eval(Y);
+                    }
+                    return [eqx, eqy];
                 }
                 node.onExecute = () => {
                     let scale = 2 * 10000;
                     let step = scale * Math.sqrt(node.paramB);
-                    let start = node.timeIndex++ / step;
+                    let start = node.timeIndex / step;
+
+                    node.timeIndex += node.animationSpeed;
 
                     if (node.curveName === "rhodonea") start *= 100;
                     let end = start + 1000 * scale * 2 * Math.PI;
@@ -1915,7 +1941,7 @@
                             { value: 'gentilis_regular', name: 'Gentilis' },
                             { value: 'droid_sans_regular', name: 'Droid Sans' },
                             { value: 'optimer_regular', name: 'Optimer' },
-                            { value: 'custom', name: 'Custom' }
+                            { value: 'custom', name: 'External Font' }
                         ];
                         let optionsHTML = fontOptions.map(font =>
                             `<option value="${font.value}" ${nodeData.fontName === font.value ? 'selected' : ''}>${font.name}</option>`
@@ -1935,7 +1961,8 @@
                         const curveOptions = [
                             { value: 'rhodonea', name: 'Rhodonea' },
                             { value: 'astroid', name: 'Astroid' },
-                            { value: 'combined', name: 'Combined' }
+                            { value: 'combined', name: 'Combined' },
+                            { value: 'custom', name: 'Custom Equations' }
                         ];
                         let curvesHTML = curveOptions.map(curve =>
                             `<option value="${curve.value}" ${nodeData.curveName === curve.value ? 'selected' : ''}>${curve.name}</option>`
@@ -1946,6 +1973,10 @@
                                 <input type="color" class="node-input-color curve-color-input" data-node-id="${nodeData.id}" value="${nodeData.curveColor}">
                                 <input type="range" class="node-input-range curve-A-input" data-node-id="${nodeData.id}" min="1" max="1000" value="${nodeData.paramA}" title="A: ${nodeData.paramA}" style="width:144px">
                                 <input type="range" class="node-input-range curve-B-input" data-node-id="${nodeData.id}" min="1" max="1000" value="${nodeData.paramB}" title="B: ${nodeData.paramB}" style="width:144px">
+                                <br><br>
+                                <em>x[t]=</em><input type="text" class="node-input-field curve-equation-X" title="Use only: numbers, +, -, /, *, %, **, sqr(), sin(), cos(), log(), e, pi, A, B, and t" value="${nodeData.equationX}" style="width:155px" ${nodeData.isReadonly}>
+                                <em>y[t]=</em><input type="text" class="node-input-field curve-equation-Y" title="Use only: numbers, +, -, /, *, %, **, sqr(), sin(), cos(), log(), e, pi, A, B, and t" value="${nodeData.equationY}" style="width:155px" ${nodeData.isReadonly}>
+                                <input type="range" data-node-id="${nodeData.id}" title="Animation speed: ${nodeData.animationSpeed}" class="node-input-range curve-animation-speed" min="-3" max="3" step="0.1" value="${nodeData.animationSpeed}">
                                 <p><input type="radio" id="curvePoints${nodeData.id}" data-node-id="${nodeData.id}" class="node-input-check curve-style" name="curveStyle${nodeData.id}" ${nodeData.curveType[0]}><small>Points</small>
                                 <input type="radio" id="curveLines${nodeData.id}" data-node-id="${nodeData.id}" class="node-input-check curve-style" name="curveStyle${nodeData.id}" ${nodeData.curveType[1]}><small>Lines</small>
                                 <input type="radio" data-node-id="${nodeData.id}" class="node-input-check curve-style" name="curveStyle${nodeData.id}" ${nodeData.curveType[2]}><small>Curves</small></p>
@@ -2328,11 +2359,29 @@
                 }
                 else if (event.target.classList.contains('curve-type-selector')) {
                     nodeData.curveName = event.target.value;
+                    nodeData.isReadonly = "readonly";
+                    if (event.target.value === "rhodonea") {
+                        nodeData.equationX = "sin(t/sqr(B))*sin(sqr(A)*t/sqr(B))";
+                        nodeData.equationY = "cos(t/sqr(B))*sin(sqr(A)*t/sqr(B))";
+                    }
+                    else if (event.target.value === "astroid") {
+                        nodeData.equationX = "pow(cos(A*t/sqr(B)),A%3*2+3)";
+                        nodeData.equationY = "pow(sin(A*t/sqr(B)),A%3*2+3)";
+                    }
+                    else if (event.target.value === "combined") {
+                        nodeData.equationX = "cos(A*t/sqr(B))-pow(cos(A*t/sqr(B)),A%10*2+3)";
+                        nodeData.equationY = "sin(A*t/sqr(B))-pow(sin(A*t/sqr(B)),A%10*2+3)";
+                    }
+                    else nodeData.isReadonly = "";
                 }
                 else if (event.target.classList.contains('curve-style')) {
                     nodeData.curveType = ["", "", "checked"];
                     if (document.getElementById('curvePoints' + nodeId).checked) nodeData.curveType = ["checked", "", ""];
                     else if (document.getElementById('curveLines' + nodeId).checked) nodeData.curveType = ["", "checked", ""];
+                }
+                else if (event.target.classList.contains('curve-animation-speed')) {
+                    nodeData.animationSpeed = event.target.value * 1.0;
+                    event.target.title = "Animation speed: " + nodeData.animationSpeed;
                 }
                 else if (event.target.classList.contains('character-model-loader')) {
                     const file = event.target.files[0];
@@ -2676,6 +2725,20 @@
                         nodeData.needsUpdate = true;
                     }
                 }
+                else if (event.target.classList.contains('curve-equation-X')) {
+                    const inputEl = event.target;
+                    const nodeEl = inputEl.closest('.node');
+                    const nodeId = parseInt(nodeEl.dataset.nodeId);
+                    const nodeData = nodes.find(n => n.id === nodeId);
+                    nodeData.equationX = inputEl.value;
+                }
+                else if (event.target.classList.contains('curve-equation-Y')) {
+                    const inputEl = event.target;
+                    const nodeEl = inputEl.closest('.node');
+                    const nodeId = parseInt(nodeEl.dataset.nodeId);
+                    const nodeData = nodes.find(n => n.id === nodeId);
+                    nodeData.equationY = inputEl.value;
+                }
             });
             graphContainer.addEventListener('contextmenu', (event) => {
                 event.preventDefault();
@@ -2730,7 +2793,7 @@
                         id: n.id, title: n.title, type: n.type, x: n.x, y: n.y,
                         imageUrl: n.imageUrl, videoUrl: n.videoUrl,
                         nodeText: n.text, textColor: n.textColor, textSize: n.textSize, textHeight: n.textHeight, fontName: n.fontName, fontUrls: n.fontUrls,
-                        curveColor: n.curveColor, paramA: n.paramA, paramB: n.paramB, curveName: n.curveName, curveType: n.curveType,
+                        curveColor: n.curveColor, paramA: n.paramA, paramB: n.paramB, curveName: n.curveName, curveType: n.curveType, equationX: n.equationX, equationY: n.equationY, animationSpeed: n.animationSpeed,
                         primitiveType: n.primitiveType, isCustomModel: n.isCustomModel, loadedModel: n.loadedModel, currentVrm: n.currentVrm,
                         camera: n.camera, projectorCamera: n.projectorCamera, ambientLight: n.ambientLight, pointLight: n.pointLight,
                         checkFirstFrame: n.checkFirstFrame, gridSize: n.gridSize, gammaValue: n.gammaValue,
@@ -2858,6 +2921,9 @@
                     if (n.paramB) nd.paramB = n.paramB;
                     if (n.curveName) nd.curveName = n.curveName;
                     if (n.curveType) nd.curveType = n.curveType;
+                    if (n.equationX) nd.equationX = n.equationX;
+                    if (n.equationY) nd.equationY = n.equationY;
+                    if (n.animationSpeed) nd.animationSpeed = n.animationSpeed;
                     if (n.detectionConfidence) nd.detectionConfidence = n.detectionConfidence;
 
                     nd.fullRangeChecked = n.fullRangeChecked;
