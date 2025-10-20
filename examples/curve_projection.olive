@@ -1,0 +1,214 @@
+{
+  "nodes": [
+    {
+      "id": 340513,
+      "title": "Canvas Viewer",
+      "type": "Viewer",
+      "x": 590,
+      "y": 50
+    },
+    {
+      "id": 700553,
+      "title": "Parametric Lines",
+      "type": "Parametric",
+      "x": 42,
+      "y": 37,
+      "curveColor": "#faf0a0",
+      "paramA": 283,
+      "paramB": 528,
+      "curveName": "combined",
+      "curveType": [
+        "",
+        "checked",
+        ""
+      ],
+      "equationX": "cos(A*t/sqr(B))-pow(cos(A*t/sqr(B)),A%10*2+3)",
+      "equationY": "sin(A*t/sqr(B))-pow(sin(A*t/sqr(B)),A%10*2+3)",
+      "animationSpeed": 1
+    },
+    {
+      "id": 218686,
+      "title": "Projection",
+      "type": "3DScene",
+      "x": 314,
+      "y": 79,
+      "primitiveType": "Cube",
+      "isCustomModel": false,
+      "camera": {
+        "metadata": {
+          "version": 4.5,
+          "type": "Object",
+          "generator": "Object3D.toJSON"
+        },
+        "object": {
+          "uuid": "D2FD4AAD-D7DE-4BEE-B51B-4D4224966B64",
+          "type": "PerspectiveCamera",
+          "layers": 1,
+          "matrix": [
+            0.9071779934990268,
+            -1.3877787807814457e-17,
+            -0.42074705953943353,
+            0,
+            -0.12932415161670963,
+            0.9515907509296613,
+            -0.2788374195723048,
+            0,
+            0.4003790103385764,
+            0.30736792732021223,
+            0.8632621880606024,
+            0,
+            10.214331816558568,
+            7.841465007772435,
+            22.02324848668471,
+            1
+          ],
+          "fov": 45,
+          "zoom": 1,
+          "near": 1,
+          "far": 1000,
+          "focus": 10,
+          "aspect": 1.7777777777777777,
+          "filmGauge": 35,
+          "filmOffset": 0
+        }
+      },
+      "projectorCamera": {
+        "metadata": {
+          "version": 4.5,
+          "type": "Object",
+          "generator": "Object3D.toJSON"
+        },
+        "object": {
+          "uuid": "F5139F46-2292-428C-BD8E-4F8003257703",
+          "type": "PerspectiveCamera",
+          "layers": 1,
+          "matrix": [
+            1,
+            0,
+            0,
+            0,
+            0,
+            1,
+            0,
+            0,
+            0,
+            0,
+            1,
+            0,
+            0.14481624079705913,
+            0.1183065735927506,
+            27.98313728975134,
+            1
+          ],
+          "fov": 45,
+          "zoom": 1,
+          "near": 1,
+          "far": 1000,
+          "focus": 10,
+          "aspect": 1,
+          "filmGauge": 35,
+          "filmOffset": 0
+        }
+      },
+      "ambientLight": {
+        "metadata": {
+          "version": 4.5,
+          "type": "Object",
+          "generator": "Object3D.toJSON"
+        },
+        "object": {
+          "uuid": "7281AD46-BE2A-4647-A517-FC007E58280F",
+          "type": "AmbientLight",
+          "layers": 1,
+          "matrix": [
+            1,
+            0,
+            0,
+            0,
+            0,
+            1,
+            0,
+            0,
+            0,
+            0,
+            1,
+            0,
+            0,
+            0,
+            0,
+            1
+          ],
+          "color": 16777215,
+          "intensity": 1
+        }
+      },
+      "pointLight": {
+        "metadata": {
+          "version": 4.5,
+          "type": "Object",
+          "generator": "Object3D.toJSON"
+        },
+        "object": {
+          "uuid": "64F5789B-8BBF-4644-8968-B6663EEAEC64",
+          "type": "PointLight",
+          "layers": 1,
+          "matrix": [
+            1,
+            0,
+            0,
+            0,
+            0,
+            1,
+            0,
+            0,
+            0,
+            0,
+            1,
+            0,
+            0,
+            0,
+            0,
+            1
+          ],
+          "color": 16711680,
+          "intensity": 2,
+          "distance": 0,
+          "decay": 1,
+          "shadow": {
+            "camera": {
+              "uuid": "BFF44661-FF08-4276-A85F-22A828A9E277",
+              "type": "PerspectiveCamera",
+              "layers": 1,
+              "fov": 90,
+              "zoom": 1,
+              "near": 0.5,
+              "far": 500,
+              "focus": 10,
+              "aspect": 1,
+              "filmGauge": 35,
+              "filmOffset": 0
+            }
+          }
+        }
+      }
+    }
+  ],
+  "connections": [
+    {
+      "id": 849465,
+      "fromNode": 700553,
+      "fromPort": 0,
+      "toNode": 218686,
+      "toPort": 0,
+      "color": "hsl(232.42475349685327, 54.865292621392044%, 45.714973839210224%)"
+    },
+    {
+      "id": 944648,
+      "fromNode": 218686,
+      "fromPort": 0,
+      "toNode": 340513,
+      "toPort": 0,
+      "color": "hsl(210.79555590601652, 74.77419853105442%, 47.08984895532974%)"
+    }
+  ]
+}
