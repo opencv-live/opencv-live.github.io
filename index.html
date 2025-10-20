@@ -114,6 +114,7 @@
             border: 1px solid #666;
             color: #eee;
             padding: 5px;
+            margin-bottom: 5px;
         }
 
         .node-input-range {
@@ -151,6 +152,7 @@
             border: 0;
             cursor: pointer;
             font-size: large;
+            text-decoration: none;
         }
 
         .node-fullscreen-button {
@@ -254,7 +256,7 @@
 
 <body>
     <a href="docs/manual.pdf" target="_blank" title="Help" class="load-save-button"
-        style="right:0;text-decoration:none;padding:2px">&#10067;</a>
+        style="right:0;padding:2px">&#10067;</a>
     <button onclick="document.getElementById('projectPath').click();" title="Open" class="load-save-button"
         style="right:20px">&#x1F4C2;</button>
     <button onclick="saveProject();" title="Save" class="load-save-button" style="right:48px">&#128190;</button>
@@ -345,6 +347,7 @@
                 node.fontName = 'helvetiker_regular';
                 node.font = null;
                 node.needsUpdate = true;
+                node.isReadonly = "disabled";
 
                 const scene = new THREE.Scene();
                 node.camera = new THREE.OrthographicCamera(screen.width / -2, screen.width / 2, screen.height / 2, screen.height / -2, 1, 1000);
@@ -357,23 +360,29 @@
                 const controls = new THREE.OrbitControls(node.camera, renderer.domElement);
                 controls.enableZoom = true;
 
+                node.fontUrls = {
+                    'helvetiker_regular': 'fonts/helvetiker_regular.typeface.json',
+                    'gentilis_regular': 'fonts/gentilis_regular.typeface.json',
+                    'droid_sans_regular': 'fonts/droid_sans_regular.typeface.json',
+                    'optimer_regular': 'fonts/optimer_regular.typeface.json',
+                    'custom': ''
+                };
                 function loadFont(fontName) {
+                    if (node.fontUrls[fontName] === '') return;
+                    
                     if (fontCache[fontName]) {
                         node.font = fontCache[fontName];
                         node.needsUpdate = true;
                         return;
                     }
-                    const fontUrls = {
-                        'helvetiker_regular': 'fonts/helvetiker_regular.typeface.json',
-                        'gentilis_regular': 'fonts/gentilis_regular.typeface.json',
-                        'droid_sans_regular': 'fonts//droid_sans_regular.typeface.json',
-                        'optimer_regular': 'fonts/optimer_regular.typeface.json'
-                    };
-                    fontLoader.load(fontUrls[fontName], (loadedFont) => {
-                        fontCache[fontName] = loadedFont;
-                        node.font = loadedFont;
-                        node.needsUpdate = true;
-                    });
+                    try {
+                        fontLoader.load(node.fontUrls[fontName], (loadedFont) => {
+                            fontCache[fontName] = loadedFont;
+                            node.font = loadedFont;
+                            node.needsUpdate = true;
+                        });
+                    }
+                    catch { }
                 }
                 loadFont(node.fontName);
 
@@ -1896,7 +1905,7 @@
                     case 'Video':
                         specificContentHTML = `
                             <div class="node-content">
-                                <input tabIndex="-1" type="file" title="Upload Video" class="node-input-file video-loader" data-node-id="${nodeData.id}" accept=".avi, .wmv, .mp4, .mkv, .mov, .webm">
+                                <input tabIndex="-1" type="file" title="Upload Video" class="node-input-file video-loader" data-node-id="${nodeData.id}" accept=".avi, .wmv, .mp4, .mkv, .mov, .webm, .wav, .mp3">
                                 <input type="text" class="node-input-field" data-property="videoUrl" placeholder="Video URL..." value="${nodeData.videoUrl}">
                             </div>`;
                         break;
@@ -1905,7 +1914,8 @@
                             { value: 'helvetiker_regular', name: 'Helvetiker' },
                             { value: 'gentilis_regular', name: 'Gentilis' },
                             { value: 'droid_sans_regular', name: 'Droid Sans' },
-                            { value: 'optimer_regular', name: 'Optimer' }
+                            { value: 'optimer_regular', name: 'Optimer' },
+                            { value: 'custom', name: 'Custom' }
                         ];
                         let optionsHTML = fontOptions.map(font =>
                             `<option value="${font.value}" ${nodeData.fontName === font.value ? 'selected' : ''}>${font.name}</option>`
@@ -1913,11 +1923,11 @@
                         specificContentHTML = `
                             <div class="node-content">
                                 <select class="node-select-field text-font-selector" data-node-id="${nodeData.id}">${optionsHTML}</select>
-                                <input type="text" class="node-input-field text-input" data-node-id="${nodeData.id}" value="${nodeData.text}">
+                                <input type="text" class="node-input-field" placeholder="Typeface URL..." value="${nodeData.fontUrls[nodeData.fontName]}" ${nodeData.isReadonly}>
                                 <input type="color" class="node-input-color text-color-input" data-node-id="${nodeData.id}" value="${nodeData.textColor}">
                                 <input type="range" class="node-input-range text-size-input" data-node-id="${nodeData.id}" min="10" max="100" value="${nodeData.textSize}" title="Font-size: ${nodeData.textSize}" style="width:144px">
                                 <input type="range" class="node-input-range text-size-height" data-node-id="${nodeData.id}" min="1" max="50" value="${nodeData.textHeight}" title="Thickness: ${nodeData.textHeight}" style="width:144px">
-                                <br><br>
+                                <input type="text" class="node-input-field text-input" data-node-id="${nodeData.id}" value="${nodeData.text}" style="margin-top:5px">
                                 <button class="node-fullscreen-button" onclick="this.nextElementSibling.requestFullscreen();">Render 3D Scene</button>
                             </div>`;
                         break;
@@ -2310,6 +2320,8 @@
                     nodeData.mediaElement.play();
                 }
                 else if (event.target.classList.contains('text-font-selector')) {
+                    nodeData.isReadonly = "disabled";
+                    if (event.target.value === 'custom') nodeData.isReadonly = "";
                     if (nodeData.changeFont) {
                         nodeData.changeFont(event.target.value);
                     }
@@ -2634,7 +2646,13 @@
                     const nodeEl = inputEl.closest('.node');
                     const nodeId = parseInt(nodeEl.dataset.nodeId);
                     const nodeData = nodes.find(n => n.id === nodeId);
-                    if (nodeData && nodeData.title !== 'Convolution') {
+                    if (nodeData && nodeData.title === '3D Text') {
+                        nodeData.fontUrls['custom'] = event.target.value;
+                        if (nodeData.changeFont) {
+                            nodeData.changeFont('custom');
+                        }
+                    }
+                    else if (nodeData && nodeData.title !== 'Convolution') {
                         const prop = inputEl.dataset.property;
                         nodeData[prop] = inputEl.value;
                         nodeData.mediaElement.src = inputEl.value;
@@ -2701,41 +2719,61 @@
         });
 
         function saveProject() {
-            const payload = {
-                nodes: nodes.map(n => ({
-                    id: n.id, title: n.title, type: n.type, x: n.x, y: n.y,
-                    imageUrl: n.imageUrl, videoUrl: n.videoUrl,
-                    nodeText: n.text, textColor: n.textColor, textSize: n.textSize, textHeight: n.textHeight, fontName: n.fontName,
-                    curveColor: n.curveColor, paramA: n.paramA, paramB: n.paramB, curveName: n.curveName, curveType: n.curveType,
-                    primitiveType: n.primitiveType, isCustomModel: n.isCustomModel, loadedModel: n.loadedModel, currentVrm: n.currentVrm,
-                    camera: n.camera, projectorCamera: n.projectorCamera, ambientLight: n.ambientLight, pointLight: n.pointLight,
-                    checkFirstFrame: n.checkFirstFrame, gridSize: n.gridSize, gammaValue: n.gammaValue,
-                    selectedColor: n.selectedColor, oldHSV: n.oldHSV, newHSV: n.newHSV, fullRangeChecked: n.fullRangeChecked, colorRangeChecked: n.colorRangeChecked, colorInvertChecked: n.colorInvertChecked,
-                    convolutionType: n.convolutionType, convolutionalFilterSize: n.convolutionalFilterSize, customKernel: n.customKernel,
-                    morphologyType: n.morphologyType, morphologicalFilterSize: n.morphologicalFilterSize, morphologyKernelType: n.morphologyKernelType,
-                    polarEffectSize: n.polarEffectSize, polarEffectType: n.polarEffectType, glitchEffectSize: n.glitchEffectSize, glitchEffectType: n.glitchEffectType,
-                    channelMixerValues: n.channelMixerValues, opticalFlowSize: n.opticalFlowSize,
-                    thresholdValue: n.thresholdValue, thresholdingChecked: n.thresholdingChecked, connectedComponentsSize: n.connectedComponentsSize,
-                    operationType: n.operationType, operationWeight: n.operationWeight, detectionConfidence: n.detectionConfidence,
-                    hueBlendChecked: n.hueBlendChecked, satBlendChecked: n.satBlendChecked, valBlendChecked: n.valBlendChecked,
-                    concatenationAlignment: n.concatenationAlignment, concatenationChecked: n.concatenationChecked,
-                    transitionType: n.transitionType, transitionDuration: n.transitionDuration
-                })), connections
-            };
-            try {
-                const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
-                const url = URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = document.getElementById('projectName').value + '.olive';
-                document.body.appendChild(a);
-                a.click();
-                a.remove();
-                URL.revokeObjectURL(url);
-            }
-            catch (err) { alert(err); }
+            const statusEl = document.getElementById('opencv-status');
+            statusEl.textContent = 'Saving Project...';
+            statusEl.style.backgroundColor = 'goldenrod';
+            statusEl.style.display = 'block';
+
+            setTimeout(function () {
+                const payload = {
+                    nodes: nodes.map(n => ({
+                        id: n.id, title: n.title, type: n.type, x: n.x, y: n.y,
+                        imageUrl: n.imageUrl, videoUrl: n.videoUrl,
+                        nodeText: n.text, textColor: n.textColor, textSize: n.textSize, textHeight: n.textHeight, fontName: n.fontName, fontUrls: n.fontUrls,
+                        curveColor: n.curveColor, paramA: n.paramA, paramB: n.paramB, curveName: n.curveName, curveType: n.curveType,
+                        primitiveType: n.primitiveType, isCustomModel: n.isCustomModel, loadedModel: n.loadedModel, currentVrm: n.currentVrm,
+                        camera: n.camera, projectorCamera: n.projectorCamera, ambientLight: n.ambientLight, pointLight: n.pointLight,
+                        checkFirstFrame: n.checkFirstFrame, gridSize: n.gridSize, gammaValue: n.gammaValue,
+                        selectedColor: n.selectedColor, oldHSV: n.oldHSV, newHSV: n.newHSV, fullRangeChecked: n.fullRangeChecked, colorRangeChecked: n.colorRangeChecked, colorInvertChecked: n.colorInvertChecked,
+                        convolutionType: n.convolutionType, convolutionalFilterSize: n.convolutionalFilterSize, customKernel: n.customKernel,
+                        morphologyType: n.morphologyType, morphologicalFilterSize: n.morphologicalFilterSize, morphologyKernelType: n.morphologyKernelType,
+                        polarEffectSize: n.polarEffectSize, polarEffectType: n.polarEffectType, glitchEffectSize: n.glitchEffectSize, glitchEffectType: n.glitchEffectType,
+                        channelMixerValues: n.channelMixerValues, opticalFlowSize: n.opticalFlowSize,
+                        thresholdValue: n.thresholdValue, thresholdingChecked: n.thresholdingChecked, connectedComponentsSize: n.connectedComponentsSize,
+                        operationType: n.operationType, operationWeight: n.operationWeight, detectionConfidence: n.detectionConfidence,
+                        hueBlendChecked: n.hueBlendChecked, satBlendChecked: n.satBlendChecked, valBlendChecked: n.valBlendChecked,
+                        concatenationAlignment: n.concatenationAlignment, concatenationChecked: n.concatenationChecked,
+                        transitionType: n.transitionType, transitionDuration: n.transitionDuration
+                    })), connections
+                };
+                try {
+                    let jsonFILE = JSON.stringify(payload, null, 2);
+                    try {
+                        const blob = new Blob([jsonFILE], { type: 'application/json' });
+                        const url = URL.createObjectURL(blob);
+                        const a = document.createElement('a');
+                        a.href = url;
+                        a.download = document.getElementById('projectName').value + '.olive';
+                        document.body.appendChild(a);
+                        a.click();
+                        a.remove();
+                        URL.revokeObjectURL(url);
+
+                        statusEl.textContent = 'Project Saved';
+                        statusEl.style.backgroundColor = 'darkolivegreen';
+                        setTimeout(() => statusEl.style.display = 'none', 1500);
+                    }
+                    catch (err) { alert(err); statusEl.style.display = 'none'; }
+                }
+                catch { alert("Cannot save project... 3D model too large!"); statusEl.style.display = 'none'; }
+            }, 50);
         }
         function loadProjectFromJSON(event) {
+            const statusEl = document.getElementById('opencv-status');
+            statusEl.textContent = 'Loading Project...';
+            statusEl.style.backgroundColor = 'goldenrod';
+            statusEl.style.display = 'block';
+
             var reader = new FileReader();
             reader.onload = onReaderLoad;
             const file = event.target.files[0];
@@ -2743,6 +2781,7 @@
             document.getElementById('projectName').value = file.name.substring(0, file.name.lastIndexOf('.'));
         }
         function onReaderLoad(event) {
+            const statusEl = document.getElementById('opencv-status');
             try {
                 const payload = JSON.parse(event.target.result);
                 nodes = [];
@@ -2813,6 +2852,7 @@
                     if (n.textSize) nd.textSize = n.textSize;
                     if (n.textHeight) nd.textHeight = n.textHeight;
                     if (n.fontName) nd.fontName = n.fontName;
+                    if (n.fontUrls) nd.fontUrls = n.fontUrls;
                     if (n.curveColor) nd.curveColor = n.curveColor;
                     if (n.paramA) nd.paramA = n.paramA;
                     if (n.paramB) nd.paramB = n.paramB;
@@ -2832,8 +2872,12 @@
                     nodes.push(nd);
                 });
                 renderGraph();
+
+                statusEl.textContent = 'Project Loaded';
+                statusEl.style.backgroundColor = 'darkolivegreen';
+                setTimeout(() => statusEl.style.display = 'none', 1500);
             }
-            catch (err) { alert(err); }
+            catch (err) { alert(err); statusEl.style.display = 'none'; }
         }
     </script>
 </body>
