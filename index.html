@@ -478,14 +478,17 @@
                         eqy = Math.sin(node.paramA * t) - Math.pow(Math.sin(node.paramA * t), node.paramA % 10 * 2 + 3);
                     }
                     else {
-                        let X = node.equationX.replace(/t/g, t).replace(/A/g, node.paramA).replace(/sqr\(B\)/g, 1);
-                        let Y = node.equationY.replace(/t/g, t).replace(/A/g, node.paramA).replace(/sqr\(B\)/g, 1);
+                        try {
+                            let X = node.equationX.replace(/t/g, t).replace(/A/g, node.paramA).replace(/sqr\(B\)/g, 1);
+                            let Y = node.equationY.replace(/t/g, t).replace(/A/g, node.paramA).replace(/sqr\(B\)/g, 1);
 
-                        X = X.replace(/PI/gi, "Math.PI").replace(/E/gi, "Math.E").replace(/sqr/g, "Math.sqrt").replace(/pow/g, "Math.pow").replace(/log/g, "Math.log").replace(/sin/g, "Math.sin").replace(/cos/g, "Math.cos");
-                        Y = Y.replace(/PI/gi, "Math.PI").replace(/E/gi, "Math.E").replace(/sqr/g, "Math.sqrt").replace(/pow/g, "Math.pow").replace(/log/g, "Math.log").replace(/sin/g, "Math.sin").replace(/cos/g, "Math.cos");
+                            X = X.replace(/PI/gi, "Math.PI").replace(/E/gi, "Math.E").replace(/sqr/g, "Math.sqrt").replace(/pow/g, "Math.pow").replace(/log/g, "Math.log").replace(/sin/g, "Math.sin").replace(/cos/g, "Math.cos");
+                            Y = Y.replace(/PI/gi, "Math.PI").replace(/E/gi, "Math.E").replace(/sqr/g, "Math.sqrt").replace(/pow/g, "Math.pow").replace(/log/g, "Math.log").replace(/sin/g, "Math.sin").replace(/cos/g, "Math.cos");
 
-                        eqx = eval(X);
-                        eqy = eval(Y);
+                            eqx = eval(X);
+                            eqy = eval(Y);
+                        }
+                        catch { eqx = 0; eqy = 0; }
                     }
                     return [eqx, eqy];
                 }
