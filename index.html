@@ -292,7 +292,6 @@
         let pendingWire = null;
         let activeNode = null;
         let openCvReady = false;
-        let poseRunning = false;
 
         const fontCache = {};
         const fontLoader = new THREE.FontLoader();
@@ -1779,8 +1778,6 @@
                 node.detectionConfidence = 0.5;
                 node.poseData = null;
 
-                poseRunning = true;
-
                 const statusEl = document.getElementById('opencv-status');
                 statusEl.textContent = 'Loading MediaPipe...';
                 statusEl.style.backgroundColor = 'goldenrod';
@@ -2419,7 +2416,6 @@
                 paletteNodes[category].forEach(nodeDef => {
                     const nodeElement = document.createElement("div");
                     nodeElement.className = "palette-node";
-                    if (nodeDef.title === 'Human Pose') nodeElement.id = 'humanPoseNode';
                     nodeElement.textContent = nodeDef.title;
                     nodeElement.draggable = true;
                     nodeElement.addEventListener("dragstart", (event) => { event.dataTransfer.setData("text/plain", nodeDef.title + '|' + nodeDef.type); });
@@ -2700,10 +2696,6 @@
                 const nodeTitle = nodeData[0];
                 const nodeType = nodeData[1];
                 if (!nodeType || nodeType === 'undefined') return;
-                if (nodeType === 'MediaPipe') {
-                    poseRunning = true;
-                    document.getElementById('humanPoseNode').style.display = 'none';
-                }
                 const rect = graphContainer.getBoundingClientRect();
                 nodes.push(createNodeData(Math.round(Math.random() * 999999), nodeTitle, nodeType, event.clientX - rect.left - 30, event.clientY - rect.top - 10));
                 renderGraph();
@@ -2756,7 +2748,6 @@
                         catChildren[i].style.display = "block";
                         catChildren[0].style.color = "white";
                     }
-                    if (poseRunning) document.getElementById('humanPoseNode').style.display = 'none';
                 }
                 else if (event.target.classList.contains('node-input-field')) {
                     const currentlySelected = document.querySelector('.node.selected');
@@ -2798,7 +2789,6 @@
             document.addEventListener('keydown', (event) => {
                 if (event.key === 'Delete') {
                     if (activeNode) {
-                        if (activeNode.type === 'MediaPipe') poseRunning = false;
                         nodes = nodes.filter(n => n.id !== activeNode.id);
                         connections = connections.filter(c => c.fromNode !== activeNode.id && c.toNode !== activeNode.id);
                         activeNode = null;
