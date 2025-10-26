@@ -320,16 +320,16 @@
             let rightWrist = source[0][16];
             let leftWrist = source[0][15];
 
-            let X, Y;
+            let lX = null, lY = null, rX = null, rY = null;
             if (rightWrist.y < rightShoulder.y && leftWrist.y > leftShoulder.y) {
-                X = (rightElbow.x - rightWrist.x);
-                Y = (levelY - rightWrist.y) * 10;
+                rX = (rightElbow.x - rightWrist.x);
+                rY = (levelY - rightWrist.y) * 10;
             }
-            else if (rightWrist.y > rightShoulder.y && leftWrist.y < leftShoulder.y) {
-                X = (leftElbow.x - leftWrist.x);
-                Y = (levelY - leftWrist.y) * 10;
+            if (rightWrist.y > rightShoulder.y && leftWrist.y < leftShoulder.y) {
+                lX = (leftElbow.x - leftWrist.x);
+                lY = (levelY - leftWrist.y) * 10;
             }
-            return [X, Y];
+            return [rX, rY, lX, lY];
         }
         function getInputData(node, portIndex) {
             const conn = connections.find(c => c.toNode === node.id && c.toPort === portIndex);
@@ -352,20 +352,30 @@
                 else {
                     node.mediaElement = document.createElement('video');
 
-                    if (title === 'Video') {
+                    if (title === 'Video / Audio') {
+                        node.inputs.push({ name: 'control' });
                         node.videoUrl = '';
                         node.mediaElement.controls = true;
-                        node.mediaElement.playsInline = true;
-                        node.mediaElement.crossOrigin = 'anonymous';
+                        node.mediaElement.loop = false;
+                        node.mediaElement.muted = false;
                     }
-                    node.mediaElement.loop = true;
-                    node.mediaElement.muted = true;
                     node.mediaElement.autoplay = true;
                     node.mediaElement.playsInline = true;
                     node.mediaElement.className = 'media-preview';
                 }
                 node.mediaElement.crossOrigin = 'anonymous';
                 node.onExecute = () => {
+                    if (title === 'Video / Audio') {
+                        const sourceControl = getInputData(node, 0);
+                        if (sourceControl && sourceControl.length == 2) {
+                            try {
+                                let playVid = calculateLandmarks(sourceControl);
+                                if (playVid[0]) node.mediaElement.play();
+                                if (playVid[2]) node.mediaElement.pause();
+                            }
+                            catch { }
+                        }
+                    }
                     node.outputValues.output = node.mediaElement;
                     node.mediaElement.style.zoom = 1;
                     if (!document.fullscreenElement) node.mediaElement.style.zoom = 190 / node.mediaElement.naturalWidth;
@@ -458,12 +468,8 @@
                     if (sourceControl && sourceControl.length == 2) {
                         try {
                             let points = calculateLandmarks(sourceControl);
-                            if (points[0] !== undefined) {
-                                node.camera.position.x += points[0];
-                            }
-                            if (points[1] !== undefined) {
-                                node.camera.position.y += points[1];
-                            }
+                            if (points[0] || points[2]) node.camera.position.x += points[0] || points[2];
+                            if (points[1] || points[3]) node.camera.position.y += points[1] || points[3];
                         }
                         catch { }
                     }
@@ -550,9 +556,9 @@
                     if (sourceControl && sourceControl.length == 2) {
                         document.getElementById('curveSpeed' + node.id).style.accentColor = 'darkgoldenrod';
                         try {
-                            let speed = calculateLandmarks(sourceControl)[0];
-                            if (speed !== undefined) {
-                                node.animationSpeed += speed / 10;
+                            let speed = calculateLandmarks(sourceControl);
+                            if (speed[0] || speed[2]) {
+                                node.animationSpeed += (speed[0] || speed[2]) / 10;
                                 if (node.animationSpeed < -3) node.animationSpeed = -3;
                                 if (node.animationSpeed > 3) node.animationSpeed = 3;
                                 document.getElementById('curveSpeed' + node.id).value = node.animationSpeed;
@@ -751,8 +757,8 @@
                         if (sourceControl && sourceControl.length == 2) {
                             try {
                                 let points = calculateLandmarks(sourceControl);
-                                if (points[0] !== undefined) node.camera.position.x += points[0];
-                                if (points[1] !== undefined) node.camera.position.y += points[1];
+                                if (points[0] || points[2]) node.camera.position.x += points[0] || points[2];
+                                if (points[1] || points[3]) node.camera.position.y += points[1] || points[3];
                             }
                             catch { }
                         }
@@ -976,16 +982,15 @@
                                         document.getElementById('hueValue' + node.id).style.accentColor = 'darkgoldenrod';
                                         document.getElementById('satValue' + node.id).style.accentColor = 'darkgoldenrod';
                                         try {
-                                            let h = calculateLandmarks(sourceControl)[0];
-                                            let s = calculateLandmarks(sourceControl)[1];
-                                            if (h !== undefined) {
-                                                node.newHSV[0] += h;
+                                            let hs = calculateLandmarks(sourceControl);
+                                            if (hs[0] || hs[2]) {
+                                                node.newHSV[0] += (hs[0] || hs[2]) * 10;
                                                 if (node.newHSV[0] < -180) node.newHSV[0] = -180;
                                                 if (node.newHSV[0] > 180) node.newHSV[0] = 180;
                                                 document.getElementById('hueValue' + node.id).value = node.newHSV[0];
                                             }
-                                            if (s !== undefined) {
-                                                node.newHSV[1] += s;
+                                            if (hs[1] || hs[3]) {
+                                                node.newHSV[1] += hs[1] || hs[3];
                                                 if (node.newHSV[1] < -255) node.newHSV[1] = -255;
                                                 if (node.newHSV[1] > 255) node.newHSV[1] = 255;
                                                 document.getElementById('satValue' + node.id).value = node.newHSV[1];
@@ -1021,9 +1026,9 @@
                                     if (sourceControl && sourceControl.length == 2) {
                                         document.getElementById('gamma' + node.id).style.accentColor = 'darkgoldenrod';
                                         try {
-                                            let gamma = calculateLandmarks(sourceControl)[0];
-                                            if (gamma !== undefined) {
-                                                node.gammaValue += gamma / 10;
+                                            let gamma = calculateLandmarks(sourceControl);
+                                            if (gamma[0] || gamma[2]) {
+                                                node.gammaValue += (gamma[0] || gamma[2]) / 10;
                                                 if (node.gammaValue < 0.01) node.gammaValue = 0.01;
                                                 if (node.gammaValue > 10) node.gammaValue = 10;
                                                 document.getElementById('gamma' + node.id).value = node.gammaValue;
@@ -1133,9 +1138,9 @@
                                     if (sourceControl && sourceControl.length == 2) {
                                         document.getElementById('kernelSize' + node.id).style.accentColor = 'darkgoldenrod';
                                         try {
-                                            let block = calculateLandmarks(sourceControl)[0];
-                                            if (block !== undefined) {
-                                                node.morphologicalFilterSize += block;
+                                            let block = calculateLandmarks(sourceControl);
+                                            if (block[0] || block[2]) {
+                                                node.morphologicalFilterSize += block[0] || block[2];
                                                 if (node.morphologicalFilterSize < 3) node.morphologicalFilterSize = 3;
                                                 if (node.morphologicalFilterSize > 25) node.morphologicalFilterSize = 25;
                                                 document.getElementById('kernelSize' + node.id).value = node.morphologicalFilterSize;
@@ -1193,9 +1198,9 @@
                                     if (sourceControl && sourceControl.length == 2) {
                                         document.getElementById('glitch' + node.id).style.accentColor = 'darkgoldenrod';
                                         try {
-                                            let glitch = calculateLandmarks(sourceControl)[0];
-                                            if (glitch !== undefined) {
-                                                node.glitchEffectSize += glitch;
+                                            let glitch = calculateLandmarks(sourceControl);
+                                            if (glitch[0] || glitch[2]) {
+                                                node.glitchEffectSize += glitch[0] || glitch[2];
                                                 if (node.glitchEffectSize < 1) node.glitchEffectSize = 1;
                                                 if (node.glitchEffectSize > 25) node.glitchEffectSize = 25;
                                                 document.getElementById('glitch' + node.id).value = node.glitchEffectSize;
@@ -1498,7 +1503,7 @@
                 };
             }
             else if (type === 'Transition') {
-                node.inputs.push({ name: 'input1' }, { name: 'input2' });
+                node.inputs.push({ name: 'input1' }, { name: 'input2' }, { name: 'control' });
                 node.outputs.push({ name: 'output' });
 
                 node.canvas = document.createElement('canvas');
@@ -1566,9 +1571,8 @@
                 const plane = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), material);
                 scene.add(plane);
 
-                node.playTransition = () => {
-                    node.progress = 0;
-                    gsap.to(node, { progress: 1.0, duration: node.transitionDuration, ease: "power2.inOut", yoyo: true, repeat: 0 });
+                node.playTransition = (dir) => {
+                    gsap.to(node, { progress: dir, duration: node.transitionDuration, ease: "power2.inOut", yoyo: true, repeat: 0 });
                 };
 
                 node.onExecute = () => {
@@ -1582,12 +1586,23 @@
                         if (node.canvas.width !== newWidth || node.canvas.height !== newHeight) {
                             renderer.setSize(newWidth, newHeight, false);
                         }
-
                         material.uniforms.tex1.value = new THREE.CanvasTexture(source1);
                         material.uniforms.tex2.value = new THREE.CanvasTexture(source2);
                         material.uniforms.progress.value = node.progress;
                         material.fragmentShader = shaders[node.transitionType];
                         material.needsUpdate = true;
+
+                        const sourceControl = getInputData(node, 2);
+                        if (sourceControl && sourceControl.length == 2) {
+                            try {
+                                let playTrans = calculateLandmarks(sourceControl);
+                                if (playTrans[0] || playTrans[2]) {
+                                    if (node.progress == 0) node.playTransition(1.0);
+                                    else if (node.progress == 1) node.playTransition(0);
+                                }
+                            }
+                            catch { }
+                        }
                     }
 
                     renderer.render(scene, camera);
@@ -1656,9 +1671,9 @@
                                     if (sourceControl && sourceControl.length == 2) {
                                         document.getElementById('weights' + node.id).style.accentColor = 'darkgoldenrod';
                                         try {
-                                            let weight = calculateLandmarks(sourceControl)[0];
-                                            if (weight !== undefined) {
-                                                node.operationWeight += weight / 10;
+                                            let weight = calculateLandmarks(sourceControl);
+                                            if (weight[0] || weight[2]) {
+                                                node.operationWeight += (weight[0] || weight[2]) / 10;
                                                 if (node.operationWeight < 0.01) node.operationWeight = 0.01;
                                                 if (node.operationWeight > 0.99) node.operationWeight = 0.99;
                                                 document.getElementById('weights' + node.id).value = node.operationWeight;
@@ -1726,9 +1741,9 @@
                                     if (sourceControl && sourceControl.length == 2) {
                                         document.getElementById('overlap' + node.id).style.accentColor = 'darkgoldenrod';
                                         try {
-                                            let overlap = calculateLandmarks(sourceControl)[0];
-                                            if (overlap !== undefined) {
-                                                node.concatenationAlignment += overlap / 10;
+                                            let overlap = calculateLandmarks(sourceControl);
+                                            if (overlap[0] || overlap[2]) {
+                                                node.concatenationAlignment += (overlap[0] || overlap[2]) / 10;
                                                 if (node.concatenationAlignment < 0) node.concatenationAlignment = 0;
                                                 if (node.concatenationAlignment > 1) node.concatenationAlignment = 1;
                                                 document.getElementById('overlap' + node.id).value = node.concatenationAlignment;
@@ -2026,11 +2041,11 @@
                                 <input type="text" class="node-input-field" data-property="imageUrl" placeholder="Image URL..." value="${nodeData.imageUrl}">
                             </div>`;
                         break;
-                    case 'Video':
+                    case 'Video / Audio':
                         specificContentHTML = `
                             <div class="node-content">
-                                <input tabIndex="-1" type="file" title="Upload Video" class="node-input-file video-loader" data-node-id="${nodeData.id}" accept=".avi, .wmv, .mp4, .mkv, .mov, .webm, .wav, .mp3">
-                                <input type="text" class="node-input-field" data-property="videoUrl" placeholder="Video URL..." value="${nodeData.videoUrl}">
+                                <input tabIndex="-1" type="file" title="Upload Media" class="node-input-file video-loader" data-node-id="${nodeData.id}" accept=".avi, .wmv, .mp4, .mkv, .mov, .webm, .wav, .mp3">
+                                <input type="text" class="node-input-field" data-property="videoUrl" placeholder="Media URL..." value="${nodeData.videoUrl}">
                             </div>`;
                         break;
                     case '3D Text':
@@ -2395,7 +2410,7 @@
             const graphContainer = document.getElementById('graph-container');
             paletteContainer.style.display = 'block';
             const paletteNodes = {
-                "Capture": [{ title: "Image", type: "Input" }, { title: "Video", type: "Input" }, { title: "Camera", type: "Input" }],
+                "Capture": [{ title: "Image", type: "Input" }, { title: "Video / Audio", type: "Input" }, { title: "Camera", type: "Input" }],
                 "Generate": [{ title: "3D Text", type: "Text" }, { title: "Parametric Lines", type: "Parametric" }],
                 "Enhance": [{ title: "Gamma Correction", type: "Throughput" }, { title: "Histogram Equalization", type: "Throughput" }, { title: "Color Adjustment", type: "Throughput" }],
                 "Filter": [{ title: "Convolution", type: "Throughput" }, { title: "Morphology / Rank", type: "Throughput" }],
@@ -2428,7 +2443,8 @@
                     const nodeId = parseInt(event.target.dataset.nodeId);
                     const nodeData = nodes.find(n => n.id === nodeId);
                     if (nodeData && nodeData.playTransition) {
-                        nodeData.playTransition();
+                        if (nodeData.progress == 0) nodeData.playTransition(1.0);
+                        else nodeData.playTransition(0);
                     }
                 }
             });
@@ -2450,7 +2466,6 @@
                     if (!file) return;
                     nodeData.mediaElement.src = URL.createObjectURL(file);
                     nodeData.videoUrl = file.name;
-                    nodeData.mediaElement.play();
                 }
                 else if (event.target.classList.contains('text-font-selector')) {
                     nodeData.isReadonly = "disabled";
@@ -2811,7 +2826,6 @@
                         const prop = inputEl.dataset.property;
                         nodeData[prop] = inputEl.value;
                         nodeData.mediaElement.src = inputEl.value;
-                        if (nodeData.title === 'Video') nodeData.mediaElement.play();
                     }
                 }
             });
