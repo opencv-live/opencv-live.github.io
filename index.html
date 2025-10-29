@@ -291,10 +291,12 @@
         let connections = [];
         let pendingWire = null;
         let activeNode = null;
+        let audioSource = null;
         let openCvReady = false;
 
         const fontCache = {};
         const fontLoader = new THREE.FontLoader();
+        const audioContext = new (window.AudioContext || window.webkitAudioContext)();
 
         function cartesian2polar(x, y) {
             let R = Math.sqrt(x * x + y * y)
@@ -379,6 +381,145 @@
                     node.outputValues.output = node.mediaElement;
                     node.mediaElement.style.zoom = 1;
                     if (!document.fullscreenElement) node.mediaElement.style.zoom = 190 / node.mediaElement.naturalWidth;
+                };
+            }
+            else if (title === 'Sound Filters & Effects') {
+                node.inputs.push({ name: 'input' });
+                node.inputs.push({ name: 'control' });
+
+                node.fxName = 'bandpass';
+                node.fxA = 50;
+                node.sliderAtitle = 'Delay: ' + (node.fxA / 100.0) + 's';
+
+                node.gain = audioContext.createGain();
+                node.panner = audioContext.createStereoPanner();
+
+                node.delay = audioContext.createDelay(1.0);
+                node.delay.delayTime.value = node.fxA / 100;
+                node.feedback = audioContext.createGain();
+                node.feedback.gain.value = 0.5;
+
+                node.flangerDelay = audioContext.createDelay(1.0);
+                node.flangerDelay.delayTime.value = node.fxA / 10000;
+                node.flangerFeedback = audioContext.createGain();
+                node.flangerFeedback.gain.value = 0.5;
+                node.flangerLFO = audioContext.createOscillator();
+                node.flangerLFO.type = 'sine';
+                node.flangerLFO.frequency.value = 0.5;
+                node.flangerLfoGain = audioContext.createGain();
+                node.flangerLfoGain.gain.value = 0.005;
+                node.flangerLFO.connect(node.flangerLfoGain);
+                node.flangerLfoGain.connect(node.flangerDelay.delayTime);
+                node.flangerLFO.start();
+
+                node.convolver = audioContext.createConvolver();
+
+                node.distortion = audioContext.createWaveShaper();
+                node.distortion.oversample = '4x';
+
+                node.filter = audioContext.createBiquadFilter();
+                node.filter.Q.value = 1;
+
+                node.tremoloGain = audioContext.createGain();
+                node.tremoloGain.gain.value = 1;
+                node.tremoloLFO = audioContext.createOscillator();
+                node.tremoloLFO.type = 'sine';
+                node.tremoloLFO.frequency.value = 5;
+                node.tremoloLfoGain = audioContext.createGain();
+                node.tremoloLfoGain.gain.value = 0.5;
+                node.tremoloLFO.connect(node.tremoloLfoGain);
+                node.tremoloLfoGain.connect(node.tremoloGain.gain);
+                node.tremoloLFO.start();
+
+                node.updateEffect = () => {
+                    node.gain.disconnect(); node.panner.disconnect();
+                    node.delay.disconnect(); node.feedback.disconnect(); node.flangerDelay.disconnect(); node.flangerFeedback.disconnect();
+                    node.convolver.disconnect(); node.distortion.disconnect(); node.filter.disconnect(); node.tremoloGain.disconnect();
+                    node.gain.gain.value = 1;
+
+                    audioSource.connect(node.gain);
+                    if (node.fxName === 'panning') {
+                        node.panner.pan.value = (node.fxA - 50) / 50;
+                        node.gain.connect(node.panner).connect(audioContext.destination);
+                        node.sliderAtitle = 'Panning: ' + (node.fxA - 50) / 50;
+                    }
+                    else if (node.fxName === 'delay') {
+                        node.delay.delayTime.value = node.fxA / 100.0;
+                        node.gain.connect(audioContext.destination);
+                        node.gain.connect(node.delay);
+                        node.delay.connect(node.feedback);
+                        node.delay.connect(audioContext.destination);
+                        node.sliderAtitle = 'Delay: ' + (node.fxA / 100.0) + 's';
+                    }
+                    else if (node.fxName === 'flanger') {
+                        node.flangerDelay.delayTime.value = node.fxA / 10000.0;
+                        node.gain.connect(audioContext.destination);
+                        node.gain.connect(node.flangerDelay);
+                        node.flangerDelay.connect(node.flangerFeedback).connect(node.flangerDelay);
+                        node.flangerDelay.connect(audioContext.destination);
+                        node.sliderAtitle = 'Delay: ' + (node.fxA / 10000.0) + 's';
+                    }
+                    else if (node.fxName === 'reverb') {
+                        const impulseBuffer = audioContext.createBuffer(2, audioContext.sampleRate * (node.fxA / 25.0 + 0.001), audioContext.sampleRate);
+                        for (let i = 0; i < impulseBuffer.numberOfChannels; i++) {
+                            const channel = impulseBuffer.getChannelData(i);
+                            for (let j = 0; j < impulseBuffer.length; j++) {
+                                channel[j] = (Math.random() * 2 - 1) * Math.pow(1 - j / impulseBuffer.length, 2);
+                            }
+                        }
+                        node.convolver.buffer = impulseBuffer;
+                        node.sliderAtitle = 'Impulse: ' + (node.fxA / 25.0) + 's';
+                        node.gain.gain.value = 3;
+                        node.gain.connect(node.convolver).connect(audioContext.destination);
+                    }
+                    else if (node.fxName === 'distortion') {
+                        const curve = new Float32Array(22050);
+                        for (let i = 0; i < 22050; i++) {
+                            const x = i * 2 / 22050 - 1;
+                            curve[i] = (x < 0) ? (x * (1 + node.fxA * 5.0 * x)) : (x / (1 + node.fxA * 5.0 * x));
+                        }
+                        node.distortion.curve = curve;
+                        node.sliderAtitle = 'Amount: ' + (node.fxA * 10.0);
+                        node.gain.gain.value = 0.5;
+                        node.gain.connect(node.distortion).connect(audioContext.destination);
+                    }
+                    else if (node.fxName === 'lowpass' || node.fxName === 'highpass' || node.fxName === 'bandpass') {
+                        node.filter.type = node.fxName;
+                        node.filter.frequency.value = node.fxA * 100.0;
+                        node.sliderAtitle = 'Frequency: ' + (node.fxA * 100.0) + 'Hz';
+                        node.gain.gain.value = 2;
+                        node.gain.connect(node.filter).connect(audioContext.destination);
+                    }
+                    else if (node.fxName === 'tremolo') {
+                        node.tremoloLFO.frequency.value = node.fxA / 10.0;
+                        node.sliderAtitle = 'Frequency: ' + (node.fxA / 10.0) + 'Hz';
+                        node.gain.connect(node.tremoloGain).connect(audioContext.destination);
+                    }
+                    document.getElementById('fxA' + node.id).title = node.sliderAtitle;
+                };
+
+                node.onExecute = () => {
+                    const source = getInputData(node, 0);
+                    if (source && source.tagName === 'VIDEO') {
+                        try { audioSource = audioContext.createMediaElementSource(source); node.updateEffect(); }
+                        catch { }
+                    }
+                    const sourceControl = getInputData(node, 1);
+                    if (sourceControl && sourceControl.length == 2) {
+                        document.getElementById('fxA' + node.id).style.accentColor = 'darkgoldenrod';
+                        try {
+                            let fx = calculateLandmarks(sourceControl);
+                            if (fx[0] || fx[2]) {
+                                node.fxA += (fx[0] || fx[2]);
+                                if (node.fxA < 0) node.fxA = 0;
+                                if (node.fxA > 100) node.fxA = 100;
+                                document.getElementById('fxA' + node.id).value = node.fxA;
+                                if (Math.abs(node.fxA - Math.round(node.fxA)) < 0.1) node.updateEffect();
+                            }
+                        }
+                        catch { }
+                    }
+                    else document.getElementById('fxA' + node.id).style.accentColor = '';
                 };
             }
             else if (type === 'Text') {
@@ -2048,6 +2189,27 @@
                                 <input type="text" class="node-input-field" data-property="videoUrl" placeholder="Media URL..." value="${nodeData.videoUrl}">
                             </div>`;
                         break;
+                    case 'Sound Filters & Effects':
+                        const soundEffects = [
+                            { value: 'bandpass', name: 'Band Pass' },
+                            { value: 'lowpass', name: 'Low Pass' },
+                            { value: 'highpass', name: 'High Pass' },
+                            { value: 'delay', name: 'Delay' },
+                            { value: 'reverb', name: 'Reverb' },
+                            { value: 'flanger', name: 'Flanger' },
+                            { value: 'distortion', name: 'Distortion' },
+                            { value: 'tremolo', name: 'Tremolo' },
+                            { value: 'panning', name: 'Panning' }
+                        ];
+                        let effectsHTML = soundEffects.map(fx =>
+                            `<option value="${fx.value}" ${nodeData.fxName === fx.value ? 'selected' : ''}>${fx.name}</option>`
+                        ).join('');
+                        specificContentHTML = `
+                            <div class="node-content">
+                                <select class="node-select-field sound-fx-selector" data-node-id="${nodeData.id}">${effectsHTML}</select>
+                                <input type="range" id="fxA${nodeData.id}" class="node-input-range fx-A-parameter" data-node-id="${nodeData.id}" min="0" max="100" value="${nodeData.fxA}" title="${nodeData.sliderAtitle}">
+                            </div>`;
+                        break;
                     case '3D Text':
                         const fontOptions = [
                             { value: 'helvetiker_regular', name: 'Helvetiker' },
@@ -2315,9 +2477,9 @@
         }
 
         async function startCamera(videoElement, deviceId) {
-            if (videoElement.srcObject) {
-                videoElement.srcObject.getTracks().forEach(track => track.stop());
-            }
+            //if (videoElement.srcObject) {
+            //videoElement.srcObject.getTracks().forEach(track => node.stop());
+            //}
             const constraints = {
                 video: { deviceId: { exact: deviceId } }
             };
@@ -2413,7 +2575,7 @@
                 "Capture": [{ title: "Image", type: "Input" }, { title: "Video / Audio", type: "Input" }, { title: "Camera", type: "Input" }],
                 "Generate": [{ title: "3D Text", type: "Text" }, { title: "Parametric Lines", type: "Parametric" }],
                 "Enhance": [{ title: "Gamma Correction", type: "Throughput" }, { title: "Histogram Equalization", type: "Throughput" }, { title: "Color Adjustment", type: "Throughput" }],
-                "Filter": [{ title: "Convolution", type: "Throughput" }, { title: "Morphology / Rank", type: "Throughput" }],
+                "Filter": [{ title: "Convolution", type: "Throughput" }, { title: "Morphology / Rank", type: "Throughput" }, { title: "Sound Filters & Effects", type: "Audio" }],
                 "Render": [{ title: "Projection", type: "3DScene" }, { title: "Mapping / Lighting", type: "3DScene" }, { title: "Character Animation", type: "Character" }],
                 "Distort": [{ title: "Polar Transformation", type: "Throughput" }, { title: "Glitch Effects", type: "Throughput" }, { title: "Thresholding", type: "Throughput" }],
                 "Mix": [{ title: "Matrix Operations", type: "Mixer" }, { title: "Channel Mixer", type: "Throughput" }, { title: "Color Blending", type: "Mixer" }],
@@ -2466,6 +2628,10 @@
                     if (!file) return;
                     nodeData.mediaElement.src = URL.createObjectURL(file);
                     nodeData.videoUrl = file.name;
+                }
+                else if (event.target.classList.contains('sound-fx-selector')) {
+                    nodeData.fxName = event.target.value;
+                    nodeData.updateEffect();
                 }
                 else if (event.target.classList.contains('text-font-selector')) {
                     nodeData.isReadonly = "disabled";
@@ -2721,6 +2887,10 @@
                 const nodeData = nodes.find(n => n.id === nodeId);
                 if (!nodeData) return;
 
+                if (target.classList.contains('fx-A-parameter')) {
+                    nodeData.fxA = parseInt(target.value);
+                    nodeData.updateEffect();
+                }
                 if (target.classList.contains('text-color-input')) {
                     nodeData.textColor = target.value;
                     nodeData.needsUpdate = true;
@@ -2911,7 +3081,7 @@
                 const payload = {
                     nodes: nodes.map(n => ({
                         id: n.id, title: n.title, type: n.type, x: n.x, y: n.y, bypass: n.bypass,
-                        imageUrl: n.imageUrl, videoUrl: n.videoUrl,
+                        imageUrl: n.imageUrl, videoUrl: n.videoUrl, fxName: n.fxName, fxA: n.fxA, sliderAtitle: n.sliderAtitle,
                         nodeText: n.text, textColor: n.textColor, textSize: n.textSize, textHeight: n.textHeight, fontName: n.fontName, fontUrls: n.fontUrls,
                         curveColor: n.curveColor, paramA: n.paramA, paramB: n.paramB, curveName: n.curveName, curveType: n.curveType, equationX: n.equationX, equationY: n.equationY, animationSpeed: n.animationSpeed,
                         primitiveType: n.primitiveType, isCustomModel: n.isCustomModel, loadedModel: n.loadedModel, currentVrm: n.currentVrm,
@@ -3046,6 +3216,9 @@
                     if (n.equationY) nd.equationY = n.equationY;
                     if (n.animationSpeed) nd.animationSpeed = n.animationSpeed;
                     if (n.detectionConfidence) nd.detectionConfidence = n.detectionConfidence;
+                    if (n.fxName) nd.fxName = n.fxName;
+                    if (n.fxA) nd.fxA = n.fxA;
+                    if (n.sliderAtitle) nd.sliderAtitle = n.sliderAtitle;
 
                     nd.fullRangeChecked = n.fullRangeChecked;
                     nd.colorRangeChecked = n.colorRangeChecked;
