@@ -3074,6 +3074,7 @@
                 const c = event.target;
                 if (c.tagName === 'IMG' || c.tagName === 'VIDEO' || c.tagName === 'CANVAS') c.requestFullscreen();
                 else if (event.target.classList.contains('port-input')) {
+                    event.preventDefault();
                     const nodeId = parseInt(event.target.dataset.nodeId);
                     const portIndex = parseInt(event.target.dataset.portIndex);
                     const isInput = event.target.classList.contains('port-input');
