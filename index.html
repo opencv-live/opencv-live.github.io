@@ -247,6 +247,22 @@
             padding-left: 56px;
             padding-top: 8px;
         }
+
+        #examples {
+            position: absolute;
+            top: 33px;
+            right: 9px;
+            display: none;
+            background-color: #282828;
+            font-size: 11px;
+            padding: 0 10px 0 10px;
+            border: dotted silver 1px;
+            cursor: pointer;
+        }
+
+        #examples p:hover {
+            color: indianred;
+        }
     </style>
 
     <script src="js/three.js"></script>
@@ -268,7 +284,8 @@
     <a href="docs/manual.pdf" target="_blank" title="Help" class="load-save-button"
         style="right:0;padding:2px">&#10067;</a>
     <button onclick="document.getElementById('projectPath').click();" title="Open" class="load-save-button"
-        style="right:20px">&#x1F4C2;</button>
+        style="right:20px" oncontextmenu="document.getElementById('examples').style.display='block';"
+        onmouseenter="document.getElementById('examples').style.display='block';">&#x1F4C2;</button>
     <button onclick="saveProject();" title="Save" class="load-save-button" style="right:48px">&#128190;</button>
     <input tabIndex="-1" type="file" id="projectPath" accept=".olive" onchange="loadProjectFromJSON(event);"
         style="display:none">
@@ -284,6 +301,20 @@
         <strong style="font-size: 50px;">O</strong>
         <div style="font-size: 17px; margin-top: -30px;margin-left: 40px;">LIVE</div>
         <div style="font-size: 12px; color: #666; margin-top: -35px;margin-left: 40px;">penCV</div>
+    </div>
+    <div id="examples" onmouseleave="this.style.display='none';">
+        <h3 style="color:darkolivegreen">Sample Graphs:</h3>
+        <p class="example">Blooming Effect</p>
+        <p class="example">Channel Swap</p>
+        <p class="example">Color Manipulation</p>
+        <p class="example">Curve Projection</p>
+        <p class="example">Custom Kernels</p>
+        <p class="example">Edges Sketch</p>
+        <p class="example">Foreground Extraction</p>
+        <p class="example">Glass Texture</p>
+        <p class="example">Saturation Replacement</p>
+        <p class="example">Text Mask</p>
+        <p class="example">Weighted Subtraction</p>
     </div>
 
     <script>
@@ -2992,11 +3023,18 @@
                     if (currentlySelected) { currentlySelected.classList.remove('selected'); }
                     activeNode = event.target.parentNode.parentNode;
                 }
+                else if (event.target.className === 'example') {
+                    const fileName = event.target.innerText.replace(' ', '_').toLowerCase();
+                    const file = 'examples/' + fileName + '.olive';
+                    fetch(file).then(res => res.text()).then(text => loadProject(text));
+                    document.getElementById('projectName').value = fileName;
+                }
                 else if (!event.target.closest('.node')) {
                     const currentlySelected = document.querySelector('.node.selected');
                     if (currentlySelected) { currentlySelected.classList.remove('selected'); }
                     activeNode = null;
                 }
+                document.getElementById('examples').style.display = 'none';
             });
             document.addEventListener('mousemove', (event) => {
                 if (pendingWire) {
@@ -3182,11 +3220,6 @@
             }, 50);
         }
         function loadProjectFromJSON(event) {
-            const statusEl = document.getElementById('opencv-status');
-            statusEl.textContent = 'Loading Project...';
-            statusEl.style.backgroundColor = 'goldenrod';
-            statusEl.style.display = 'block';
-
             var reader = new FileReader();
             reader.onload = onReaderLoad;
             const file = event.target.files[0];
@@ -3194,9 +3227,16 @@
             document.getElementById('projectName').value = file.name.substring(0, file.name.lastIndexOf('.'));
         }
         function onReaderLoad(event) {
+            loadProject(event.target.result);
+        }
+        function loadProject(text) {
             const statusEl = document.getElementById('opencv-status');
+            statusEl.textContent = 'Loading Project...';
+            statusEl.style.backgroundColor = 'goldenrod';
+            statusEl.style.display = 'block';
+
             try {
-                const payload = JSON.parse(event.target.result);
+                const payload = JSON.parse(text);
                 nodes = [];
                 connections = payload.connections || [];
                 payload.nodes.forEach(n => {
