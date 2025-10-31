@@ -213,8 +213,6 @@
             position: absolute;
             top: 0;
             left: 0;
-            width: 100%;
-            height: 100%;
             pointer-events: none;
         }
 
@@ -2585,7 +2583,10 @@
                 path.style.stroke = color;
                 wireSVG.appendChild(path);
             }
+            wireSVG.style.width = graphContainer.scrollWidth + "px";
+            wireSVG.style.height = graphContainer.scrollHeight + "px";
         }
+
         function styleConnectedPorts() {
             connections.forEach(conn => {
                 const fromPortEl = document.querySelector(`.port-output[data-node-id='${conn.fromNode}'][data-port-index='${conn.fromPort}']`);
