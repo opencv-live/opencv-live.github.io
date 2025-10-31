@@ -3074,6 +3074,7 @@
                 const c = event.target;
                 if (c.tagName === 'IMG' || c.tagName === 'VIDEO' || c.tagName === 'CANVAS') c.requestFullscreen();
                 else if (activeNode) {
+                    event.preventDefault();
                     nodes = nodes.filter(n => n.id !== activeNode.id);
                     connections = connections.filter(c => c.fromNode !== activeNode.id && c.toNode !== activeNode.id);
                     activeNode = null;
