@@ -2477,9 +2477,9 @@
         }
 
         async function startCamera(videoElement, deviceId) {
-            //if (videoElement.srcObject) {
-            //videoElement.srcObject.getTracks().forEach(track => node.stop());
-            //}
+            if (videoElement.srcObject) {
+                videoElement.srcObject.getTracks().forEach(track => node.stop());
+            }
             const constraints = {
                 video: { deviceId: { exact: deviceId } }
             };
@@ -2915,6 +2915,7 @@
             });
             document.addEventListener('mousedown', (event) => {
                 if (event.target.classList.contains('port-output')) {
+                    event.preventDefault();
                     const fromNodeId = parseInt(event.target.dataset.nodeId);
                     const fromPortIndex = parseInt(event.target.dataset.portIndex);
                     pendingWire = { fromNodeId, fromPortIndex, element: document.createElementNS('http://www.w3.org/2000/svg', 'path') };
