@@ -2610,6 +2610,30 @@
                         else nodeData.playTransition(0);
                     }
                 }
+                else if (event.target.classList.contains('port-output')) {
+                    const fromNodeId = parseInt(event.target.dataset.nodeId);
+                    const fromPortIndex = parseInt(event.target.dataset.portIndex);
+                    pendingWire = { fromNodeId, fromPortIndex, element: document.createElementNS('http://www.w3.org/2000/svg', 'path') };
+                    pendingWire.element.classList.add('wire');
+                    document.getElementById('wire-svg').appendChild(pendingWire.element);
+                }
+                else if (pendingWire) {
+                    const wasConnected = event.target.classList.contains('port-input');
+                    if (wasConnected) {
+                        const toNodeId = parseInt(event.target.dataset.nodeId);
+                        const toPortIndex = parseInt(event.target.dataset.portIndex);
+                        if (!connections.some(c => c.toNode === toNodeId && c.toPort === toPortIndex)) {
+                            connections.push({ id: Math.round(Math.random() * 999999), fromNode: pendingWire.fromNodeId, fromPort: pendingWire.fromPortIndex, toNode: toNodeId, toPort: toPortIndex, color: getRandomColor() });
+                        }
+                    }
+                    pendingWire.element.remove();
+                    pendingWire = null;
+
+                    if (wasConnected) {
+                        setTimeout(renderWires, 100);
+                        styleConnectedPorts();
+                    }
+                }
             });
 
             graphContainer.addEventListener('change', (event) => {
