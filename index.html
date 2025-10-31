@@ -2468,8 +2468,8 @@
                     startCamera(nodeData.mediaElement, selector.value);
                 });
                 container.prepend(selector);
-                if (videoDevices.length > 0) {
-                    startCamera(nodeData.mediaElement, videoDevices[0].deviceId);
+                if (videoDevices.length > 1) {
+                    startCamera(nodeData.mediaElement, videoDevices[1].deviceId);
                 }
             } catch (err) {
                 alert("Could not enumerate devices:", err);
@@ -2948,6 +2948,7 @@
             });
             document.addEventListener('mousemove', (event) => {
                 if (pendingWire) {
+                    event.preventDefault();
                     const fromPortEl = document.querySelector(`.port-output[data-node-id='${pendingWire.fromNodeId}'][data-port-index='${pendingWire.fromPortIndex}']`);
                     const mousePos = { getBoundingClientRect: () => ({ left: event.clientX, top: event.clientY, width: 0, height: 0 }) };
                     drawWire(fromPortEl, mousePos, pendingWire.element);
@@ -2955,6 +2956,7 @@
             });
             document.addEventListener('mouseup', (event) => {
                 if (pendingWire) {
+                    event.preventDefault();
                     const wasConnected = event.target.classList.contains('port-input');
                     if (wasConnected) {
                         const toNodeId = parseInt(event.target.dataset.nodeId);
