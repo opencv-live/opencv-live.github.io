@@ -2468,8 +2468,8 @@
                     startCamera(nodeData.mediaElement, selector.value);
                 });
                 container.prepend(selector);
-                if (videoDevices.length > 1) {
-                    startCamera(nodeData.mediaElement, videoDevices[1].deviceId);
+                if (videoDevices.length > 0) {
+                    startCamera(nodeData.mediaElement, videoDevices[0].deviceId);
                 }
             } catch (err) {
                 alert("Could not enumerate devices:", err);
@@ -2478,7 +2478,8 @@
 
         async function startCamera(videoElement, deviceId) {
             if (videoElement.srcObject) {
-                videoElement.srcObject.getTracks().forEach(track => node.stop());
+                try { videoElement.srcObject.getTracks().forEach(track => node.stop()); }
+                catch { }
             }
             const constraints = {
                 video: { deviceId: { exact: deviceId } }
@@ -2915,7 +2916,6 @@
             });
             document.addEventListener('mousedown', (event) => {
                 if (event.target.classList.contains('port-output')) {
-                    event.preventDefault();
                     const fromNodeId = parseInt(event.target.dataset.nodeId);
                     const fromPortIndex = parseInt(event.target.dataset.portIndex);
                     pendingWire = { fromNodeId, fromPortIndex, element: document.createElementNS('http://www.w3.org/2000/svg', 'path') };
@@ -2948,7 +2948,6 @@
             });
             document.addEventListener('mousemove', (event) => {
                 if (pendingWire) {
-                    event.preventDefault();
                     const fromPortEl = document.querySelector(`.port-output[data-node-id='${pendingWire.fromNodeId}'][data-port-index='${pendingWire.fromPortIndex}']`);
                     const mousePos = { getBoundingClientRect: () => ({ left: event.clientX, top: event.clientY, width: 0, height: 0 }) };
                     drawWire(fromPortEl, mousePos, pendingWire.element);
@@ -2956,7 +2955,6 @@
             });
             document.addEventListener('mouseup', (event) => {
                 if (pendingWire) {
-                    event.preventDefault();
                     const wasConnected = event.target.classList.contains('port-input');
                     if (wasConnected) {
                         const toNodeId = parseInt(event.target.dataset.nodeId);
