@@ -3075,6 +3075,7 @@
                     activeNode = null;
                     renderGraph();
                 }
+                else if (event.target.tagName === 'IMG' || event.target.tagName === 'VIDEO' || event.target.tagName === 'CANVAS') event.target.requestFullscreen();
             });
             graphContainer.addEventListener('dblclick', (event) => { const c = event.target; if (c.tagName === 'IMG' || c.tagName === 'VIDEO' || c.tagName === 'CANVAS') c.requestFullscreen(); });
             requestAnimationFrame(update);
