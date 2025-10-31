@@ -3069,13 +3069,13 @@
                     }
                     renderGraph();
                 }
+                else if (event.target.tagName === 'IMG' || event.target.tagName === 'VIDEO' || event.target.tagName === 'CANVAS') event.target.requestFullscreen();
                 else if (activeNode) {
                     nodes = nodes.filter(n => n.id !== activeNode.id);
                     connections = connections.filter(c => c.fromNode !== activeNode.id && c.toNode !== activeNode.id);
                     activeNode = null;
                     renderGraph();
                 }
-                else if (event.target.tagName === 'IMG' || event.target.tagName === 'VIDEO' || event.target.tagName === 'CANVAS') event.target.requestFullscreen();
             });
             graphContainer.addEventListener('dblclick', (event) => { const c = event.target; if (c.tagName === 'IMG' || c.tagName === 'VIDEO' || c.tagName === 'CANVAS') c.requestFullscreen(); });
             requestAnimationFrame(update);
