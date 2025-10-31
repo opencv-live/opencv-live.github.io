@@ -291,7 +291,6 @@
         let connections = [];
         let pendingWire = null;
         let activeNode = null;
-        let audioSource = null;
         let openCvReady = false;
 
         const fontCache = {};
@@ -389,7 +388,10 @@
 
                 node.fxName = 'bandpass';
                 node.fxA = 50;
-                node.sliderAtitle = 'Delay: ' + (node.fxA / 100.0) + 's';
+                node.sliderAtitle = 'Frequency: ' + (node.fxA * 100.0) + 'Hz';
+
+                node.audioSource = null;
+                node.isConnected = false;
 
                 node.gain = audioContext.createGain();
                 node.panner = audioContext.createStereoPanner();
@@ -435,28 +437,33 @@
                     node.gain.disconnect(); node.panner.disconnect();
                     node.delay.disconnect(); node.feedback.disconnect(); node.flangerDelay.disconnect(); node.flangerFeedback.disconnect();
                     node.convolver.disconnect(); node.distortion.disconnect(); node.filter.disconnect(); node.tremoloGain.disconnect();
-                    node.gain.gain.value = 1;
 
-                    audioSource.connect(node.gain);
+                    node.gain.gain.value = 1;
+                    if (node.audioSource) node.audioSource.connect(node.gain);
+
                     if (node.fxName === 'panning') {
                         node.panner.pan.value = (node.fxA - 50) / 50;
-                        node.gain.connect(node.panner).connect(audioContext.destination);
+                        if (node.isConnected) node.gain.connect(node.panner).connect(audioContext.destination);
                         node.sliderAtitle = 'Panning: ' + (node.fxA - 50) / 50;
                     }
                     else if (node.fxName === 'delay') {
                         node.delay.delayTime.value = node.fxA / 100.0;
-                        node.gain.connect(audioContext.destination);
-                        node.gain.connect(node.delay);
-                        node.delay.connect(node.feedback);
-                        node.delay.connect(audioContext.destination);
+                        if (node.isConnected) {
+                            node.gain.connect(audioContext.destination);
+                            node.gain.connect(node.delay);
+                            node.delay.connect(node.feedback);
+                            node.delay.connect(audioContext.destination);
+                        }
                         node.sliderAtitle = 'Delay: ' + (node.fxA / 100.0) + 's';
                     }
                     else if (node.fxName === 'flanger') {
                         node.flangerDelay.delayTime.value = node.fxA / 10000.0;
-                        node.gain.connect(audioContext.destination);
-                        node.gain.connect(node.flangerDelay);
-                        node.flangerDelay.connect(node.flangerFeedback).connect(node.flangerDelay);
-                        node.flangerDelay.connect(audioContext.destination);
+                        if (node.isConnected) {
+                            node.gain.connect(audioContext.destination);
+                            node.gain.connect(node.flangerDelay);
+                            node.flangerDelay.connect(node.flangerFeedback).connect(node.flangerDelay);
+                            node.flangerDelay.connect(audioContext.destination);
+                        }
                         node.sliderAtitle = 'Delay: ' + (node.fxA / 10000.0) + 's';
                     }
                     else if (node.fxName === 'reverb') {
@@ -470,7 +477,7 @@
                         node.convolver.buffer = impulseBuffer;
                         node.sliderAtitle = 'Impulse: ' + (node.fxA / 25.0) + 's';
                         node.gain.gain.value = 3;
-                        node.gain.connect(node.convolver).connect(audioContext.destination);
+                        if (node.isConnected) node.gain.connect(node.convolver).connect(audioContext.destination);
                     }
                     else if (node.fxName === 'distortion') {
                         const curve = new Float32Array(22050);
@@ -481,19 +488,23 @@
                         node.distortion.curve = curve;
                         node.sliderAtitle = 'Amount: ' + (node.fxA * 10.0);
                         node.gain.gain.value = 0.5;
-                        node.gain.connect(node.distortion).connect(audioContext.destination);
+                        if (node.isConnected) node.gain.connect(node.distortion).connect(audioContext.destination);
                     }
                     else if (node.fxName === 'lowpass' || node.fxName === 'highpass' || node.fxName === 'bandpass') {
                         node.filter.type = node.fxName;
                         node.filter.frequency.value = node.fxA * 100.0;
                         node.sliderAtitle = 'Frequency: ' + (node.fxA * 100.0) + 'Hz';
                         node.gain.gain.value = 2;
-                        node.gain.connect(node.filter).connect(audioContext.destination);
+                        if (node.isConnected) node.gain.connect(node.filter).connect(audioContext.destination);
                     }
                     else if (node.fxName === 'tremolo') {
                         node.tremoloLFO.frequency.value = node.fxA / 10.0;
                         node.sliderAtitle = 'Frequency: ' + (node.fxA / 10.0) + 'Hz';
-                        node.gain.connect(node.tremoloGain).connect(audioContext.destination);
+                        if (node.isConnected) node.gain.connect(node.tremoloGain).connect(audioContext.destination);
+                    }
+                    if (!node.isConnected) {
+                        node.gain.gain.value = 1;
+                        node.gain.connect(audioContext.destination);
                     }
                     document.getElementById('fxA' + node.id).title = node.sliderAtitle;
                 };
@@ -501,8 +512,25 @@
                 node.onExecute = () => {
                     const source = getInputData(node, 0);
                     if (source && source.tagName === 'VIDEO') {
-                        try { audioSource = audioContext.createMediaElementSource(source); node.updateEffect(); }
-                        catch { }
+                        try {
+                            node.audioSource = audioContext.createMediaElementSource(source);
+                            node.isConnected = true;
+                            node.updateEffect();
+                        }
+                        catch {
+                            if (!node.isConnected) {
+                                node.isConnected = true;
+                                node.updateEffect();
+                            }
+                        }
+                        node.isConnected = true;
+                    }
+                    else {
+                        if (node.isConnected) {
+                            node.isConnected = false;
+                            node.updateEffect();
+                        }
+                        node.isConnected = false;
                     }
                     const sourceControl = getInputData(node, 1);
                     if (sourceControl && sourceControl.length == 2) {
