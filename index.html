@@ -448,12 +448,12 @@
                 lY = (levelY - leftWrist.y) * 10;
             }
             if (rightWrist.y < rightShoulder.y && leftWrist.y < leftShoulder.y) {
-                bX = (rightWrist.x - leftWrist.x);
-                bY = (rightWrist.y - leftWrist.y) * 10;
+                bX = (leftWrist.x - rightWrist.x) - 0.5;
+                bY = (leftWrist.y - rightWrist.y) * 10;
             }
-            if (Math.abs(rightWrist.x - leftWrist.x) < 0.05 && Math.abs(rightWrist.y - leftWrist.y) < 0.05) {
-                jX = (rightWrist.x + leftWrist.x) / 2;
-                jY = (rightWrist.y + leftWrist.y) / 2;
+            if (Math.abs(rightWrist.x - leftWrist.x) < 0.1 && Math.abs(rightWrist.y - leftWrist.y) < 0.1) {
+                jX = 0.5 - (rightWrist.x + leftWrist.x) / 2;
+                jY = 0.5 - (rightWrist.y + leftWrist.y) / 2;
             }
             return [rX, rY, lX, lY, bX, bY, jX, jY];
         }
