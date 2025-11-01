@@ -158,7 +158,7 @@
             position: absolute;
             top: 0;
             z-index: 700;
-            background-color: #000;
+            background-color: #1a1a1a;
             border: 0;
             cursor: pointer;
             font-size: large;
@@ -245,7 +245,8 @@
             padding-top: 8px;
         }
 
-        #examples {
+        #examples,
+        #settings {
             position: absolute;
             top: 33px;
             right: 9px;
@@ -259,6 +260,13 @@
 
         #examples p:hover {
             color: indianred;
+        }
+
+        #settings table select {
+            background-color: #282828;
+            font-size: 11px;
+            color: white;
+            margin-right: -10px;
         }
     </style>
 
@@ -280,13 +288,15 @@
 <body>
     <a href="docs/manual.pdf" target="_blank" title="Help" class="load-save-button"
         style="right:0;padding:2px">&#10067;</a>
+    <button title="Settings" class="load-save-button" style="top:1px;right:25px;color:silver"
+        onclick="if (document.getElementById('settings').style.display=='block') document.getElementById('settings').style.display='none'; else document.getElementById('settings').style.display='block';">&#9881;</button>
     <button onclick="document.getElementById('projectPath').click();" title="Open" class="load-save-button"
-        style="right:20px" oncontextmenu="document.getElementById('examples').style.display='block';"
+        style="right:50px" oncontextmenu="document.getElementById('examples').style.display='block';"
         onmouseenter="document.getElementById('examples').style.display='block';">&#x1F4C2;</button>
-    <button onclick="saveProject();" title="Save" class="load-save-button" style="right:48px">&#128190;</button>
+    <button onclick="saveProject();" title="Save" class="load-save-button" style="right:78px">&#128190;</button>
     <input tabIndex="-1" type="file" id="projectPath" accept=".olive" onchange="loadProjectFromJSON(event);"
         style="display:none">
-    <input type="text" id="projectName" class="name-input-field" value="Untitled project" style="right:84px">
+    <input type="text" id="projectName" class="name-input-field" value="Untitled project" style="right:114px">
     <div id="main-container">
         <div id="node-palette" style="display: none;"> </div>
         <div id="graph-container">
@@ -313,6 +323,75 @@
         <p class="example">Text Mask</p>
         <p class="example">Weighted Subtraction</p>
     </div>
+    <div id="settings" onmouseleave="this.style.display='none';">
+        <h3 style="color:darkolivegreen">Control Gestures:</h3>
+        <table>
+            <tr>
+                <td>Video/Audio Play</td>
+                <td><select id="videoAudioPlay"></select></td>
+            </tr>
+            <tr>
+                <td>Video/Audio Pause</td>
+                <td><select id="videoAudioPause"></select></td>
+            </tr>
+            <tr>
+                <td>3D Text Camera Left/Right Position</td>
+                <td><select id="textCameraHor"></select></td>
+            </tr>
+            <tr>
+                <td>3D Text Camera Up/Down Position</td>
+                <td><select id="textCameraVer"></select></td>
+            </tr>
+            <tr>
+                <td>Parametric Lines Animation Speed</td>
+                <td><select id="parametricLines"></select></td>
+            </tr>
+            <tr>
+                <td>Gamma Correction γ Value</td>
+                <td><select id="gammaCorrection"></select></td>
+            </tr>
+            <tr>
+                <td>Color Adjustment Hue Value</td>
+                <td><select id="colorHue"></select></td>
+            </tr>
+            <tr>
+                <td>Color Adjustment Saturation Value</td>
+                <td><select id="colorSat"></select></td>
+            </tr>
+            <tr>
+                <td>Morphology/Rank Filter Kernel Size</td>
+                <td><select id="morphRankSize"></select></td>
+            </tr>
+            <tr>
+                <td>Sound Filters & Effects Slider</td>
+                <td><select id="soundFilters"></select></td>
+            </tr>
+            <tr>
+                <td>Projection/Mapping Camera Left/Right Position&nbsp;&nbsp;&nbsp;</td>
+                <td><select id="projCameraHor"></select></td>
+            </tr>
+            <tr>
+                <td>Projection/Mapping Camera Up/Down Position</td>
+                <td><select id="projCameraVer"></select></td>
+            </tr>
+            <tr>
+                <td>Glitch Effects Slider</td>
+                <td><select id="glitchSlider"></select></td>
+            </tr>
+            <tr>
+                <td>Matrix Operations Weights Slider</td>
+                <td><select id="matrixSlider"></select></td>
+            </tr>
+            <tr>
+                <td>Concatenation Overlaping Percentage</td>
+                <td><select id="concatSlider"></select></td>
+            </tr>
+            <tr>
+                <td>Transitions Play</td>
+                <td><select id="transitionPlay"></select></td>
+            </tr>
+        </table>
+    </div>
 
     <script>
         let nodes = [];
@@ -324,6 +403,23 @@
         const fontCache = {};
         const fontLoader = new THREE.FontLoader();
         const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+
+        const gestureOptions = [
+            { value: '0', name: '&#129306; Right hand raised and moving left/right' },
+            { value: '1', name: '&#129306; Right hand raised and moving up/down' },
+            { value: '2', name: '&#9995; Left hand raised and moving left/right' },
+            { value: '3', name: '&#9995; Left hand raised and moving up/down' },
+            { value: '4', name: '&#128080; Both hands raised and moving left/right' },
+            { value: '5', name: '&#128080; Both hands raised and moving up/down' },
+            { value: '6', name: '&#129309; Hands joined and moving left/right' },
+            { value: '7', name: '&#129309; Hands joined and moving up/down' }
+        ];
+        let gesturesHTML = gestureOptions.map(gesture => `<option value="${gesture.value}">${gesture.name}</option>`).join('');
+        let settingsHTML = document.getElementById('settings').getElementsByTagName('*');
+
+        for (var i = 0; i < settingsHTML.length; i++) {
+            if (settingsHTML[i].tagName === 'SELECT') settingsHTML[i].innerHTML = gesturesHTML;
+        }
 
         function cartesian2polar(x, y) {
             let R = Math.sqrt(x * x + y * y)
@@ -350,6 +446,8 @@
             let leftWrist = source[0][15];
 
             let lX = null, lY = null, rX = null, rY = null;
+            let bX = null, bY = null, jX = null, jY = null;
+
             if (rightWrist.y < rightShoulder.y && leftWrist.y > leftShoulder.y) {
                 rX = (rightElbow.x - rightWrist.x);
                 rY = (levelY - rightWrist.y) * 10;
@@ -358,7 +456,15 @@
                 lX = (leftElbow.x - leftWrist.x);
                 lY = (levelY - leftWrist.y) * 10;
             }
-            return [rX, rY, lX, lY];
+            if (rightWrist.y < rightShoulder.y && leftWrist.y < leftShoulder.y) {
+                bX = (rightWrist.x - leftWrist.x);
+                bY = (rightWrist.y - leftWrist.y) * 10;
+            }
+            if (Math.abs(rightWrist.x - leftWrist.x) < 0.05 && Math.abs(rightWrist.y - leftWrist.y) < 0.05) {
+                jX = (rightWrist.x + leftWrist.x) / 2;
+                jY = (rightWrist.y + leftWrist.y) / 2;
+            }
+            return [rX, rY, lX, lY, bX, bY, jX, jY];
         }
         function getInputData(node, portIndex) {
             const conn = connections.find(c => c.toNode === node.id && c.toPort === portIndex);
@@ -393,14 +499,24 @@
                     node.mediaElement.className = 'media-preview';
                 }
                 node.mediaElement.crossOrigin = 'anonymous';
+
+                let isPlaying = true;
                 node.onExecute = () => {
                     if (title === 'Video / Audio') {
                         const sourceControl = getInputData(node, 0);
                         if (sourceControl && sourceControl.length == 2) {
                             try {
                                 let playVid = calculateLandmarks(sourceControl);
-                                if (playVid[0]) node.mediaElement.play();
-                                if (playVid[2]) node.mediaElement.pause();
+                                let ix1 = document.getElementById('videoAudioPlay').value * 1;
+                                let ix2 = document.getElementById('videoAudioPause').value * 1;
+                                if (isPlaying && playVid[ix2]) {
+                                    node.mediaElement.pause();
+                                    setTimeout(function() { isPlaying = false; }, 1000);
+                                }
+                                else if (!isPlaying && playVid[ix1]) {
+                                    node.mediaElement.play();
+                                    setTimeout(function() { isPlaying = true; }, 1000);
+                                }
                             }
                             catch { }
                         }
@@ -565,8 +681,9 @@
                         document.getElementById('fxA' + node.id).style.accentColor = 'darkgoldenrod';
                         try {
                             let fx = calculateLandmarks(sourceControl);
-                            if (fx[0] || fx[2]) {
-                                node.fxA += (fx[0] || fx[2]);
+                            let ix = document.getElementById('soundFilters').value * 1;
+                            if (fx[ix]) {
+                                node.fxA += fx[ix];
                                 if (node.fxA < 0) node.fxA = 0;
                                 if (node.fxA > 100) node.fxA = 100;
                                 document.getElementById('fxA' + node.id).value = node.fxA;
@@ -665,8 +782,10 @@
                     if (sourceControl && sourceControl.length == 2) {
                         try {
                             let points = calculateLandmarks(sourceControl);
-                            if (points[0] || points[2]) node.camera.position.x += points[0] || points[2];
-                            if (points[1] || points[3]) node.camera.position.y += points[1] || points[3];
+                            let ix1 = document.getElementById('textCameraHor').value * 1;
+                            let ix2 = document.getElementById('textCameraVer').value * 1;
+                            if (points[ix1]) node.camera.position.x += points[ix1];
+                            if (points[ix2]) node.camera.position.y += points[ix2];
                         }
                         catch { }
                     }
@@ -754,8 +873,9 @@
                         document.getElementById('curveSpeed' + node.id).style.accentColor = 'darkgoldenrod';
                         try {
                             let speed = calculateLandmarks(sourceControl);
-                            if (speed[0] || speed[2]) {
-                                node.animationSpeed += (speed[0] || speed[2]) / 10;
+                            let ix = document.getElementById('parametricLines').value * 1;
+                            if (speed[ix]) {
+                                node.animationSpeed += speed[ix] / 10;
                                 if (node.animationSpeed < -3) node.animationSpeed = -3;
                                 if (node.animationSpeed > 3) node.animationSpeed = 3;
                                 document.getElementById('curveSpeed' + node.id).value = node.animationSpeed;
@@ -954,8 +1074,10 @@
                         if (sourceControl && sourceControl.length == 2) {
                             try {
                                 let points = calculateLandmarks(sourceControl);
-                                if (points[0] || points[2]) node.camera.position.x += points[0] || points[2];
-                                if (points[1] || points[3]) node.camera.position.y += points[1] || points[3];
+                                let ix1 = document.getElementById('projCameraHor').value * 1;
+                                let ix2 = document.getElementById('projCameraVer').value * 1;
+                                if (points[ix1]) node.camera.position.x += points[ix1];
+                                if (points[ix2]) node.camera.position.y += points[ix2];
                             }
                             catch { }
                         }
@@ -1180,14 +1302,16 @@
                                         document.getElementById('satValue' + node.id).style.accentColor = 'darkgoldenrod';
                                         try {
                                             let hs = calculateLandmarks(sourceControl);
-                                            if (hs[0] || hs[2]) {
-                                                node.newHSV[0] += (hs[0] || hs[2]) * 10;
+                                            let ix1 = document.getElementById('colorHue').value * 1;
+                                            let ix2 = document.getElementById('colorSat').value * 1;
+                                            if (hs[ix1]) {
+                                                node.newHSV[0] += hs[ix1] * 10;
                                                 if (node.newHSV[0] < -180) node.newHSV[0] = -180;
                                                 if (node.newHSV[0] > 180) node.newHSV[0] = 180;
                                                 document.getElementById('hueValue' + node.id).value = node.newHSV[0];
                                             }
-                                            if (hs[1] || hs[3]) {
-                                                node.newHSV[1] += hs[1] || hs[3];
+                                            if (hs[ix2]) {
+                                                node.newHSV[1] += hs[ix2] * 10;
                                                 if (node.newHSV[1] < -255) node.newHSV[1] = -255;
                                                 if (node.newHSV[1] > 255) node.newHSV[1] = 255;
                                                 document.getElementById('satValue' + node.id).value = node.newHSV[1];
@@ -1224,8 +1348,9 @@
                                         document.getElementById('gamma' + node.id).style.accentColor = 'darkgoldenrod';
                                         try {
                                             let gamma = calculateLandmarks(sourceControl);
-                                            if (gamma[0] || gamma[2]) {
-                                                node.gammaValue += (gamma[0] || gamma[2]) / 10;
+                                            let ix = document.getElementById('gammaCorrection').value * 1;
+                                            if (gamma[ix]) {
+                                                node.gammaValue += gamma[ix] / 10;
                                                 if (node.gammaValue < 0.01) node.gammaValue = 0.01;
                                                 if (node.gammaValue > 10) node.gammaValue = 10;
                                                 document.getElementById('gamma' + node.id).value = node.gammaValue;
@@ -1336,8 +1461,9 @@
                                         document.getElementById('kernelSize' + node.id).style.accentColor = 'darkgoldenrod';
                                         try {
                                             let block = calculateLandmarks(sourceControl);
-                                            if (block[0] || block[2]) {
-                                                node.morphologicalFilterSize += block[0] || block[2];
+                                            let ix = document.getElementById('morphRankSize').value * 1;
+                                            if (block[ix]) {
+                                                node.morphologicalFilterSize += block[ix];
                                                 if (node.morphologicalFilterSize < 3) node.morphologicalFilterSize = 3;
                                                 if (node.morphologicalFilterSize > 25) node.morphologicalFilterSize = 25;
                                                 document.getElementById('kernelSize' + node.id).value = node.morphologicalFilterSize;
@@ -1396,8 +1522,9 @@
                                         document.getElementById('glitch' + node.id).style.accentColor = 'darkgoldenrod';
                                         try {
                                             let glitch = calculateLandmarks(sourceControl);
-                                            if (glitch[0] || glitch[2]) {
-                                                node.glitchEffectSize += glitch[0] || glitch[2];
+                                            let ix = document.getElementById('glitchSlider').value * 1;
+                                            if (glitch[ix]) {
+                                                node.glitchEffectSize += glitch[ix];
                                                 if (node.glitchEffectSize < 1) node.glitchEffectSize = 1;
                                                 if (node.glitchEffectSize > 25) node.glitchEffectSize = 25;
                                                 document.getElementById('glitch' + node.id).value = node.glitchEffectSize;
@@ -1793,7 +1920,8 @@
                         if (sourceControl && sourceControl.length == 2) {
                             try {
                                 let playTrans = calculateLandmarks(sourceControl);
-                                if (playTrans[0] || playTrans[2]) {
+                                let ix = document.getElementById('transitionPlay').value * 1;
+                                if (playTrans[ix]) {
                                     if (node.progress == 0) node.playTransition(1.0);
                                     else if (node.progress == 1) node.playTransition(0);
                                 }
@@ -1869,8 +1997,9 @@
                                         document.getElementById('weights' + node.id).style.accentColor = 'darkgoldenrod';
                                         try {
                                             let weight = calculateLandmarks(sourceControl);
-                                            if (weight[0] || weight[2]) {
-                                                node.operationWeight += (weight[0] || weight[2]) / 10;
+                                            let ix = document.getElementById('matrixSlider').value * 1;
+                                            if (weight[ix]) {
+                                                node.operationWeight += weight[ix] / 10;
                                                 if (node.operationWeight < 0.01) node.operationWeight = 0.01;
                                                 if (node.operationWeight > 0.99) node.operationWeight = 0.99;
                                                 document.getElementById('weights' + node.id).value = node.operationWeight;
@@ -1939,8 +2068,9 @@
                                         document.getElementById('overlap' + node.id).style.accentColor = 'darkgoldenrod';
                                         try {
                                             let overlap = calculateLandmarks(sourceControl);
-                                            if (overlap[0] || overlap[2]) {
-                                                node.concatenationAlignment += (overlap[0] || overlap[2]) / 10;
+                                            let ix = document.getElementById('concatSlider').value * 1;
+                                            if (overlap[ix]) {
+                                                node.concatenationAlignment += overlap[ix] / 10;
                                                 if (node.concatenationAlignment < 0) node.concatenationAlignment = 0;
                                                 if (node.concatenationAlignment > 1) node.concatenationAlignment = 1;
                                                 document.getElementById('overlap' + node.id).value = node.concatenationAlignment;
