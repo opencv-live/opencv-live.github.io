@@ -457,6 +457,7 @@
             }
             return [rX, rY, lX, lY, bX, bY, jX, jY];
         }
+
         function getInputData(node, portIndex) {
             const conn = connections.find(c => c.toNode === node.id && c.toPort === portIndex);
             if (!conn) return null;
@@ -502,11 +503,11 @@
                                 let ix2 = document.getElementById('videoAudioPause').value * 1;
                                 if (isPlaying && playVid[ix2]) {
                                     node.mediaElement.pause();
-                                    setTimeout(function() { isPlaying = false; }, 1000);
+                                    setTimeout(function () { isPlaying = false; }, 1000);
                                 }
                                 else if (!isPlaying && playVid[ix1]) {
                                     node.mediaElement.play();
-                                    setTimeout(function() { isPlaying = true; }, 1000);
+                                    setTimeout(function () { isPlaying = true; }, 1000);
                                 }
                             }
                             catch { }
@@ -1920,7 +1921,6 @@
                             catch { }
                         }
                     }
-
                     renderer.render(scene, camera);
                     node.outputValues.output = node.canvas;
                 };
@@ -2652,7 +2652,6 @@
                 alert("Could not enumerate devices:", err);
             }
         }
-
         async function startCamera(videoElement, deviceId) {
             if (videoElement.srcObject) {
                 try { videoElement.srcObject.getTracks().forEach(track => node.stop()); }
@@ -2815,7 +2814,6 @@
                     }
                 }
             });
-
             graphContainer.addEventListener('change', (event) => {
                 const nodeId = parseInt(event.target.dataset.nodeId);
                 const nodeData = nodes.find(n => n.id === nodeId);
@@ -3118,6 +3116,7 @@
                     nodeData.paramB = parseInt(target.value);
                 }
             });
+
             document.addEventListener('mousedown', (event) => {
                 if (event.target.classList.contains('port-output')) {
                     const fromNodeId = parseInt(event.target.dataset.nodeId);
@@ -3183,6 +3182,7 @@
                     }
                 }
             });
+
             document.addEventListener('keydown', (event) => {
                 if (event.key === 'Delete') {
                     if (activeNode) {
@@ -3242,6 +3242,7 @@
                     nodeData.equationY = inputEl.value;
                 }
             });
+
             graphContainer.addEventListener('contextmenu', (event) => {
                 event.preventDefault();
                 if (event.target.classList.contains('port')) {
@@ -3297,6 +3298,10 @@
             statusEl.style.display = 'block';
 
             setTimeout(function () {
+                let gestures = [];
+                for (var i = 0; i < settingsHTML.length; i++) {
+                    if (settingsHTML[i].tagName === 'SELECT') gestures.push(settingsHTML[i].value);
+                }
                 const payload = {
                     nodes: nodes.map(n => ({
                         id: n.id, title: n.title, type: n.type, x: n.x, y: n.y, bypass: n.bypass,
@@ -3316,7 +3321,7 @@
                         hueBlendChecked: n.hueBlendChecked, satBlendChecked: n.satBlendChecked, valBlendChecked: n.valBlendChecked,
                         concatenationAlignment: n.concatenationAlignment, concatenationChecked: n.concatenationChecked,
                         transitionType: n.transitionType, transitionDuration: n.transitionDuration
-                    })), connections
+                    })), connections, gestures
                 };
                 try {
                     let jsonFILE = JSON.stringify(payload, null, 2);
@@ -3454,6 +3459,12 @@
                 });
                 renderGraph();
 
+                if (payload.gestures) {
+                    let count = 0;
+                    for (var i = 0; i < settingsHTML.length; i++) {
+                        if (settingsHTML[i].tagName === 'SELECT') settingsHTML[i].value = payload.gestures[count++];
+                    }
+                }
                 statusEl.textContent = 'Project Loaded';
                 statusEl.style.backgroundColor = 'darkolivegreen';
                 setTimeout(() => statusEl.style.display = 'none', 1500);
