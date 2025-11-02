@@ -338,6 +338,10 @@
                 <td><select id="parametricLines"></select></td>
             </tr>
             <tr>
+                <td>Countdown/Keyframes Triggering</td>
+                <td><select id="countdownTrigger"></select></td>
+            </tr>
+            <tr>
                 <td>Gamma Correction γ Value</td>
                 <td><select id="gammaCorrection"></select></td>
             </tr>
@@ -512,6 +516,10 @@
                             }
                             catch { }
                         }
+                        else if (sourceControl && sourceControl.length == 4 && sourceControl[3] === 'disabled' && sourceControl[0] == 1) {
+                            if (isPlaying) setTimeout(function () { node.mediaElement.pause(); isPlaying = false; }, 1000);
+                            else setTimeout(function () { node.mediaElement.play(); isPlaying = true; }, 1000);
+                        }
                     }
                     node.outputValues.output = node.mediaElement;
                     node.mediaElement.style.zoom = 1;
@@ -684,6 +692,12 @@
                         }
                         catch { }
                     }
+                    else if (sourceControl && sourceControl.length == 4 && sourceControl[3] === 'disabled') {
+                        let target = sourceControl[1] * 100;
+                        if (sourceControl[0] > 0) node.fxA += (target - node.fxA) / Math.pow(sourceControl[0], 3);
+                        document.getElementById('fxA' + node.id).value = node.fxA;
+                        if (Math.abs(node.fxA - Math.round(node.fxA)) < 0.1) node.updateEffect();
+                    }
                     else document.getElementById('fxA' + node.id).style.accentColor = '';
                 };
             }
@@ -781,6 +795,14 @@
                         }
                         catch { }
                     }
+                    else if (sourceControl && sourceControl.length == 4 && sourceControl[3] === 'disabled') {
+                        let targetA = sourceControl[1] * 100 - 50;
+                        let targetB = sourceControl[2] * 100 - 50;
+                        if (sourceControl[0] > 0) {
+                            node.camera.position.x += (targetA - node.camera.position.x) / Math.pow(sourceControl[0], 3);
+                            node.camera.position.y += (targetB - node.camera.position.y) / Math.pow(sourceControl[0], 3);
+                        }
+                    }
                     controls.update();
                     renderer.render(scene, node.camera);
                     node.outputValues.output = renderer.domElement;
@@ -876,6 +898,12 @@
                         }
                         catch { }
                     }
+                    else if (sourceControl && sourceControl.length == 4 && sourceControl[3] === 'disabled') {
+                        let target = sourceControl[1] * 6 - 3;
+                        if (sourceControl[0] > 0) node.animationSpeed += (target - node.animationSpeed) / Math.pow(sourceControl[0], 3);
+                        document.getElementById('curveSpeed' + node.id).value = node.animationSpeed;
+                        document.getElementById('curveSpeed' + node.id).title = 'Animation speed: ' + node.animationSpeed;
+                    }
                     else document.getElementById('curveSpeed' + node.id).style.accentColor = '';
 
                     node.timeIndex += node.animationSpeed;
@@ -907,6 +935,49 @@
                     if (node.curveType[0] !== "checked") node.ctx.stroke();
 
                     node.outputValues.output = node.canvas;
+                };
+            }
+            else if (type === 'Time') {
+                node.inputs.push({ name: 'control' });
+                node.outputs.push({ name: 'control' });
+
+                node.targetValueA = 0.5;
+                node.targetValueB = 0.5;
+                node.countDown = null;
+                node.countTime = 1;
+                node.isDisabled = '';
+
+                node.onExecute = () => {
+                    const sourceControl = getInputData(node, 0);
+                    if (sourceControl && node.isDisabled === '') {
+                        let check = false;
+                        if (sourceControl.length == 2) {
+                            try {
+                                let trigger = calculateLandmarks(sourceControl);
+                                let ix = document.getElementById('countdownTrigger').value * 1;
+                                if (trigger[ix]) check = true;
+                            }
+                            catch { }
+                        }
+                        else if (sourceControl.length == 4 && sourceControl[0] == 0) check = true;
+
+                        if (check) {
+                            node.countDown = setInterval(function () {
+                                node.countTime--;
+                                document.getElementById('countDownTime' + node.id).value = node.countTime;
+                            }, 1000);
+                            node.isDisabled = "disabled";
+                            document.getElementById('countDownTime' + node.id).disabled = 'disabled';
+                            document.getElementById('countDownButton' + node.id).disabled = 'disabled';
+                        }
+                    }
+                    if (node.countDown && node.countTime <= 0) {
+                        clearInterval(node.countDown);
+                        node.countDown = null;
+                        node.isDisabled = '';
+                        renderGraph();
+                    }
+                    node.outputValues.control = [node.countTime, node.targetValueA, node.targetValueB, node.isDisabled];
                 };
             }
             else if (type === '3DScene') {
@@ -1072,6 +1143,14 @@
                                 if (points[ix2]) node.camera.position.y += points[ix2];
                             }
                             catch { }
+                        }
+                        else if (sourceControl && sourceControl.length == 4 && sourceControl[3] === 'disabled') {
+                            let targetA = sourceControl[1] * 100 - 50;
+                            let targetB = sourceControl[2] * 100 - 50;
+                            if (sourceControl[0] > 0) {
+                                node.camera.position.x += (targetA - node.camera.position.x) / Math.pow(sourceControl[0], 3);
+                                node.camera.position.y += (targetB - node.camera.position.y) / Math.pow(sourceControl[0], 3);
+                            }
                         }
                     }
                     controls.update();
@@ -1311,6 +1390,16 @@
                                         }
                                         catch { }
                                     }
+                                    else if (sourceControl && sourceControl.length == 4 && sourceControl[3] === 'disabled') {
+                                        let targetA = sourceControl[1] * 360 - 180;
+                                        let targetB = sourceControl[2] * 510 - 255;
+                                        if (sourceControl[0] > 0) {
+                                            node.newHSV[0] += (targetA - node.newHSV[0]) / Math.pow(sourceControl[0], 3);
+                                            node.newHSV[1] += (targetB - node.newHSV[1]) / Math.pow(sourceControl[0], 3);
+                                        }
+                                        document.getElementById('hueValue' + node.id).value = node.newHSV[0];
+                                        document.getElementById('satValue' + node.id).value = node.newHSV[1];
+                                    }
                                     else {
                                         document.getElementById('hueValue' + node.id).style.accentColor = '';
                                         document.getElementById('satValue' + node.id).style.accentColor = '';
@@ -1350,6 +1439,12 @@
                                             }
                                         }
                                         catch { }
+                                    }
+                                    else if (sourceControl && sourceControl.length == 4 && sourceControl[3] === 'disabled') {
+                                        let target = sourceControl[1] * 10;
+                                        if (sourceControl[0] > 0) node.gammaValue += (target - node.gammaValue) / Math.pow(sourceControl[0], 3);
+                                        document.getElementById('gamma' + node.id).value = node.gammaValue;
+                                        document.getElementById('gamma' + node.id).title = 'Gamma value: ' + node.gammaValue;
                                     }
                                     else document.getElementById('gamma' + node.id).style.accentColor = '';
 
@@ -1464,6 +1559,12 @@
                                         }
                                         catch { }
                                     }
+                                    else if (sourceControl && sourceControl.length == 4 && sourceControl[3] === 'disabled') {
+                                        let target = Math.round(sourceControl[1] * 11) * 2 + 3;
+                                        if (sourceControl[0] > 0) node.morphologicalFilterSize += (target - node.morphologicalFilterSize) / Math.pow(sourceControl[0], 3);
+                                        document.getElementById('kernelSize' + node.id).value = node.morphologicalFilterSize;
+                                        document.getElementById('kernelSize' + node.id).title = 'Kernel size' + node.morphologicalFilterSize + 'X' + node.morphologicalFilterSize;
+                                    }
                                     else document.getElementById('kernelSize' + node.id).style.accentColor = '';
 
                                     let ksize = new cv.Size(node.morphologicalFilterSize, node.morphologicalFilterSize);
@@ -1523,6 +1624,11 @@
                                             }
                                         }
                                         catch { }
+                                    }
+                                    else if (sourceControl && sourceControl.length == 4 && sourceControl[3] === 'disabled') {
+                                        let target = Math.round(sourceControl[1] * 12) * 2 + 1;
+                                        if (sourceControl[0] > 0) node.glitchEffectSize += (target - node.glitchEffectSize) / Math.pow(sourceControl[0], 3);
+                                        document.getElementById('glitch' + node.id).value = node.glitchEffectSize;
                                     }
                                     else document.getElementById('glitch' + node.id).style.accentColor = '';
 
@@ -1920,6 +2026,10 @@
                             }
                             catch { }
                         }
+                        else if (sourceControl && sourceControl.length == 4 && sourceControl[3] === 'disabled' && sourceControl[0] == 1) {
+                            if (node.progress == 0) setTimeout(function () { node.playTransition(1.0); }, 1000);
+                            else if (node.progress == 1) setTimeout(function () { node.playTransition(0); }, 1000);
+                        }
                     }
                     renderer.render(scene, camera);
                     node.outputValues.output = node.canvas;
@@ -1999,6 +2109,12 @@
                                         }
                                         catch { }
                                     }
+                                    else if (sourceControl && sourceControl.length == 4 && sourceControl[3] === 'disabled') {
+                                        let target = sourceControl[1];
+                                        if (sourceControl[0] > 0) node.operationWeight += (target - node.operationWeight) / Math.pow(sourceControl[0], 3);
+                                        document.getElementById('weights' + node.id).value = node.operationWeight;
+                                        document.getElementById('weights' + node.id).title = 'Weights: ' + node.operationWeight + ', ' + (1 - node.operationWeight);
+                                    }
                                     else document.getElementById('weights' + node.id).style.accentColor = '';
 
                                     temp1 = new cv.Mat(), temp2 = new cv.Mat();
@@ -2068,6 +2184,11 @@
                                             }
                                         }
                                         catch { }
+                                    }
+                                    else if (sourceControl && sourceControl.length == 4 && sourceControl[3] === 'disabled') {
+                                        let target = sourceControl[1];
+                                        if (sourceControl[0] > 0) node.concatenationAlignment += (target - node.concatenationAlignment) / Math.pow(sourceControl[0], 3);
+                                        document.getElementById('overlap' + node.id).value = node.concatenationAlignment;
                                     }
                                     else document.getElementById('overlap' + node.id).style.accentColor = '';
 
@@ -2434,15 +2555,24 @@
                                 <input type="radio" data-node-id="${nodeData.id}" class="node-input-check curve-style" name="curveStyle${nodeData.id}" ${nodeData.curveType[2]}><small>Curves</small></p>
                             </div>`;
                         break;
+                    case 'Countdown / Keyframes':
+                        specificContentHTML = `
+                            <div class="node-content">
+                                <input type="range" data-node-id="${nodeData.id}" title="Target value A: ${nodeData.targetValueA}" class="node-input-range target-value-A" min="0" max="1" step="0.001" value="${nodeData.targetValueA}">
+                                <input type="range" data-node-id="${nodeData.id}" title="Target value B: ${nodeData.targetValueB}" class="node-input-range target-value-B" min="0" max="1" step="0.001" value="${nodeData.targetValueB}">
+                                <p><button id="countDownButton${nodeData.id}" class="node-button keyframe-trigger-button" data-node-id="${nodeData.id}" style="width:100px;font-weight:bold" ${nodeData.isDisabled}>Trigger</button>
+                                <input type="number" id="countDownTime${nodeData.id}" data-node-id="${nodeData.id}" title="Seconds" class="node-input-number count-down-time" min="1" max="3600" value="${nodeData.countTime}" style="width:75px" ${nodeData.isDisabled}></p>
+                            </div>`;
+                        break;
                     case 'Histogram Equalization':
                         specificContentHTML = `
-                            <div class="node-content node-viewer-content-container">
+                            <div class="node-content">
                                 <input type="range" data-node-id="${nodeData.id}" title="CLAHE grid size: ${nodeData.gridSize}" class="node-input-range hist-range" min="0" max="16" value="${nodeData.gridSize}">
                             </div>`;
                         break;
                     case 'Color Adjustment':
                         specificContentHTML = `
-                            <div class="node-content node-viewer-content-container">
+                            <div class="node-content">
                                 <input type="color" class="node-input-color color-picker" title="Selected Color" data-node-id="${nodeData.id}" value="${nodeData.selectedColor}">
                                 <input type="range" class="node-input-range hue-adjustment" id="hueValue${nodeData.id}" title="Adjust Color Hue" data-node-id="${nodeData.id}" min="-180" max="180" value="${nodeData.newHSV[0]}" style="width:144px">
                                 <input type="range" class="node-input-range saturation-adjustment" id="satValue${nodeData.id}" title="Adjust Color Saturation" data-node-id="${nodeData.id}" min="-255" max="255" value="${nodeData.newHSV[1]}" style="width:144px">
@@ -2453,7 +2583,7 @@
                         break;
                     case 'Gamma Correction':
                         specificContentHTML = `
-                            <div class="node-content node-viewer-content-container">
+                            <div class="node-content">
                                 <input type="range" id="gamma${nodeData.id}" data-node-id="${nodeData.id}" title="Gamma value: ${nodeData.gammaValue}" class="node-input-range gamma-range" min="0.01" max="10" step="0.01" value="${nodeData.gammaValue}">
                             </div>`;
                         break;
@@ -2525,7 +2655,7 @@
                         break;
                     case 'Channel Mixer':
                         specificContentHTML = `
-                            <div class="node-content node-viewer-content-container">
+                            <div class="node-content">
                                 <input type="range" id="channelRR${nodeData.id}" data-node-id="${nodeData.id}" title="R: ${nodeData.channelMixerValues[0] * 100}%" class="node-input-range channel-mixer-range" min="0" max="1" step="0.01" value="${nodeData.channelMixerValues[0]}" style="accent-color:indianred">
                                 <input type="range" id="channelRG${nodeData.id}" data-node-id="${nodeData.id}" title="G: ${nodeData.channelMixerValues[1] * 100}%" class="node-input-range channel-mixer-range" min="0" max="1" step="0.01" value="${nodeData.channelMixerValues[1]}" style="accent-color:indianred">
                                 <input type="range" id="channelRB${nodeData.id}" data-node-id="${nodeData.id}" title="B: ${nodeData.channelMixerValues[2] * 100}%" class="node-input-range channel-mixer-range" min="0" max="1" step="0.01" value="${nodeData.channelMixerValues[2]}" style="accent-color:indianred">
@@ -2539,7 +2669,7 @@
                         break;
                     case 'Color Blending':
                         specificContentHTML = `
-                            <div class="node-content node-viewer-content-container">
+                            <div class="node-content">
                                 <p><input type="checkbox" class="node-input-check hue-blending" id="hueBlend${nodeData.id}" data-node-id="${nodeData.id}" ${nodeData.hueBlendChecked}>Hue<br>
                                 <input type="checkbox" class="node-input-check saturation-blending" id="satBlend${nodeData.id}" data-node-id="${nodeData.id}" ${nodeData.satBlendChecked}>Saturation<br>
                                 <input type="checkbox" class="node-input-check value-blending" id="valBlend${nodeData.id}" data-node-id="${nodeData.id}" ${nodeData.valBlendChecked}>Value</p>
@@ -2564,7 +2694,7 @@
                         break;
                     case 'Connected Components':
                         specificContentHTML = `
-                            <div class="node-content node-viewer-content-container">
+                            <div class="node-content">
                                 <input type="range" data-node-id="${nodeData.id}" title="Threshold: ${nodeData.connectedComponentsSize}" class="node-input-range connected-components-range" min="0" max="255" value="${nodeData.connectedComponentsSize}">
                             </div>`;
                         break;
@@ -2577,7 +2707,7 @@
                         break;
                     case 'Human Pose':
                         specificContentHTML = `
-                            <div class="node-content node-viewer-content-container">
+                            <div class="node-content">
                                 <input type="range" id="confidenceRange${nodeData.id}" data-node-id="${nodeData.id}" title="Detection confidence: ${nodeData.detectionConfidence}" class="node-input-range confidence-range" min="0" max="1" step="0.1" value="${nodeData.detectionConfidence}">
                             </div>`;
                         break;
@@ -2597,7 +2727,7 @@
                             </div>`;
                         break;
                     default:
-                        specificContentHTML = `<div class="node-content node-viewer-content-container"></div>`;
+                        specificContentHTML = `<div class="node-content"></div>`;
                         break;
                 }
                 let bypassCheck = '';
@@ -2753,7 +2883,7 @@
             paletteContainer.style.display = 'block';
             const paletteNodes = {
                 "Capture": [{ title: "Image", type: "Input" }, { title: "Video / Audio", type: "Input" }, { title: "Camera", type: "Input" }],
-                "Generate": [{ title: "3D Text", type: "Text" }, { title: "Parametric Lines", type: "Parametric" }],
+                "Generate": [{ title: "3D Text", type: "Text" }, { title: "Parametric Lines", type: "Parametric" }, { title: "Countdown / Keyframes", type: "Time" }],
                 "Enhance": [{ title: "Gamma Correction", type: "Throughput" }, { title: "Histogram Equalization", type: "Throughput" }, { title: "Color Adjustment", type: "Throughput" }],
                 "Filter": [{ title: "Convolution", type: "Throughput" }, { title: "Morphology / Rank", type: "Throughput" }, { title: "Sound Filters & Effects", type: "Audio" }],
                 "Render": [{ title: "Projection", type: "3DScene" }, { title: "Mapping / Lighting", type: "3DScene" }, { title: "Character Animation", type: "Character" }],
@@ -2787,6 +2917,19 @@
                     if (nodeData && nodeData.playTransition) {
                         if (nodeData.progress == 0) nodeData.playTransition(1.0);
                         else nodeData.playTransition(0);
+                    }
+                }
+                else if (event.target.classList.contains('keyframe-trigger-button')) {
+                    const nodeId = parseInt(event.target.dataset.nodeId);
+                    const nodeData = nodes.find(n => n.id === nodeId);
+                    if (nodeData) {
+                        nodeData.countDown = setInterval(function () {
+                            nodeData.countTime--;
+                            document.getElementById('countDownTime' + nodeId).value = nodeData.countTime;
+                        }, 1000);
+                        document.getElementById('countDownTime' + nodeId).disabled = "disabled";
+                        event.target.disabled = "disabled";
+                        nodeData.isDisabled = "disabled";
                     }
                 }
                 else if (event.target.classList.contains('port-output')) {
@@ -2868,6 +3011,17 @@
                 else if (event.target.classList.contains('curve-animation-speed')) {
                     nodeData.animationSpeed = event.target.value * 1.0;
                     event.target.title = "Animation speed: " + nodeData.animationSpeed;
+                }
+                else if (event.target.classList.contains('target-value-A')) {
+                    nodeData.targetValueA = event.target.value * 1.0;
+                    event.target.title = "Target value A: " + nodeData.targetValueA;
+                }
+                else if (event.target.classList.contains('target-value-B')) {
+                    nodeData.targetValueB = event.target.value * 1.0;
+                    event.target.title = "Target value B: " + nodeData.targetValueB;
+                }
+                else if (event.target.classList.contains('count-down-time')) {
+                    nodeData.countTime = event.target.value * 1;
                 }
                 else if (event.target.classList.contains('character-model-loader')) {
                     const file = event.target.files[0];
@@ -3308,6 +3462,7 @@
                         imageUrl: n.imageUrl, videoUrl: n.videoUrl, fxName: n.fxName, fxA: n.fxA, sliderAtitle: n.sliderAtitle,
                         nodeText: n.text, textColor: n.textColor, textSize: n.textSize, textHeight: n.textHeight, fontName: n.fontName, fontUrls: n.fontUrls,
                         curveColor: n.curveColor, paramA: n.paramA, paramB: n.paramB, curveName: n.curveName, curveType: n.curveType, equationX: n.equationX, equationY: n.equationY, animationSpeed: n.animationSpeed,
+                        targetValueA: n.targetValueA, targetValueB: n.targetValueB, countTime: n.countTime,
                         primitiveType: n.primitiveType, isCustomModel: n.isCustomModel, loadedModel: n.loadedModel, currentVrm: n.currentVrm,
                         camera: n.camera, projectorCamera: n.projectorCamera, ambientLight: n.ambientLight, pointLight: n.pointLight,
                         checkFirstFrame: n.checkFirstFrame, gridSize: n.gridSize, gammaValue: n.gammaValue,
@@ -3445,6 +3600,9 @@
                     if (n.fxName) nd.fxName = n.fxName;
                     if (n.fxA) nd.fxA = n.fxA;
                     if (n.sliderAtitle) nd.sliderAtitle = n.sliderAtitle;
+                    if (n.targetValueA) nd.targetValueA = n.targetValueA;
+                    if (n.targetValueB) nd.targetValueB = n.targetValueB;
+                    if (n.countTime) nd.countTime = n.countTime;
 
                     nd.fullRangeChecked = n.fullRangeChecked;
                     nd.colorRangeChecked = n.colorRangeChecked;
