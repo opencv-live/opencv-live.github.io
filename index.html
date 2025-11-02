@@ -149,7 +149,7 @@
             position: absolute;
             top: 0;
             z-index: 700;
-            background-color: #1a1a1a;
+            background-color: transparent;
             border: 0;
             cursor: pointer;
             font-size: large;
@@ -945,6 +945,7 @@
                 node.targetValueB = 0.5;
                 node.countDown = null;
                 node.countTime = 1;
+                node.defaultTime = 1;
                 node.isDisabled = '';
 
                 node.onExecute = () => {
@@ -971,11 +972,14 @@
                             document.getElementById('countDownButton' + node.id).disabled = 'disabled';
                         }
                     }
-                    if (node.countDown && node.countTime <= 0) {
-                        clearInterval(node.countDown);
-                        node.countDown = null;
-                        node.isDisabled = '';
-                        renderGraph();
+                    if (node.countTime <= 0) {
+                        if (node.countDown) {
+                            clearInterval(node.countDown);
+                            node.countDown = null;
+                            node.isDisabled = '';
+                        }
+                        else node.countTime = node.defaultTime;
+                        //renderGraph();
                     }
                     node.outputValues.control = [node.countTime, node.targetValueA, node.targetValueB, node.isDisabled];
                 };
@@ -3022,6 +3026,7 @@
                 }
                 else if (event.target.classList.contains('count-down-time')) {
                     nodeData.countTime = event.target.value * 1;
+                    nodeData.defaultTime = nodeData.countTime;
                 }
                 else if (event.target.classList.contains('character-model-loader')) {
                     const file = event.target.files[0];
@@ -3556,53 +3561,56 @@
                         nd.camera.zoom = n.camera.object.zoom;
                         nd.camera.updateProjectionMatrix();
                     }
-                    if (n.checkFirstFrame) nd.checkFirstFrame = n.checkFirstFrame;
                     if (n.bypass) nd.bypass = n.bypass;
-                    if (n.gridSize) nd.gridSize = n.gridSize;
-                    if (n.gammaValue) nd.gammaValue = n.gammaValue;
-                    if (n.selectedColor) nd.selectedColor = n.selectedColor;
-                    if (n.oldHSV) nd.oldHSV = n.oldHSV;
-                    if (n.newHSV) nd.newHSV = n.newHSV;
-                    if (n.convolutionType) nd.convolutionType = n.convolutionType;
-                    if (n.convolutionalFilterSize) nd.convolutionalFilterSize = n.convolutionalFilterSize;
-                    if (n.customKernel) nd.customKernel = n.customKernel;
-                    if (n.morphologyType) nd.morphologyType = n.morphologyType;
-                    if (n.morphologicalFilterSize) nd.morphologicalFilterSize = n.morphologicalFilterSize;
-                    if (n.morphologyKernelType) nd.morphologyKernelType = n.morphologyKernelType;
-                    if (n.polarEffectSize) nd.polarEffectSize = n.polarEffectSize;
-                    if (n.polarEffectType) nd.polarEffectType = n.polarEffectType;
-                    if (n.glitchEffectSize) nd.glitchEffectSize = n.glitchEffectSize;
-                    if (n.glitchEffectType) nd.glitchEffectType = n.glitchEffectType;
-                    if (n.channelMixerValues) nd.channelMixerValues = n.channelMixerValues;
-                    if (n.opticalFlowSize) nd.opticalFlowSize = n.opticalFlowSize;
-                    if (n.thresholdValue) nd.thresholdValue = n.thresholdValue;
-                    if (n.connectedComponentsSize) nd.connectedComponentsSize = n.connectedComponentsSize;
-                    if (n.operationType) nd.operationType = n.operationType;
-                    if (n.operationWeight) nd.operationWeight = n.operationWeight;
-                    if (n.concatenationAlignment) nd.concatenationAlignment = n.concatenationAlignment;
-                    if (n.transitionType) nd.transitionType = n.transitionType;
-                    if (n.transitionDuration) nd.transitionDuration = n.transitionDuration;
-                    if (n.nodeText) nd.nodeText = n.nodeText;
-                    if (n.textColor) nd.textColor = n.textColor;
-                    if (n.textSize) nd.textSize = n.textSize;
-                    if (n.textHeight) nd.textHeight = n.textHeight;
+                    if (n.checkFirstFrame) nd.checkFirstFrame = n.checkFirstFrame;
+
+                    nd.gridSize = n.gridSize;
+                    nd.gammaValue = n.gammaValue;
+                    nd.selectedColor = n.selectedColor;
+                    nd.oldHSV = n.oldHSV;
+                    nd.newHSV = n.newHSV;
+                    nd.convolutionType = n.convolutionType;
+                    nd.convolutionalFilterSize = n.convolutionalFilterSize;
+                    nd.customKernel = n.customKernel;
+                    nd.morphologyType = n.morphologyType;
+                    nd.morphologicalFilterSize = n.morphologicalFilterSize;
+                    nd.morphologyKernelType = n.morphologyKernelType;
+                    nd.polarEffectSize = n.polarEffectSize;
+                    nd.polarEffectType = n.polarEffectType;
+                    nd.glitchEffectSize = n.glitchEffectSize;
+                    nd.glitchEffectType = n.glitchEffectType;
+                    nd.channelMixerValues = n.channelMixerValues;
+                    nd.opticalFlowSize = n.opticalFlowSize;
+                    nd.thresholdValue = n.thresholdValue;
+                    nd.connectedComponentsSize = n.connectedComponentsSize;
+                    nd.operationType = n.operationType;
+                    nd.operationWeight = n.operationWeight;
+                    nd.concatenationAlignment = n.concatenationAlignment;
+                    nd.transitionType = n.transitionType;
+                    nd.transitionDuration = n.transitionDuration;
+
+                    nd.nodeText = n.nodeText;
+                    nd.textColor = n.textColor;
+                    nd.textSize = n.textSize;
+                    nd.textHeight = n.textHeight;
                     if (n.fontName) nd.fontName = n.fontName;
                     if (n.fontUrls) nd.fontUrls = n.fontUrls;
-                    if (n.curveColor) nd.curveColor = n.curveColor;
-                    if (n.paramA) nd.paramA = n.paramA;
-                    if (n.paramB) nd.paramB = n.paramB;
-                    if (n.curveName) nd.curveName = n.curveName;
-                    if (n.curveType) nd.curveType = n.curveType;
-                    if (n.equationX) nd.equationX = n.equationX;
-                    if (n.equationY) nd.equationY = n.equationY;
-                    if (n.animationSpeed) nd.animationSpeed = n.animationSpeed;
-                    if (n.detectionConfidence) nd.detectionConfidence = n.detectionConfidence;
-                    if (n.fxName) nd.fxName = n.fxName;
-                    if (n.fxA) nd.fxA = n.fxA;
-                    if (n.sliderAtitle) nd.sliderAtitle = n.sliderAtitle;
-                    if (n.targetValueA) nd.targetValueA = n.targetValueA;
-                    if (n.targetValueB) nd.targetValueB = n.targetValueB;
-                    if (n.countTime) nd.countTime = n.countTime;
+
+                    nd.curveColor = n.curveColor;
+                    nd.paramA = n.paramA;
+                    nd.paramB = n.paramB;
+                    nd.curveName = n.curveName;
+                    nd.curveType = n.curveType;
+                    nd.equationX = n.equationX;
+                    nd.equationY = n.equationY;
+                    nd.animationSpeed = n.animationSpeed;
+                    nd.detectionConfidence = n.detectionConfidence;
+                    nd.fxName = n.fxName;
+                    nd.fxA = n.fxA;
+                    nd.sliderAtitle = n.sliderAtitle;
+                    nd.targetValueA = n.targetValueA;
+                    nd.targetValueB = n.targetValueB;
+                    nd.countTime = n.countTime;
 
                     nd.fullRangeChecked = n.fullRangeChecked;
                     nd.colorRangeChecked = n.colorRangeChecked;
