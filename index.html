@@ -98,6 +98,13 @@
             display: none;
         }
 
+        .fs-canvas {
+            position: absolute;
+            left: -1000px;
+            top: -1000px;
+            zoom: 0.001;
+        }
+
         .name-input-field {
             background-color: #222;
             border: 1px solid #666;
@@ -391,6 +398,9 @@
     <script>
         let nodes = [];
         let connections = [];
+        let fsCanvas = [];
+        let fsCtx = [];
+        let fsIndex = [];
         let pendingWire = null;
         let activeNode = null;
         let openCvReady = false;
@@ -1177,21 +1187,34 @@
                 node.canvas.width = 190;
                 node.ctx = node.canvas.getContext('2d', { willReadFrequently: true });
 
-                node.canvas.addEventListener("fullscreenchange", function () { for (var i = 0; i < 10; i++) setTimeout(renderWires, i * 100); });
+                let index = fsIndex.indexOf(node.id);
+                if (index < 0) {
+                    let fsC = document.createElement('canvas');
+                    let fsX = fsC.getContext('2d', { willReadFrequently: true });
+                    fsC.className = 'fs-canvas';
+                    document.body.appendChild(fsC);
+                    fsCanvas.push(fsC);
+                    fsCtx.push(fsX);
+                    fsIndex.push(node.id);
+                    index = fsIndex.length - 1;
+                }
+                //node.canvas.addEventListener("fullscreenchange", function () { for (var i = 0; i < 10; i++) setTimeout(renderWires, i * 100); });
 
                 node.onExecute = () => {
                     if (!openCvReady) return;
                     const sourceElement = getInputData(node, 0);
                     const sourceIsValid = sourceElement && (sourceElement.naturalWidth > 0 || sourceElement.videoWidth > 0 || sourceElement.width > 0);
                     if (sourceIsValid) {
-                        node.canvas.width = sourceElement.naturalWidth || sourceElement.videoWidth || sourceElement.width;
-                        node.canvas.height = sourceElement.naturalHeight || sourceElement.videoHeight || sourceElement.height;
+                        let W = sourceElement.naturalWidth || sourceElement.videoWidth || sourceElement.width;
+                        let H = sourceElement.naturalHeight || sourceElement.videoHeight || sourceElement.height;
 
-                        if (!document.fullscreenElement) {
-                            node.canvas.height = 190 * node.canvas.height / node.canvas.width;
-                            node.canvas.width = 190;
-                        }
+                        node.canvas.height = 190 * H / W;
+                        node.canvas.width = 190;
                         node.ctx.drawImage(sourceElement, 0, 0, node.canvas.width, node.canvas.height);
+
+                        fsCanvas[index].width = W;
+                        fsCanvas[index].height = H;
+                        fsCtx[index].drawImage(sourceElement, 0, 0, W, H);
                     }
                     else {
                         node.ctx.fillStyle = '#000000';
@@ -3421,7 +3444,12 @@
                     }
                     renderGraph();
                 }
-                else if (event.target.tagName === 'IMG' || event.target.tagName === 'VIDEO' || event.target.tagName === 'CANVAS') event.target.requestFullscreen();
+                else if (event.target.tagName === 'IMG' || event.target.tagName === 'VIDEO') event.target.requestFullscreen();
+                else if (event.target.tagName === 'CANVAS') {
+                    const nodeEl = event.target.closest('.node');
+                    const nodeId = parseInt(nodeEl.dataset.nodeId);
+                    fsCanvas[fsIndex.indexOf(nodeId)].requestFullscreen();
+                }
                 else if (activeNode) {
                     nodes = nodes.filter(n => n.id !== activeNode.id);
                     connections = connections.filter(c => c.fromNode !== activeNode.id && c.toNode !== activeNode.id);
@@ -3429,7 +3457,14 @@
                     renderGraph();
                 }
             });
-            graphContainer.addEventListener('dblclick', (event) => { const c = event.target; if (c.tagName === 'IMG' || c.tagName === 'VIDEO' || c.tagName === 'CANVAS') c.requestFullscreen(); });
+            graphContainer.addEventListener('dblclick', (event) => {
+                if (event.target.tagName === 'IMG' || event.target.tagName === 'VIDEO') event.target.requestFullscreen();
+                else if (event.target.tagName === 'CANVAS') {
+                    const nodeEl = event.target.closest('.node');
+                    const nodeId = parseInt(nodeEl.dataset.nodeId);
+                    fsCanvas[fsIndex.indexOf(nodeId)].requestFullscreen();
+                }
+            });
             requestAnimationFrame(update);
         }
 
