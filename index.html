@@ -963,6 +963,7 @@
                         else if (sourceControl.length == 4 && sourceControl[0] == 0) check = true;
 
                         if (check) {
+                            node.defaultTime = node.countTime;
                             node.countDown = setInterval(function () {
                                 node.countTime--;
                                 document.getElementById('countDownTime' + node.id).value = node.countTime;
@@ -978,8 +979,12 @@
                             node.countDown = null;
                             node.isDisabled = '';
                         }
-                        else node.countTime = node.defaultTime;
-                        //renderGraph();
+                        else {
+                            node.countTime = node.defaultTime;
+                            document.getElementById('countDownTime' + node.id).value = node.defaultTime;
+                            document.getElementById('countDownTime' + node.id).disabled = '';
+                            document.getElementById('countDownButton' + node.id).disabled = '';
+                        }
                     }
                     node.outputValues.control = [node.countTime, node.targetValueA, node.targetValueB, node.isDisabled];
                 };
@@ -2927,6 +2932,7 @@
                     const nodeId = parseInt(event.target.dataset.nodeId);
                     const nodeData = nodes.find(n => n.id === nodeId);
                     if (nodeData) {
+                        nodeData.defaultTime = nodeData.countTime;
                         nodeData.countDown = setInterval(function () {
                             nodeData.countTime--;
                             document.getElementById('countDownTime' + nodeId).value = nodeData.countTime;
@@ -3026,7 +3032,6 @@
                 }
                 else if (event.target.classList.contains('count-down-time')) {
                     nodeData.countTime = event.target.value * 1;
-                    nodeData.defaultTime = nodeData.countTime;
                 }
                 else if (event.target.classList.contains('character-model-loader')) {
                     const file = event.target.files[0];
