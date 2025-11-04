@@ -1,0 +1,191 @@
+{
+  "nodes": [
+    {
+      "id": 702274,
+      "title": "Image",
+      "type": "Input",
+      "x": 26,
+      "y": 8,
+      "imageUrl": "examples/images/flowers.bmp"
+    },
+    {
+      "id": 760456,
+      "title": "Canvas Viewer",
+      "type": "Viewer",
+      "x": 764,
+      "y": 157
+    },
+    {
+      "id": 255652,
+      "title": "Transitions",
+      "type": "Transition",
+      "x": 519,
+      "y": 326,
+      "transitionType": "Wipe",
+      "transitionDuration": 2
+    },
+    {
+      "id": 278808,
+      "title": "Color Adjustment",
+      "type": "Throughput",
+      "x": 274,
+      "y": 9,
+      "bypass": "checked",
+      "checkFirstFrame": true,
+      "selectedColor": "#80ffff",
+      "oldHSV": [
+        90,
+        128
+      ],
+      "newHSV": [
+        0,
+        0
+      ],
+      "fullRangeChecked": true,
+      "colorRangeChecked": "",
+      "colorInvertChecked": ""
+    },
+    {
+      "id": 811580,
+      "title": "Color Adjustment",
+      "type": "Throughput",
+      "x": 520,
+      "y": 75,
+      "bypass": "checked",
+      "checkFirstFrame": true,
+      "selectedColor": "#80ffff",
+      "oldHSV": [
+        90,
+        128
+      ],
+      "newHSV": [
+        180,
+        0
+      ],
+      "fullRangeChecked": true,
+      "colorRangeChecked": "",
+      "colorInvertChecked": "checked"
+    },
+    {
+      "id": 384456,
+      "title": "Countdown / Keyframes",
+      "type": "Time",
+      "x": 273,
+      "y": 280,
+      "targetValueA": 0,
+      "targetValueB": 500,
+      "countTime": 100
+    },
+    {
+      "id": 985225,
+      "title": "Countdown / Keyframes",
+      "type": "Time",
+      "x": 23,
+      "y": 331,
+      "targetValueA": 500,
+      "targetValueB": 0,
+      "countTime": 3
+    }
+  ],
+  "connections": [
+    {
+      "id": 346973,
+      "fromNode": 255652,
+      "fromPort": 0,
+      "toNode": 760456,
+      "toPort": 0,
+      "color": "hsl(25.948764875539553, 59.83904356111108%, 49.14786113711594%)"
+    },
+    {
+      "id": 52397,
+      "fromNode": 702274,
+      "fromPort": 0,
+      "toNode": 278808,
+      "toPort": 0,
+      "color": "hsl(297.12559046002394, 65.80187529235477%, 52.641412844445824%)"
+    },
+    {
+      "id": 647735,
+      "fromNode": 702274,
+      "fromPort": 0,
+      "toNode": 811580,
+      "toPort": 0,
+      "color": "hsl(251.85034418814973, 56.071776627923946%, 45.708922888707185%)"
+    },
+    {
+      "id": 856103,
+      "fromNode": 384456,
+      "fromPort": 0,
+      "toNode": 811580,
+      "toPort": 1,
+      "color": "hsl(287.90666173721286, 52.77831568243187%, 49.60350590323513%)"
+    },
+    {
+      "id": 949042,
+      "fromNode": 985225,
+      "fromPort": 0,
+      "toNode": 384456,
+      "toPort": 0,
+      "color": "hsl(187.5496252923409, 68.13911439478503%, 53.21114174476521%)"
+    },
+    {
+      "id": 290833,
+      "fromNode": 985225,
+      "fromPort": 0,
+      "toNode": 985225,
+      "toPort": 0,
+      "color": "hsl(243.18156648586123, 58.21149855093249%, 46.539301721488954%)"
+    },
+    {
+      "id": 551069,
+      "fromNode": 811580,
+      "fromPort": 0,
+      "toNode": 255652,
+      "toPort": 1,
+      "color": "hsl(297.09124838292684, 58.07859614617672%, 52.486317448134876%)"
+    },
+    {
+      "id": 91283,
+      "fromNode": 278808,
+      "fromPort": 0,
+      "toNode": 255652,
+      "toPort": 0,
+      "color": "hsl(224.7997662472973, 52.40417886652418%, 50.65295945828629%)"
+    },
+    {
+      "id": 213990,
+      "fromNode": 985225,
+      "fromPort": 0,
+      "toNode": 255652,
+      "toPort": 2,
+      "color": "hsl(9.650057065507589, 65.87484053572315%, 46.50484026795321%)"
+    },
+    {
+      "id": 762179,
+      "fromNode": 985225,
+      "fromPort": 0,
+      "toNode": 278808,
+      "toPort": 1,
+      "color": "hsl(48.5097558717217, 64.75024659204203%, 52.68595748448028%)"
+    }
+  ],
+  "gestures": [
+    "0",
+    "0",
+    "0",
+    "0",
+    "0",
+    "0",
+    "0",
+    "0",
+    "0",
+    "0",
+    "0",
+    "0",
+    "0",
+    "0",
+    "0",
+    "0",
+    "0"
+  ]
+}
