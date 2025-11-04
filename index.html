@@ -310,6 +310,7 @@
     <div id="examples" onmouseleave="this.style.display='none';">
         <h3 style="color:darkolivegreen">Sample Graphs:</h3>
         <p class="example">Blooming Effect</p>
+        <p class="example">Cascaded Keyframes</p>
         <p class="example">Channel Swap</p>
         <p class="example">Color Manipulation</p>
         <p class="example">Curve Projection</p>
@@ -319,6 +320,7 @@
         <p class="example">Glass Texture</p>
         <p class="example">Saturation Replacement</p>
         <p class="example">Text Mask</p>
+        <p class="example">Transitions Loop</p>
         <p class="example">Weighted Subtraction</p>
     </div>
     <div id="settings" onmouseleave="this.style.display='none';">
@@ -526,7 +528,7 @@
                             }
                             catch { }
                         }
-                        else if (sourceControl && sourceControl.length == 4 && sourceControl[3] === 'disabled' && sourceControl[0] == 1) {
+                        else if (sourceControl && sourceControl.length == 5 && sourceControl[3] === 'disabled' && sourceControl[0] == 1) {
                             if (isPlaying) setTimeout(function () { node.mediaElement.pause(); isPlaying = false; }, 1000);
                             else setTimeout(function () { node.mediaElement.play(); isPlaying = true; }, 1000);
                         }
@@ -702,9 +704,9 @@
                         }
                         catch { }
                     }
-                    else if (sourceControl && sourceControl.length == 4 && sourceControl[3] === 'disabled') {
-                        let target = sourceControl[1] * 100;
-                        if (sourceControl[0] > 0) node.fxA += (target - node.fxA) / Math.pow(sourceControl[0], 3);
+                    else if (sourceControl && sourceControl.length == 5 && sourceControl[3] === 'disabled') {
+                        let target = sourceControl[1] * 0.1;
+                        if (sourceControl[0] > 0) node.fxA += (target - node.fxA) / Math.min(Math.pow(sourceControl[0], 3), 2000);
                         document.getElementById('fxA' + node.id).value = node.fxA;
                         if (Math.abs(node.fxA - Math.round(node.fxA)) < 0.1) node.updateEffect();
                     }
@@ -805,12 +807,12 @@
                         }
                         catch { }
                     }
-                    else if (sourceControl && sourceControl.length == 4 && sourceControl[3] === 'disabled') {
-                        let targetA = sourceControl[1] * 100 - 50;
-                        let targetB = sourceControl[2] * 100 - 50;
+                    else if (sourceControl && sourceControl.length == 5 && sourceControl[3] === 'disabled') {
+                        let targetA = sourceControl[1] * 0.2 - 100;
+                        let targetB = sourceControl[2] * 0.2 - 100;
                         if (sourceControl[0] > 0) {
-                            node.camera.position.x += (targetA - node.camera.position.x) / Math.pow(sourceControl[0], 3);
-                            node.camera.position.y += (targetB - node.camera.position.y) / Math.pow(sourceControl[0], 3);
+                            node.camera.position.x += (targetA - node.camera.position.x) / Math.min(Math.pow(sourceControl[0], 3), 2000);
+                            node.camera.position.y += (targetB - node.camera.position.y) / Math.min(Math.pow(sourceControl[0], 3), 2000);
                         }
                     }
                     controls.update();
@@ -908,9 +910,9 @@
                         }
                         catch { }
                     }
-                    else if (sourceControl && sourceControl.length == 4 && sourceControl[3] === 'disabled') {
-                        let target = sourceControl[1] * 6 - 3;
-                        if (sourceControl[0] > 0) node.animationSpeed += (target - node.animationSpeed) / Math.pow(sourceControl[0], 3);
+                    else if (sourceControl && sourceControl.length == 5 && sourceControl[3] === 'disabled') {
+                        let target = sourceControl[1] * 0.006 - 3;
+                        if (sourceControl[0] > 0) node.animationSpeed += (target - node.animationSpeed) / Math.min(Math.pow(sourceControl[0], 3), 2000);
                         document.getElementById('curveSpeed' + node.id).value = node.animationSpeed;
                         document.getElementById('curveSpeed' + node.id).title = 'Animation speed: ' + node.animationSpeed;
                     }
@@ -959,30 +961,6 @@
                 node.isDisabled = '';
 
                 node.onExecute = () => {
-                    const sourceControl = getInputData(node, 0);
-                    if (sourceControl && node.isDisabled === '') {
-                        let check = false;
-                        if (sourceControl.length == 2) {
-                            try {
-                                let trigger = calculateLandmarks(sourceControl);
-                                let ix = document.getElementById('countdownTrigger').value * 1;
-                                if (trigger[ix]) check = true;
-                            }
-                            catch { }
-                        }
-                        else if (sourceControl.length == 4 && sourceControl[0] == 0) check = true;
-
-                        if (check) {
-                            node.defaultTime = node.countTime;
-                            node.countDown = setInterval(function () {
-                                node.countTime--;
-                                document.getElementById('countDownTime' + node.id).value = node.countTime;
-                            }, 1000);
-                            node.isDisabled = "disabled";
-                            document.getElementById('countDownTime' + node.id).disabled = 'disabled';
-                            document.getElementById('countDownButton' + node.id).disabled = 'disabled';
-                        }
-                    }
                     if (node.countTime <= 0) {
                         if (node.countDown) {
                             clearInterval(node.countDown);
@@ -996,7 +974,32 @@
                             document.getElementById('countDownButton' + node.id).disabled = '';
                         }
                     }
-                    node.outputValues.control = [node.countTime, node.targetValueA, node.targetValueB, node.isDisabled];
+
+                    const sourceControl = getInputData(node, 0);
+                    if (sourceControl && node.isDisabled === '') {
+                        let check = false;
+                        if (sourceControl.length == 2) {
+                            try {
+                                let trigger = calculateLandmarks(sourceControl);
+                                let ix = document.getElementById('countdownTrigger').value * 1;
+                                if (trigger[ix]) check = true;
+                            }
+                            catch { }
+                        }
+                        else if (sourceControl.length == 5 && sourceControl[0] == 0) check = true;
+
+                        if (check) {
+                            node.defaultTime = node.countTime;
+                            node.countDown = setInterval(function () {
+                                node.countTime--;
+                                document.getElementById('countDownTime' + node.id).value = node.countTime;
+                            }, 1000);
+                            node.isDisabled = "disabled";
+                            document.getElementById('countDownTime' + node.id).disabled = 'disabled';
+                            document.getElementById('countDownButton' + node.id).disabled = 'disabled';
+                        }
+                    }
+                    node.outputValues.control = [node.countTime, node.targetValueA, node.targetValueB, node.isDisabled, node.id];
                 };
             }
             else if (type === '3DScene') {
@@ -1163,12 +1166,12 @@
                             }
                             catch { }
                         }
-                        else if (sourceControl && sourceControl.length == 4 && sourceControl[3] === 'disabled') {
-                            let targetA = sourceControl[1] * 100 - 50;
-                            let targetB = sourceControl[2] * 100 - 50;
+                        else if (sourceControl && sourceControl.length == 5 && sourceControl[3] === 'disabled') {
+                            let targetA = sourceControl[1] * 0.2 - 100;
+                            let targetB = sourceControl[2] * 0.2 - 100;
                             if (sourceControl[0] > 0) {
-                                node.camera.position.x += (targetA - node.camera.position.x) / Math.pow(sourceControl[0], 3);
-                                node.camera.position.y += (targetB - node.camera.position.y) / Math.pow(sourceControl[0], 3);
+                                node.camera.position.x += (targetA - node.camera.position.x) / Math.min(Math.pow(sourceControl[0], 3), 2000);
+                                node.camera.position.y += (targetB - node.camera.position.y) / Math.min(Math.pow(sourceControl[0], 3), 2000);
                             }
                         }
                     }
@@ -1422,12 +1425,12 @@
                                         }
                                         catch { }
                                     }
-                                    else if (sourceControl && sourceControl.length == 4 && sourceControl[3] === 'disabled') {
-                                        let targetA = sourceControl[1] * 360 - 180;
-                                        let targetB = sourceControl[2] * 510 - 255;
+                                    else if (sourceControl && sourceControl.length == 5 && sourceControl[3] === 'disabled') {
+                                        let targetA = sourceControl[1] * 0.36 - 180;
+                                        let targetB = sourceControl[2] * 0.51 - 255;
                                         if (sourceControl[0] > 0) {
-                                            node.newHSV[0] += (targetA - node.newHSV[0]) / Math.pow(sourceControl[0], 3);
-                                            node.newHSV[1] += (targetB - node.newHSV[1]) / Math.pow(sourceControl[0], 3);
+                                            node.newHSV[0] += (targetA - node.newHSV[0]) / Math.min(Math.pow(sourceControl[0], 3), 2000);
+                                            node.newHSV[1] += (targetB - node.newHSV[1]) / Math.min(Math.pow(sourceControl[0], 3), 2000);
                                         }
                                         document.getElementById('hueValue' + node.id).value = node.newHSV[0];
                                         document.getElementById('satValue' + node.id).value = node.newHSV[1];
@@ -1472,9 +1475,9 @@
                                         }
                                         catch { }
                                     }
-                                    else if (sourceControl && sourceControl.length == 4 && sourceControl[3] === 'disabled') {
-                                        let target = sourceControl[1] * 10;
-                                        if (sourceControl[0] > 0) node.gammaValue += (target - node.gammaValue) / Math.pow(sourceControl[0], 3);
+                                    else if (sourceControl && sourceControl.length == 5 && sourceControl[3] === 'disabled') {
+                                        let target = sourceControl[1] * 0.01;
+                                        if (sourceControl[0] > 0) node.gammaValue += (target - node.gammaValue) / Math.min(Math.pow(sourceControl[0], 3), 2000);
                                         document.getElementById('gamma' + node.id).value = node.gammaValue;
                                         document.getElementById('gamma' + node.id).title = 'Gamma value: ' + node.gammaValue;
                                     }
@@ -1591,9 +1594,9 @@
                                         }
                                         catch { }
                                     }
-                                    else if (sourceControl && sourceControl.length == 4 && sourceControl[3] === 'disabled') {
-                                        let target = Math.round(sourceControl[1] * 11) * 2 + 3;
-                                        if (sourceControl[0] > 0) node.morphologicalFilterSize += (target - node.morphologicalFilterSize) / Math.pow(sourceControl[0], 3);
+                                    else if (sourceControl && sourceControl.length == 5 && sourceControl[3] === 'disabled') {
+                                        let target = Math.round(sourceControl[1] * 0.011) * 2 + 3;
+                                        if (sourceControl[0] > 0) node.morphologicalFilterSize += (target - node.morphologicalFilterSize) / Math.min(Math.pow(sourceControl[0], 3), 2000);
                                         document.getElementById('kernelSize' + node.id).value = node.morphologicalFilterSize;
                                         document.getElementById('kernelSize' + node.id).title = 'Kernel size' + node.morphologicalFilterSize + 'X' + node.morphologicalFilterSize;
                                     }
@@ -1657,9 +1660,9 @@
                                         }
                                         catch { }
                                     }
-                                    else if (sourceControl && sourceControl.length == 4 && sourceControl[3] === 'disabled') {
-                                        let target = Math.round(sourceControl[1] * 12) * 2 + 1;
-                                        if (sourceControl[0] > 0) node.glitchEffectSize += (target - node.glitchEffectSize) / Math.pow(sourceControl[0], 3);
+                                    else if (sourceControl && sourceControl.length == 5 && sourceControl[3] === 'disabled') {
+                                        let target = Math.round(sourceControl[1] * 0.012) * 2 + 1;
+                                        if (sourceControl[0] > 0) node.glitchEffectSize += (target - node.glitchEffectSize) / Math.min(Math.pow(sourceControl[0], 3), 2000);
                                         document.getElementById('glitch' + node.id).value = node.glitchEffectSize;
                                     }
                                     else document.getElementById('glitch' + node.id).style.accentColor = '';
@@ -2058,7 +2061,7 @@
                             }
                             catch { }
                         }
-                        else if (sourceControl && sourceControl.length == 4 && sourceControl[3] === 'disabled' && sourceControl[0] == 1) {
+                        else if (sourceControl && sourceControl.length == 5 && sourceControl[3] === 'disabled' && sourceControl[0] == 1) {
                             if (node.progress == 0) setTimeout(function () { node.playTransition(1.0); }, 1000);
                             else if (node.progress == 1) setTimeout(function () { node.playTransition(0); }, 1000);
                         }
@@ -2141,9 +2144,9 @@
                                         }
                                         catch { }
                                     }
-                                    else if (sourceControl && sourceControl.length == 4 && sourceControl[3] === 'disabled') {
-                                        let target = sourceControl[1];
-                                        if (sourceControl[0] > 0) node.operationWeight += (target - node.operationWeight) / Math.pow(sourceControl[0], 3);
+                                    else if (sourceControl && sourceControl.length == 5 && sourceControl[3] === 'disabled') {
+                                        let target = sourceControl[1] * 0.001;
+                                        if (sourceControl[0] > 0) node.operationWeight += (target - node.operationWeight) / Math.min(Math.pow(sourceControl[0], 3), 2000);
                                         document.getElementById('weights' + node.id).value = node.operationWeight;
                                         document.getElementById('weights' + node.id).title = 'Weights: ' + node.operationWeight + ', ' + (1 - node.operationWeight);
                                     }
@@ -2217,9 +2220,9 @@
                                         }
                                         catch { }
                                     }
-                                    else if (sourceControl && sourceControl.length == 4 && sourceControl[3] === 'disabled') {
-                                        let target = sourceControl[1];
-                                        if (sourceControl[0] > 0) node.concatenationAlignment += (target - node.concatenationAlignment) / Math.pow(sourceControl[0], 3);
+                                    else if (sourceControl && sourceControl.length == 5 && sourceControl[3] === 'disabled') {
+                                        let target = sourceControl[1] * 0.001;
+                                        if (sourceControl[0] > 0) node.concatenationAlignment += (target - node.concatenationAlignment) / Math.min(Math.pow(sourceControl[0], 3), 2000);
                                         document.getElementById('overlap' + node.id).value = node.concatenationAlignment;
                                     }
                                     else document.getElementById('overlap' + node.id).style.accentColor = '';
@@ -2590,8 +2593,8 @@
                     case 'Countdown / Keyframes':
                         specificContentHTML = `
                             <div class="node-content">
-                                <input type="range" data-node-id="${nodeData.id}" title="Target value A: ${nodeData.targetValueA}" class="node-input-range target-value-A" min="0" max="1" step="0.001" value="${nodeData.targetValueA}">
-                                <input type="range" data-node-id="${nodeData.id}" title="Target value B: ${nodeData.targetValueB}" class="node-input-range target-value-B" min="0" max="1" step="0.001" value="${nodeData.targetValueB}">
+                                <input type="range" data-node-id="${nodeData.id}" title="Target value A: ${nodeData.targetValueA}" class="node-input-range target-value-A" min="0" max="1000" value="${nodeData.targetValueA}">
+                                <input type="range" data-node-id="${nodeData.id}" title="Target value B: ${nodeData.targetValueB}" class="node-input-range target-value-B" min="0" max="1000" value="${nodeData.targetValueB}">
                                 <p><button id="countDownButton${nodeData.id}" class="node-button keyframe-trigger-button" data-node-id="${nodeData.id}" style="width:100px;font-weight:bold" ${nodeData.isDisabled}>Trigger</button>
                                 <input type="number" id="countDownTime${nodeData.id}" data-node-id="${nodeData.id}" title="Seconds" class="node-input-number count-down-time" min="1" max="3600" value="${nodeData.countTime}" style="width:75px" ${nodeData.isDisabled}></p>
                             </div>`;
