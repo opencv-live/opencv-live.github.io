@@ -3568,6 +3568,10 @@
                 const payload = JSON.parse(text);
                 nodes = [];
                 connections = payload.connections || [];
+
+                const highestId = setInterval(() => { }, 0);
+                for (let i = 1; i <= highestId; i++) clearInterval(i);
+
                 payload.nodes.forEach(n => {
                     const nd = createNodeData(n.id, n.title, n.type, n.x || 100, n.y || 100);
                     if (n.imageUrl) { nd.imageUrl = n.imageUrl; if (nd.mediaElement) nd.mediaElement.src = n.imageUrl; }
