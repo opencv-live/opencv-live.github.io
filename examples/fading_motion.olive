@@ -1,0 +1,125 @@
+{
+  "nodes": [
+    {
+      "id": 486048,
+      "title": "Video / Audio",
+      "type": "Input",
+      "x": 14,
+      "y": 16,
+      "videoUrl": "examples/videos/ballet.mp4"
+    },
+    {
+      "id": 501973,
+      "title": "Canvas Viewer",
+      "type": "Viewer",
+      "x": 738,
+      "y": 66
+    },
+    {
+      "id": 803315,
+      "title": "Human Pose",
+      "type": "MediaPipe",
+      "x": 251,
+      "y": 69,
+      "detectionConfidence": 0.5
+    },
+    {
+      "id": 498659,
+      "title": "Glitch Effects",
+      "type": "Throughput",
+      "x": 254,
+      "y": 250,
+      "bypass": "checked",
+      "glitchEffectSize": 15,
+      "glitchEffectType": "Fade"
+    },
+    {
+      "id": 102548,
+      "title": "Gamma Correction",
+      "type": "Throughput",
+      "x": 489,
+      "y": 282,
+      "bypass": "checked",
+      "gammaValue": 2
+    },
+    {
+      "id": 789255,
+      "title": "Countdown / Keyframes",
+      "type": "Time",
+      "x": 484,
+      "y": 19,
+      "targetValueA": 900,
+      "targetValueB": 500,
+      "countTime": 6
+    }
+  ],
+  "connections": [
+    {
+      "id": 688501,
+      "fromNode": 486048,
+      "fromPort": 0,
+      "toNode": 803315,
+      "toPort": 0,
+      "color": "hsl(168.61250091440553, 58.85282639647437%, 45.86054591124408%)"
+    },
+    {
+      "id": 109512,
+      "fromNode": 803315,
+      "fromPort": 1,
+      "toNode": 789255,
+      "toPort": 0,
+      "color": "hsl(227.54506817544595, 54.08933037078393%, 52.22147249060751%)"
+    },
+    {
+      "id": 156043,
+      "fromNode": 789255,
+      "fromPort": 0,
+      "toNode": 498659,
+      "toPort": 1,
+      "color": "hsl(59.12594989152489, 50.25818961863313%, 49.48777717677018%)"
+    },
+    {
+      "id": 897700,
+      "fromNode": 498659,
+      "fromPort": 0,
+      "toNode": 102548,
+      "toPort": 0,
+      "color": "hsl(202.38446984253557, 51.122696340935796%, 46.58717354854291%)"
+    },
+    {
+      "id": 666360,
+      "fromNode": 102548,
+      "fromPort": 0,
+      "toNode": 501973,
+      "toPort": 0,
+      "color": "hsl(264.4950875493587, 72.7649956897217%, 45.06097952149997%)"
+    },
+    {
+      "id": 618489,
+      "fromNode": 486048,
+      "fromPort": 0,
+      "toNode": 498659,
+      "toPort": 0,
+      "color": "hsl(197.2205147711176, 53.23289990707986%, 45.162616563281084%)"
+    }
+  ],
+  "gestures": [
+    "0",
+    "0",
+    "0",
+    "0",
+    "0",
+    "4",
+    "0",
+    "0",
+    "0",
+    "0",
+    "0",
+    "0",
+    "0",
+    "0",
+    "0",
+    "0",
+    "0"
+  ]
+}
