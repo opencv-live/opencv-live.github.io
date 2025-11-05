@@ -318,6 +318,7 @@
         <p class="example">Edges Sketch</p>
         <p class="example">Foreground Extraction</p>
         <p class="example">Glass Texture</p>
+        <p class="example">Interactive Dance</p>
         <p class="example">Saturation Replacement</p>
         <p class="example">Text Mask</p>
         <p class="example">Transitions Loop</p>
@@ -447,6 +448,8 @@
 
             let rightShoulder = source[0][12];
             let leftShoulder = source[0][11];
+            let klimax = 1.0 / Math.abs(leftShoulder.x - rightShoulder.x);
+
             let rightElbow = source[0][14];
             let leftElbow = source[0][13];
             let rightWrist = source[0][16];
@@ -456,18 +459,18 @@
             let bX = null, bY = null, jX = null, jY = null;
 
             if (rightWrist.y < rightShoulder.y && leftWrist.y > leftShoulder.y) {
-                rX = (rightElbow.x - rightWrist.x);
-                rY = (levelY - rightWrist.y) * 10;
+                rX = klimax * (rightElbow.x - rightWrist.x);
+                rY = klimax * (levelY - rightWrist.y) * 10;
             }
             if (rightWrist.y > rightShoulder.y && leftWrist.y < leftShoulder.y) {
-                lX = (leftElbow.x - leftWrist.x);
-                lY = (levelY - leftWrist.y) * 10;
+                lX = klimax * (leftElbow.x - leftWrist.x);
+                lY = klimax * (levelY - leftWrist.y) * 10;
             }
             if (rightWrist.y < rightShoulder.y && leftWrist.y < leftShoulder.y) {
-                bX = (leftWrist.x - rightWrist.x) - 0.5;
-                bY = (leftWrist.y - rightWrist.y) * 10;
+                bX = klimax * ((leftWrist.x - rightWrist.x) - 0.5);
+                bY = klimax * (leftWrist.y - rightWrist.y) * 10;
             }
-            if (Math.abs(rightWrist.x - leftWrist.x) < 0.1 && Math.abs(rightWrist.y - leftWrist.y) < 0.1) {
+            if (Math.abs(rightWrist.x - leftWrist.x) < 0.75 / klimax && Math.abs(rightWrist.y - leftWrist.y) < 0.75 / klimax) {
                 jX = 0.5 - (rightWrist.x + leftWrist.x) / 2;
                 jY = 0.5 - (rightWrist.y + leftWrist.y) / 2;
             }
@@ -494,6 +497,7 @@
                 }
                 else {
                     node.mediaElement = document.createElement('video');
+                    node.mediaElement.autoplay = true;
 
                     if (title === 'Video / Audio') {
                         node.inputs.push({ name: 'control' });
@@ -501,8 +505,8 @@
                         node.mediaElement.controls = true;
                         node.mediaElement.loop = false;
                         node.mediaElement.muted = false;
+                        node.mediaElement.autoplay = false;
                     }
-                    node.mediaElement.autoplay = true;
                     node.mediaElement.playsInline = true;
                     node.mediaElement.className = 'media-preview';
                 }
@@ -953,8 +957,8 @@
                 node.inputs.push({ name: 'control' });
                 node.outputs.push({ name: 'control' });
 
-                node.targetValueA = 0.5;
-                node.targetValueB = 0.5;
+                node.targetValueA = 500;
+                node.targetValueB = 500;
                 node.countDown = null;
                 node.countTime = 1;
                 node.defaultTime = 1;
@@ -1289,6 +1293,9 @@
                 }
                 else if (title === 'Connected Components') {
                     node.connectedComponentsSize = 128;
+                }
+                else if (title === 'Background Subtraction') {
+                    node.fgbg = new cv.BackgroundSubtractorMOG2(500, 16, false);
                 }
                 node.onExecute = () => {
                     if (!openCvReady) return;
@@ -1690,6 +1697,8 @@
                                         channels.delete(); planes.delete(); c1.delete(); c2.delete(); c3.delete();
                                     }
                                     else if (node.glitchEffectType === 'Fade') {
+                                        cv.cvtColor(src, src, cv.COLOR_RGBA2RGB);
+
                                         if (node.checkFirstFrame) {
                                             node.blackImage = new cv.Mat.zeros(node.canvas.height, node.canvas.width, src.type());
                                             node.checkFirstFrame = false;
@@ -1888,10 +1897,8 @@
                                     contours.delete(); hierarchy.delete();
                                 }
                                 else if (title === 'Background Subtraction') {
-                                    if (node.checkFirstFrame) {
-                                        node.fgbg = new cv.BackgroundSubtractorMOG2(500, 16, false);
-                                        node.checkFirstFrame = false;
-                                    }
+                                    cv.cvtColor(src, src, cv.COLOR_RGBA2RGB);
+
                                     let tmp = new cv.Mat();
                                     node.fgbg.apply(src, tmp);
 
@@ -1900,9 +1907,9 @@
                                     cv.findContours(tmp, contours, hierarchy, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE);
                                     tmp.delete();
 
-                                    let mask = cv.Mat.zeros(src.rows, src.cols, cv.CV_8UC4);
+                                    let mask = cv.Mat.zeros(src.rows, src.cols, cv.CV_8UC3);
                                     for (let i = 0; i < contours.size(); ++i) {
-                                        cv.drawContours(mask, contours, i, new cv.Scalar(255, 255, 255, 255), -1, cv.LINE_8, hierarchy, 100);
+                                        cv.drawContours(mask, contours, i, new cv.Scalar(255, 255, 255), -1, cv.LINE_8, hierarchy, 100);
                                     }
                                     contours.delete(); hierarchy.delete();
 
@@ -2264,6 +2271,7 @@
                 node.ctx = node.canvas.getContext('2d', { willReadFrequently: true });
 
                 node.checkFirstFrame = true;
+                node.sliderDisabled = '';
                 node.detectionConfidence = 0.5;
                 node.poseData = null;
 
@@ -2315,6 +2323,7 @@
                                     minDetectionConfidence: node.detectionConfidence,
                                     minTrackingConfidence: 0.5
                                 });
+                                node.sliderDisabled = 'disabled';
                                 document.getElementById('confidenceRange' + node.id).disabled = true;
 
                                 let interval;
@@ -2743,7 +2752,7 @@
                     case 'Human Pose':
                         specificContentHTML = `
                             <div class="node-content">
-                                <input type="range" id="confidenceRange${nodeData.id}" data-node-id="${nodeData.id}" title="Detection confidence: ${nodeData.detectionConfidence}" class="node-input-range confidence-range" min="0" max="1" step="0.1" value="${nodeData.detectionConfidence}">
+                                <input type="range" id="confidenceRange${nodeData.id}" data-node-id="${nodeData.id}" title="Detection confidence: ${nodeData.detectionConfidence}" class="node-input-range confidence-range" min="0" max="1" step="0.1" value="${nodeData.detectionConfidence}" ${nodeData.sliderDisabled}>
                             </div>`;
                         break;
                     case 'Optical Flow':
