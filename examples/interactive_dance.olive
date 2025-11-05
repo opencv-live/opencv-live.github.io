@@ -1,0 +1,143 @@
+{
+  "nodes": [
+    {
+      "id": 573891,
+      "title": "Video / Audio",
+      "type": "Input",
+      "x": 37,
+      "y": 23,
+      "videoUrl": "examples/videos/hip-hop.mp4"
+    },
+    {
+      "id": 260516,
+      "title": "Canvas Viewer",
+      "type": "Viewer",
+      "x": 583,
+      "y": 317
+    },
+    {
+      "id": 459429,
+      "title": "Human Pose",
+      "type": "MediaPipe",
+      "x": 36,
+      "y": 326,
+      "checkFirstFrame": false,
+      "detectionConfidence": 0.5
+    },
+    {
+      "id": 843483,
+      "title": "Transitions",
+      "type": "Transition",
+      "x": 523,
+      "y": 58,
+      "transitionType": "Fade",
+      "transitionDuration": 0.1
+    },
+    {
+      "id": 227770,
+      "title": "Glitch Effects",
+      "type": "Throughput",
+      "x": 281,
+      "y": 24,
+      "bypass": "checked",
+      "checkFirstFrame": true,
+      "glitchEffectSize": 5,
+      "glitchEffectType": "Abberation"
+    },
+    {
+      "id": 972515,
+      "title": "Gamma Correction",
+      "type": "Throughput",
+      "x": 771,
+      "y": 159,
+      "bypass": "checked",
+      "checkFirstFrame": true,
+      "gammaValue": 1
+    }
+  ],
+  "connections": [
+    {
+      "id": 260022,
+      "fromNode": 573891,
+      "fromPort": 0,
+      "toNode": 459429,
+      "toPort": 0,
+      "color": "hsl(292.0136297093411, 64.82810409366357%, 54.262140642058%)"
+    },
+    {
+      "id": 299665,
+      "fromNode": 459429,
+      "fromPort": 1,
+      "toNode": 843483,
+      "toPort": 2,
+      "color": "hsl(103.74209623026502, 74.36438496291626%, 51.99046493647128%)"
+    },
+    {
+      "id": 709418,
+      "fromNode": 573891,
+      "fromPort": 0,
+      "toNode": 227770,
+      "toPort": 0,
+      "color": "hsl(314.521206996438, 74.95045239677506%, 52.359183564330955%)"
+    },
+    {
+      "id": 67035,
+      "fromNode": 459429,
+      "fromPort": 1,
+      "toNode": 972515,
+      "toPort": 1,
+      "color": "hsl(34.45943298521009, 57.74289154076564%, 48.92295265406566%)"
+    },
+    {
+      "id": 120285,
+      "fromNode": 227770,
+      "fromPort": 0,
+      "toNode": 843483,
+      "toPort": 0,
+      "color": "hsl(4.591532823450062, 51.218500942336085%, 46.921478798785415%)"
+    },
+    {
+      "id": 494659,
+      "fromNode": 843483,
+      "fromPort": 0,
+      "toNode": 972515,
+      "toPort": 0,
+      "color": "hsl(352.24450618813245, 54.03318905239993%, 47.19480743223235%)"
+    },
+    {
+      "id": 947657,
+      "fromNode": 972515,
+      "fromPort": 0,
+      "toNode": 260516,
+      "toPort": 0,
+      "color": "hsl(23.203116928909843, 69.49894471678975%, 51.10159313261893%)"
+    },
+    {
+      "id": 344236,
+      "fromNode": 573891,
+      "fromPort": 0,
+      "toNode": 843483,
+      "toPort": 1,
+      "color": "hsl(37.28330310071693, 69.50556790836133%, 46.11489505371367%)"
+    }
+  ],
+  "gestures": [
+    "0",
+    "0",
+    "0",
+    "0",
+    "0",
+    "0",
+    "7",
+    "0",
+    "0",
+    "0",
+    "0",
+    "0",
+    "0",
+    "0",
+    "0",
+    "0",
+    "2"
+  ]
+}
