@@ -48,7 +48,7 @@
       "type": "Time",
       "x": 484,
       "y": 19,
-      "targetValueA": 900,
+      "targetValueA": 1000,
       "targetValueB": 500,
       "countTime": 6
     }
