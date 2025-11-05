@@ -21,7 +21,7 @@
       "type": "Transition",
       "x": 519,
       "y": 326,
-      "transitionType": "Wipe",
+      "transitionType": "Radial",
       "transitionDuration": 2
     },
     {
