@@ -41,7 +41,7 @@
       "y": 24,
       "bypass": "checked",
       "checkFirstFrame": true,
-      "glitchEffectSize": 15,
+      "glitchEffectSize": 9,
       "glitchEffectType": "Abberation"
     },
     {
