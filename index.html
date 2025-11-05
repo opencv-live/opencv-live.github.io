@@ -316,6 +316,7 @@
         <p class="example">Curve Projection</p>
         <p class="example">Custom Kernels</p>
         <p class="example">Edges Sketch</p>
+        <p class="example">Fading Motion</p>
         <p class="example">Foreground Extraction</p>
         <p class="example">Glass Texture</p>
         <p class="example">Interactive Dance</p>
@@ -3522,7 +3523,7 @@
                         targetValueA: n.targetValueA, targetValueB: n.targetValueB, countTime: n.countTime,
                         primitiveType: n.primitiveType, isCustomModel: n.isCustomModel, loadedModel: n.loadedModel, currentVrm: n.currentVrm,
                         camera: n.camera, projectorCamera: n.projectorCamera, ambientLight: n.ambientLight, pointLight: n.pointLight,
-                        checkFirstFrame: n.checkFirstFrame, gridSize: n.gridSize, gammaValue: n.gammaValue,
+                        gridSize: n.gridSize, gammaValue: n.gammaValue,
                         selectedColor: n.selectedColor, oldHSV: n.oldHSV, newHSV: n.newHSV, fullRangeChecked: n.fullRangeChecked, colorRangeChecked: n.colorRangeChecked, colorInvertChecked: n.colorInvertChecked,
                         convolutionType: n.convolutionType, convolutionalFilterSize: n.convolutionalFilterSize, customKernel: n.customKernel,
                         morphologyType: n.morphologyType, morphologicalFilterSize: n.morphologicalFilterSize, morphologyKernelType: n.morphologyKernelType,
@@ -3618,7 +3619,6 @@
                         nd.camera.updateProjectionMatrix();
                     }
                     if (n.bypass) nd.bypass = n.bypass;
-                    if (n.checkFirstFrame) nd.checkFirstFrame = n.checkFirstFrame;
 
                     nd.gridSize = n.gridSize;
                     nd.gammaValue = n.gammaValue;
