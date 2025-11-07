@@ -414,14 +414,17 @@
         const audioContext = new (window.AudioContext || window.webkitAudioContext)();
 
         const gestureOptions = [
-            { value: '0', name: '&#129306; Right hand raised and moving left/right' },
-            { value: '1', name: '&#129306; Right hand raised and moving up/down' },
-            { value: '2', name: '&#9995; Left hand raised and moving left/right' },
-            { value: '3', name: '&#9995; Left hand raised and moving up/down' },
-            { value: '4', name: '&#128080; Both hands raised and moving left/right' },
-            { value: '5', name: '&#128080; Both hands raised and moving up/down' },
-            { value: '6', name: '&#129309; Hands joined and moving left/right' },
-            { value: '7', name: '&#129309; Hands joined and moving up/down' }
+            { value: '0', name: 'Right hand raised and moving left/right' },
+            { value: '1', name: 'Right hand raised and moving up/down' },
+            { value: '2', name: 'Left hand raised and moving left/right' },
+            { value: '3', name: 'Left hand raised and moving up/down' },
+            { value: '4', name: 'Both hands raised and moving left/right' },
+            { value: '5', name: 'Both hands raised and moving up/down' },
+            { value: '6', name: 'Hands joined and moving left/right' },
+            { value: '7', name: 'Hands joined and moving up/down' },
+            { value: '8', name: 'Right hand extended and moving up/down' },
+            { value: '9', name: 'Left hand extended and moving up/down' },
+            { value: '10', name: 'Both hands extended and moving up/down' }
         ];
         let gesturesHTML = gestureOptions.map(gesture => `<option value="${gesture.value}">${gesture.name}</option>`).join('');
         let settingsHTML = document.getElementById('settings').getElementsByTagName('*');
@@ -458,6 +461,7 @@
 
             let lX = null, lY = null, rX = null, rY = null;
             let bX = null, bY = null, jX = null, jY = null;
+            let eR = null, eL = null, eB = null;
 
             if (rightWrist.y < rightShoulder.y && leftWrist.y > leftShoulder.y) {
                 rX = klimax * (rightElbow.x - rightWrist.x);
@@ -475,7 +479,15 @@
                 jX = 0.5 - (rightWrist.x + leftWrist.x) / 2;
                 jY = 0.5 - (rightWrist.y + leftWrist.y) / 2;
             }
-            return [rX, rY, lX, lY, bX, bY, jX, jY];
+
+            let checkL = leftWrist.x - leftShoulder.x > 1.5 * (leftElbow.x - leftShoulder.x) && Math.abs(leftElbow.y - leftShoulder.y) < 0.5 * Math.abs(leftShoulder.y - levelY);
+            let checkR = rightShoulder.x - rightWrist.x > 1.5 * (rightShoulder.x - rightElbow.x) && Math.abs(rightElbow.y - rightShoulder.y) < 0.5 * Math.abs(rightShoulder.y - levelY);
+
+            if (checkR && !checkL) eR = klimax * (rightShoulder.y - rightWrist.y);
+            if (checkL && !checkR) eL = klimax * (leftShoulder.y - leftWrist.y);
+            if (checkR && checkL) eB = klimax * (leftWrist.y - rightWrist.y);
+
+            return [rX, rY, lX, lY, bX, bY, jX, jY, eR, eL, eB];
         }
 
         function getInputData(node, portIndex) {
@@ -2037,7 +2049,7 @@
                 scene.add(plane);
 
                 node.playTransition = (dir) => {
-                    gsap.to(node, { progress: dir, duration: node.transitionDuration, ease: "power2.inOut", yoyo: true, repeat: 0 });
+                    gsap.to(node, { progress: dir, duration: node.transitionDuration, ease: "power2.inOut", repeat: 0 });
                 };
 
                 node.onExecute = () => {
