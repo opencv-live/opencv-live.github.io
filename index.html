@@ -513,6 +513,9 @@
                 if (title === 'Image') {
                     node.imageUrl = '';
                     node.mediaElement = document.createElement('img');
+                    node.mediaElement.addEventListener('load', function () {
+                        for (var i = 0; i < 10; i++) setTimeout(renderWires, i * 100);
+                    });
                 }
                 else {
                     node.mediaElement = document.createElement('video');
@@ -525,11 +528,17 @@
                         node.mediaElement.loop = false;
                         node.mediaElement.muted = false;
                         node.mediaElement.autoplay = false;
+                        node.mediaElement.addEventListener('canplay', function () {
+                            for (var i = 0; i < 10; i++) setTimeout(renderWires, i * 100);
+                        });
                     }
                     node.mediaElement.playsInline = true;
                     node.mediaElement.className = 'media-preview';
                 }
                 node.mediaElement.crossOrigin = 'anonymous';
+                node.mediaElement.addEventListener('error', function () {
+                    for (var i = 0; i < 10; i++) setTimeout(renderWires, i * 100);
+                });
 
                 let isPlaying = true;
                 node.onExecute = () => {
@@ -1331,8 +1340,11 @@
                         let src;
                         try { src = cv.imread(sourceElement); }
                         catch {
-                            node.ctx.drawImage(sourceElement, 0, 0, node.canvas.width, node.canvas.height);
-                            src = cv.imread(node.canvas);
+                            try {
+                                node.ctx.drawImage(sourceElement, 0, 0, node.canvas.width, node.canvas.height);
+                                src = cv.imread(node.canvas);
+                            }
+                            catch { return; }
                         }
                         try {
                             if (node.canvas.width !== previousWidth || node.canvas.height !== previousHeight) node.checkFirstFrame = true;
@@ -2139,17 +2151,23 @@
                         let src1, temp;
                         try { src1 = cv.imread(sourceElement1); }
                         catch {
-                            node.canvas.width = sourceElement1.naturalWidth || sourceElement1.videoWidth || sourceElement1.width;
-                            node.canvas.height = sourceElement1.naturalHeight || sourceElement1.videoHeight || sourceElement1.height;
-                            node.ctx.drawImage(sourceElement1, 0, 0, node.canvas.width, node.canvas.height);
-                            src1 = cv.imread(node.canvas);
+                            try {
+                                node.canvas.width = sourceElement1.naturalWidth || sourceElement1.videoWidth || sourceElement1.width;
+                                node.canvas.height = sourceElement1.naturalHeight || sourceElement1.videoHeight || sourceElement1.height;
+                                node.ctx.drawImage(sourceElement1, 0, 0, node.canvas.width, node.canvas.height);
+                                src1 = cv.imread(node.canvas);
+                            }
+                            catch { return; }
                         }
                         try { temp = cv.imread(sourceElement2); }
                         catch {
-                            node.canvas.width = sourceElement2.naturalWidth || sourceElement2.videoWidth || sourceElement2.width;
-                            node.canvas.height = sourceElement2.naturalHeight || sourceElement2.videoHeight || sourceElement2.height;
-                            node.ctx.drawImage(sourceElement2, 0, 0, node.canvas.width, node.canvas.height);
-                            temp = cv.imread(node.canvas);
+                            try {
+                                node.canvas.width = sourceElement2.naturalWidth || sourceElement2.videoWidth || sourceElement2.width;
+                                node.canvas.height = sourceElement2.naturalHeight || sourceElement2.videoHeight || sourceElement2.height;
+                                node.ctx.drawImage(sourceElement2, 0, 0, node.canvas.width, node.canvas.height);
+                                temp = cv.imread(node.canvas);
+                            }
+                            catch { src1.delete(); return; }
                         }
                         try {
                             let src2 = new cv.Mat();
@@ -3418,7 +3436,6 @@
                     }
                 }
                 else if (event.key === 'Enter' && event.target.classList.contains('node-input-field')) {
-                    for (var i = 0; i < 10; i++) setTimeout(renderWires, i * 100);
                     const inputEl = event.target;
                     const nodeEl = inputEl.closest('.node');
                     const nodeId = parseInt(nodeEl.dataset.nodeId);
