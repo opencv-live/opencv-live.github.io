@@ -1,0 +1,81 @@
+{
+  "nodes": [
+    {
+      "id": 428080,
+      "title": "Optical Flow",
+      "type": "Throughput",
+      "x": 470,
+      "y": 97,
+      "bypass": "checked",
+      "opticalFlowSize": 3
+    },
+    {
+      "id": 476617,
+      "title": "Video / Audio",
+      "type": "Input",
+      "x": 17,
+      "y": 11,
+      "videoUrl": "examples/videos/hip-hop.mp4"
+    },
+    {
+      "id": 834657,
+      "title": "Canvas Viewer",
+      "type": "Viewer",
+      "x": 696,
+      "y": 71
+    },
+    {
+      "id": 855799,
+      "title": "Human Pose",
+      "type": "MediaPipe",
+      "x": 243,
+      "y": 98,
+      "detectionConfidence": 0.5
+    }
+  ],
+  "connections": [
+    {
+      "id": 26029,
+      "fromNode": 428080,
+      "fromPort": 0,
+      "toNode": 834657,
+      "toPort": 0,
+      "color": "hsl(310.551425655458, 66.15346818101679%, 51.91421363851425%)"
+    },
+    {
+      "id": 149828,
+      "fromNode": 476617,
+      "fromPort": 0,
+      "toNode": 855799,
+      "toPort": 0,
+      "color": "hsl(253.22685040990876, 55.1924367363635%, 46.69992526407001%)"
+    },
+    {
+      "id": 794505,
+      "fromNode": 855799,
+      "fromPort": 0,
+      "toNode": 428080,
+      "toPort": 0,
+      "color": "hsl(42.82294726363581, 72.17589977679934%, 48.76487209007664%)"
+    }
+  ],
+  "gestures": [
+    "0",
+    "0",
+    "0",
+    "0",
+    "0",
+    "0",
+    "0",
+    "0",
+    "0",
+    "0",
+    "0",
+    "0",
+    "0",
+    "0",
+    "0",
+    "0",
+    "0"
+  ]
+}
