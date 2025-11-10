@@ -439,6 +439,13 @@
             if (settingsHTML[i].tagName === 'SELECT') settingsHTML[i].innerHTML = gesturesHTML;
         }
 
+        async function urlExists(url) {
+            try {
+                const response = await fetch(url, { method: 'HEAD' });
+                return response.ok;
+            } catch (error) { return false; }
+        }
+
         function cartesian2polar(x, y) {
             let R = Math.sqrt(x * x + y * y)
             let theta = Math.atan2(y, x)
@@ -1997,9 +2004,7 @@
                             cv.imshow(node.canvas, dst);
                             src.delete(); dst.delete();
                         }
-                        catch (err) {
-                            alert("OpenCV Error:", err);
-                        }
+                        catch (err) { console.log("OpenCV Error:", err); }
                     }
                     node.outputValues.output = node.canvas;
                 };
@@ -2299,9 +2304,7 @@
                             cv.imshow(node.canvas, dst);
                             dst.delete();
                         }
-                        catch (err) {
-                            alert("OpenCV Error:", err);
-                        }
+                        catch (err) { console.log("OpenCV Error:", err); }
                     }
                     node.outputValues.output = node.canvas;
                 };
@@ -2392,7 +2395,7 @@
                                 statusEl.style.display = "block";
                             }
                         }
-                        catch (err) { alert(err); }
+                        catch (err) { console.log("MediaPipe Error:", err); }
                     }
                     node.outputValues.output = node.canvas;
                     node.outputValues.control = [node.poseData, node.poseWorldData];
@@ -2401,8 +2404,6 @@
             else if (type === 'Character') {
                 node.inputs.push({ name: 'control' });
                 node.outputs.push({ name: 'output' });
-
-                node.buttonDisabled = "";
 
                 const scene = new THREE.Scene();
                 const renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true, alpha: true });
@@ -2507,12 +2508,13 @@
                     loader.load(url, gltf => {
                         THREE.VRMUtils.removeUnnecessaryJoints(gltf.scene);
                         THREE.VRM.from(gltf).then(vrm => {
+                            if (node.currentVrm) scene.remove(node.currentVrm.scene);
                             scene.add(vrm.scene);
                             node.currentVrm = vrm;
                             node.currentVrm.scene.rotation.y = Math.PI;
-                        });
+                        }).catch(err => { alert(err); });
                         URL.revokeObjectURL(url);
-                    }, undefined, (err) => { alert(err); URL.revokeObjectURL(url); });
+                    }, undefined, (err) => { console.log(err); URL.revokeObjectURL(url); });
                 };
 
                 node.three = { scene, renderer, controls };
@@ -2524,7 +2526,7 @@
                             animateVRM(node.currentVrm, sourceControl);
                             node.currentVrm.update(clock.getDelta());
                         }
-                        catch (err) { alert(err); }
+                        catch (err) { console.log("Three.js Error:", err); }
                         controls.update();
                         renderer.render(scene, node.camera);
                     }
@@ -2789,7 +2791,7 @@
                     case 'Character Animation':
                         specificContentHTML = `
                             <div class="node-content">
-                                <input tabIndex="-1" type="file" title="Upload VRM model" class="node-input-file character-model-loader" data-node-id="${nodeData.id}" accept=".vrm" ${nodeData.buttonDisabled}>
+                                <input tabIndex="-1" type="file" title="Upload VRM model" class="node-input-file character-model-loader" data-node-id="${nodeData.id}" accept=".vrm">
                                 <button class="node-fullscreen-button" onclick="this.nextElementSibling.requestFullscreen();">Render 3D Scene</button>
                             </div>`;
                         break;
@@ -2866,9 +2868,7 @@
                 if (videoDevices.length > 0) {
                     startCamera(nodeData.mediaElement, videoDevices[0].deviceId);
                 }
-            } catch (err) {
-                alert("Could not enumerate devices:", err);
-            }
+            } catch (err) { alert(err); }
         }
         async function startCamera(videoElement, deviceId) {
             if (videoElement.srcObject) {
@@ -2882,9 +2882,7 @@
                 .then(stream => {
                     videoElement.srcObject = stream;
                 })
-                .catch(err => {
-                    alert("Error starting camera:", err);
-                });
+                .catch(err => { alert(err); });
         }
 
         function renderWires() {
@@ -3118,7 +3116,6 @@
                     if (nodeData.loadModel) {
                         const objectURL = URL.createObjectURL(file);
                         nodeData.loadModel(objectURL);
-                        nodeData.buttonDisabled = "disabled";
                     }
                 }
                 else if (event.target.classList.contains('3d-primitive-selector')) {
@@ -3138,7 +3135,7 @@
                         nodeData.three.updateObject();
                         renderGraph();
                     }, undefined, (error) => {
-                        alert('Error loading 3D model:', error);
+                        alert(error);
                         URL.revokeObjectURL(objectURL);
                     });
                 }
@@ -3447,9 +3444,10 @@
                         }
                     }
                     else if (nodeData && nodeData.title !== 'Convolution') {
-                        const prop = inputEl.dataset.property;
-                        nodeData[prop] = inputEl.value;
-                        nodeData.mediaElement.src = inputEl.value;
+                        urlExists(inputEl.value).then(exists => {
+                            if (exists) nodeData.mediaElement.src = inputEl.value;
+                            else alert('This URL does not exist or is unreacheable...');
+                        });
                     }
                 }
             });
@@ -3597,7 +3595,7 @@
                     }
                     catch (err) { alert(err); statusEl.style.display = 'none'; }
                 }
-                catch { alert("Cannot save project... 3D model too large!"); statusEl.style.display = 'none'; }
+                catch { alert("Cannot save project... the 3D model is too large!"); statusEl.style.display = 'none'; }
             }, 50);
         }
         function loadProjectFromJSON(event) {
@@ -3630,7 +3628,6 @@
                     if (n.videoUrl) { nd.videoUrl = n.videoUrl; if (nd.mediaElement) nd.mediaElement.src = n.videoUrl; }
                     if (n.currentVrm) {
                         nd.currentVrm = n.currentVrm;
-                        nd.buttonDisabled = "disabled";
                         nd.three.scene.add(nd.currentVrm.scene);
                     }
                     if (n.primitiveType) { nd.primitiveType = n.primitiveType; nd.three.updateObject(); }
