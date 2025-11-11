@@ -101,8 +101,7 @@
 
         .fs-canvas {
             position: absolute;
-            left: -1000px;
-            top: -1000px;
+            top: -10px;
             zoom: 0.001;
         }
 
@@ -1234,6 +1233,7 @@
                     let fsC = document.createElement('canvas');
                     let fsX = fsC.getContext('2d', { willReadFrequently: true });
                     fsC.className = 'fs-canvas';
+                    fsC.style.left = screen.width + "px";
                     document.body.appendChild(fsC);
                     fsCanvas.push(fsC);
                     fsCtx.push(fsX);
