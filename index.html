@@ -319,12 +319,14 @@
         <p class="example">Color Manipulation</p>
         <p class="example">Curve Projection</p>
         <p class="example">Custom Kernels</p>
+        <p class="example">Distance Transform</p>
         <p class="example">Edges Sketch</p>
         <p class="example">Fading Motion</p>
         <p class="example">Foreground Extraction</p>
         <p class="example">Glass Texture</p>
         <p class="example">Interactive Dance</p>
         <p class="example">Optical Flow</p>
+        <p class="example">Pose Detection</p>
         <p class="example">Saturation Replacement</p>
         <p class="example">Text Mask</p>
         <p class="example">Transitions Loop</p>
@@ -3688,9 +3690,10 @@
                     nd.textColor = n.textColor;
                     nd.textSize = n.textSize;
                     nd.textHeight = n.textHeight;
-                    if (n.fontName) nd.fontName = n.fontName;
-                    if (n.fontUrls) nd.fontUrls = n.fontUrls;
-
+                    if (n.fontUrls) {
+                        nd.fontUrls = n.fontUrls;
+                        nd.changeFont(n.fontName);
+                    }
                     nd.curveColor = n.curveColor;
                     nd.paramA = n.paramA;
                     nd.paramB = n.paramB;
