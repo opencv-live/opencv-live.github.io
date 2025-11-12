@@ -519,9 +519,7 @@
                 if (title === 'Image') {
                     node.imageUrl = '';
                     node.mediaElement = document.createElement('img');
-                    node.mediaElement.addEventListener('load', function () {
-                        for (var i = 0; i < 10; i++) setTimeout(renderWires, i * 100);
-                    });
+                    node.mediaElement.addEventListener('load', renderGraph);
                 }
                 else {
                     node.mediaElement = document.createElement('video');
@@ -534,17 +532,13 @@
                         node.mediaElement.loop = false;
                         node.mediaElement.muted = false;
                         node.mediaElement.autoplay = false;
-                        node.mediaElement.addEventListener('canplay', function () {
-                            for (var i = 0; i < 10; i++) setTimeout(renderWires, i * 100);
-                        });
+                        node.mediaElement.addEventListener('canplay', renderGraph);
                     }
                     node.mediaElement.playsInline = true;
                     node.mediaElement.className = 'media-preview';
                 }
                 node.mediaElement.crossOrigin = 'anonymous';
-                node.mediaElement.addEventListener('error', function () {
-                    for (var i = 0; i < 10; i++) setTimeout(renderWires, i * 100);
-                });
+                node.mediaElement.addEventListener('error', renderGraph);
 
                 let isPlaying = true;
                 node.onExecute = () => {
