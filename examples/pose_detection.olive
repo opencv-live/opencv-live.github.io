@@ -1,0 +1,63 @@
+{
+  "nodes": [
+    {
+      "id": 458787,
+      "title": "Image",
+      "type": "Input",
+      "x": 22,
+      "y": 13,
+      "imageUrl": "examples/images/pout.jpg"
+    },
+    {
+      "id": 407620,
+      "title": "Histogram Equalization",
+      "type": "Throughput",
+      "x": 268,
+      "y": 282,
+      "checkFirstFrame": true,
+      "gridSize": 1
+    },
+    {
+      "id": 905313,
+      "title": "Canvas Viewer",
+      "type": "Viewer",
+      "x": 749,
+      "y": 66
+    },
+    {
+      "id": 678040,
+      "title": "Human Pose",
+      "type": "MediaPipe",
+      "x": 508,
+      "y": 282,
+      "checkFirstFrame": false,
+      "detectionConfidence": 0.1
+    }
+  ],
+  "connections": [
+    {
+      "id": 169285,
+      "fromNode": 458787,
+      "fromPort": 0,
+      "toNode": 407620,
+      "toPort": 0,
+      "color": "hsl(1.5805008527631825, 73.58493464760562%, 46.97499603998785%)"
+    },
+    {
+      "id": 484220,
+      "fromNode": 407620,
+      "fromPort": 0,
+      "toNode": 678040,
+      "toPort": 0,
+      "color": "hsl(164.5338093943837, 64.52183008958377%, 52.980209803191%)"
+    },
+    {
+      "id": 501700,
+      "fromNode": 678040,
+      "fromPort": 0,
+      "toNode": 905313,
+      "toPort": 0,
+      "color": "hsl(187.14694058022943, 53.98280077728559%, 45.627704550503005%)"
+    }
+  ]
+}

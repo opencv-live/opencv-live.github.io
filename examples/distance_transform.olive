@@ -1,0 +1,141 @@
+{
+  "nodes": [
+    {
+      "id": 760433,
+      "title": "Canvas Viewer",
+      "type": "Viewer",
+      "x": 769,
+      "y": 50
+    },
+    {
+      "id": 714245,
+      "title": "Skeleton",
+      "type": "Throughput",
+      "x": 518,
+      "y": 122,
+      "bypass": "checked"
+    },
+    {
+      "id": 537649,
+      "title": "3D Text",
+      "type": "Text",
+      "x": 23,
+      "y": 21,
+      "nodeText": "OLIVE",
+      "textColor": "#ff0000",
+      "textSize": 30,
+      "textHeight": 10,
+      "fontName": "helvetiker_regular",
+      "fontUrls": {
+        "helvetiker_regular": "fonts/helvetiker_regular.typeface.json",
+        "gentilis_regular": "fonts/gentilis_regular.typeface.json",
+        "droid_sans_regular": "fonts/droid_sans_regular.typeface.json",
+        "optimer_regular": "fonts/optimer_regular.typeface.json",
+        "custom": ""
+      },
+      "camera": {
+        "metadata": {
+          "version": 4.5,
+          "type": "Object",
+          "generator": "Object3D.toJSON"
+        },
+        "object": {
+          "uuid": "9D248DAC-DA44-4345-8D16-1DB5F53FD57F",
+          "type": "PerspectiveCamera",
+          "layers": 1,
+          "matrix": [
+            1,
+            0,
+            0,
+            0,
+            0,
+            1,
+            -6.123233995736766e-17,
+            0,
+            0,
+            6.123233995736766e-17,
+            1,
+            0,
+            0,
+            6.123233995736766e-15,
+            100,
+            1
+          ],
+          "fov": 45,
+          "zoom": 1,
+          "near": 1,
+          "far": 1000,
+          "focus": 10,
+          "aspect": 1.7777777777777777,
+          "filmGauge": 35,
+          "filmOffset": 0
+        }
+      }
+    },
+    {
+      "id": 143802,
+      "title": "Color Adjustment",
+      "type": "Throughput",
+      "x": 270,
+      "y": 23,
+      "bypass": "checked",
+      "selectedColor": "#80ffff",
+      "oldHSV": [
+        90,
+        128
+      ],
+      "newHSV": [
+        0,
+        255
+      ],
+      "fullRangeChecked": true,
+      "colorRangeChecked": "",
+      "colorInvertChecked": "checked"
+    }
+  ],
+  "connections": [
+    {
+      "id": 141685,
+      "fromNode": 714245,
+      "fromPort": 0,
+      "toNode": 760433,
+      "toPort": 0,
+      "color": "hsl(216.24746523848643, 65.41203000025283%, 50.638361667525025%)"
+    },
+    {
+      "id": 561836,
+      "fromNode": 143802,
+      "fromPort": 0,
+      "toNode": 714245,
+      "toPort": 0,
+      "color": "hsl(142.3338806596763, 52.317771284652764%, 51.773154586121606%)"
+    },
+    {
+      "id": 363825,
+      "fromNode": 537649,
+      "fromPort": 0,
+      "toNode": 143802,
+      "toPort": 0,
+      "color": "hsl(41.98781182090854, 61.59035030683704%, 46.40494022757725%)"
+    }
+  ],
+  "gestures": [
+    "0",
+    "0",
+    "0",
+    "0",
+    "0",
+    "0",
+    "0",
+    "0",
+    "0",
+    "0",
+    "0",
+    "0",
+    "0",
+    "0",
+    "0",
+    "0",
+    "0"
+  ]
+}

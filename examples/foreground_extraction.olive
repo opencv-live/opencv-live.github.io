@@ -1,63 +1,180 @@
 {
   "nodes": [
     {
-      "id": 458787,
-      "title": "Image",
-      "type": "Input",
-      "x": 22,
-      "y": 13,
-      "imageUrl": "examples/images/pout.jpg"
-    },
-    {
-      "id": 407620,
-      "title": "Histogram Equalization",
+      "id": 201636,
+      "title": "Background Subtraction",
       "type": "Throughput",
-      "x": 268,
-      "y": 282,
-      "checkFirstFrame": true,
-      "gridSize": 1
+      "x": 532,
+      "y": 270,
+      "bypass": "checked"
     },
     {
-      "id": 905313,
+      "id": 713316,
       "title": "Canvas Viewer",
       "type": "Viewer",
-      "x": 749,
-      "y": 66
+      "x": 809,
+      "y": 333
     },
     {
-      "id": 678040,
-      "title": "Human Pose",
-      "type": "MediaPipe",
-      "x": 508,
-      "y": 282,
-      "checkFirstFrame": false,
-      "detectionConfidence": 0.1
+      "id": 459008,
+      "title": "3D Text",
+      "type": "Text",
+      "x": 129,
+      "y": 13,
+      "nodeText": "OLIVE",
+      "textColor": "#ffffff",
+      "textSize": 30,
+      "textHeight": 1,
+      "fontName": "gentilis_regular",
+      "fontUrls": {
+        "helvetiker_regular": "fonts/helvetiker_regular.typeface.json",
+        "gentilis_regular": "fonts/gentilis_regular.typeface.json",
+        "droid_sans_regular": "fonts/droid_sans_regular.typeface.json",
+        "optimer_regular": "fonts/optimer_regular.typeface.json",
+        "custom": ""
+      },
+      "camera": {
+        "metadata": {
+          "version": 4.5,
+          "type": "Object",
+          "generator": "Object3D.toJSON"
+        },
+        "object": {
+          "uuid": "E79D818B-7D1A-46B4-90F2-1472A4DF3D5D",
+          "type": "PerspectiveCamera",
+          "layers": 1,
+          "matrix": [
+            1,
+            0,
+            0,
+            0,
+            0,
+            1,
+            -6.123233995736766e-17,
+            0,
+            0,
+            6.123233995736766e-17,
+            1,
+            0,
+            0,
+            6.123233995736766e-15,
+            100,
+            1
+          ],
+          "fov": 45,
+          "zoom": 1,
+          "near": 1,
+          "far": 1000,
+          "focus": 10,
+          "aspect": 1.7777777777777777,
+          "filmGauge": 35,
+          "filmOffset": 0
+        }
+      }
+    },
+    {
+      "id": 960061,
+      "title": "Glitch Effects",
+      "type": "Throughput",
+      "x": 446,
+      "y": 15,
+      "bypass": "checked",
+      "glitchEffectSize": 12,
+      "glitchEffectType": "Shaking"
+    },
+    {
+      "id": 226779,
+      "title": "Image",
+      "type": "Input",
+      "x": 19,
+      "y": 290,
+      "imageUrl": "examples/images/wood.jpg"
+    },
+    {
+      "id": 121224,
+      "title": "Matrix Operations",
+      "type": "Mixer",
+      "x": 268,
+      "y": 318,
+      "bypass": "checked",
+      "operationType": "Add",
+      "operationWeight": 0.75
+    },
+    {
+      "id": 599745,
+      "title": "Canvas Viewer",
+      "type": "Viewer",
+      "x": 808,
+      "y": 108
     }
   ],
   "connections": [
     {
-      "id": 169285,
-      "fromNode": 458787,
+      "id": 651586,
+      "fromNode": 459008,
       "fromPort": 0,
-      "toNode": 407620,
+      "toNode": 960061,
       "toPort": 0,
-      "color": "hsl(1.5805008527631825, 73.58493464760562%, 46.97499603998785%)"
+      "color": "hsl(193.3818992777849, 63.72484755414497%, 47.746167496144295%)"
     },
     {
-      "id": 484220,
-      "fromNode": 407620,
+      "id": 567482,
+      "fromNode": 226779,
       "fromPort": 0,
-      "toNode": 678040,
-      "toPort": 0,
-      "color": "hsl(164.5338093943837, 64.52183008958377%, 52.980209803191%)"
+      "toNode": 121224,
+      "toPort": 1,
+      "color": "hsl(103.00687933858198, 53.43837136516961%, 54.80412908347357%)"
     },
     {
-      "id": 501700,
-      "fromNode": 678040,
+      "id": 687733,
+      "fromNode": 960061,
       "fromPort": 0,
-      "toNode": 905313,
+      "toNode": 121224,
       "toPort": 0,
-      "color": "hsl(187.14694058022943, 53.98280077728559%, 45.627704550503005%)"
+      "color": "hsl(164.05497926245965, 64.74439001603643%, 53.31709171980619%)"
+    },
+    {
+      "id": 170097,
+      "fromNode": 121224,
+      "fromPort": 0,
+      "toNode": 713316,
+      "toPort": 0,
+      "color": "hsl(266.69146123887333, 65.70778851125844%, 46.54235032400325%)"
+    },
+    {
+      "id": 101117,
+      "fromNode": 121224,
+      "fromPort": 0,
+      "toNode": 201636,
+      "toPort": 0,
+      "color": "hsl(267.07577741855096, 53.89861021989345%, 47.534541910904615%)"
+    },
+    {
+      "id": 205471,
+      "fromNode": 201636,
+      "fromPort": 0,
+      "toNode": 599745,
+      "toPort": 0,
+      "color": "hsl(281.37178230418425, 60.198103134568925%, 47.371062770420394%)"
     }
+  ],
+  "gestures": [
+    "0",
+    "0",
+    "0",
+    "0",
+    "0",
+    "0",
+    "0",
+    "0",
+    "0",
+    "0",
+    "0",
+    "0",
+    "0",
+    "0",
+    "0",
+    "0",
+    "0"
   ]
 }
