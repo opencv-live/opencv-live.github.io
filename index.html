@@ -101,6 +101,7 @@
 
         .fs-canvas {
             position: absolute;
+            left: -10px;
             top: -10px;
             zoom: 0.001;
         }
@@ -161,6 +162,18 @@
             cursor: pointer;
             font-size: large;
             text-decoration: none;
+        }
+
+        .node-button {
+            font-weight: bold;
+        }
+
+        .node-popout-button {
+            background-color: transparent;
+            cursor: pointer;
+            border: 0;
+            margin-top: -3px;
+            padding: 0;
         }
 
         .node-fullscreen-button {
@@ -1230,12 +1243,14 @@
                 node.canvas.width = 190;
                 node.ctx = node.canvas.getContext('2d', { willReadFrequently: true });
 
+                node.popup = null;
+                node.popupImg = null;
+
                 let index = fsIndex.indexOf(node.id);
                 if (index < 0) {
                     let fsC = document.createElement('canvas');
                     let fsX = fsC.getContext('2d', { willReadFrequently: true });
                     fsC.className = 'fs-canvas';
-                    fsC.style.left = screen.width + "px";
                     document.body.appendChild(fsC);
                     fsCanvas.push(fsC);
                     fsCtx.push(fsX);
@@ -1262,6 +1277,29 @@
                     else {
                         node.ctx.fillStyle = '#000000';
                         node.ctx.fillRect(0, 0, node.canvas.width, node.canvas.height);
+                    }
+                    if (node.popup && !node.popup.closed) {
+                        try {
+                            if (!node.popupImg) {
+                                node.popup.document.body.style.margin = "0";
+                                node.popup.document.body.style.background = "#000";
+                                node.popup.document.title = "Live Viewer";
+                                node.popupImg = node.popup.document.createElement('img');
+                                node.popupImg.style.width = "100%";
+                                node.popupImg.style.height = "100%";
+                                node.popupImg.style.objectFit = "contain";
+                                node.popup.document.body.appendChild(node.popupImg);
+                                node.popupImg.oncontextmenu = function (e) { e.preventDefault(); this.requestFullscreen(); };
+                                node.popupImg.ondblclick = function (e) { e.preventDefault(); this.requestFullscreen(); };
+                            }
+                            node.popupImg.src = fsCanvas[index].toDataURL();
+                        } catch (e) {
+                            node.popup = null;
+                            node.popupImg = null;
+                        }
+                    } else {
+                        node.popup = null;
+                        node.popupImg = null;
                     }
                 };
             }
@@ -2652,7 +2690,7 @@
                             <div class="node-content">
                                 <input type="range" data-node-id="${nodeData.id}" title="Target value A: ${nodeData.targetValueA}" class="node-input-range target-value-A" min="0" max="1000" value="${nodeData.targetValueA}">
                                 <input type="range" data-node-id="${nodeData.id}" title="Target value B: ${nodeData.targetValueB}" class="node-input-range target-value-B" min="0" max="1000" value="${nodeData.targetValueB}">
-                                <p><button id="countDownButton${nodeData.id}" class="node-button keyframe-trigger-button" data-node-id="${nodeData.id}" style="width:100px;font-weight:bold" ${nodeData.isDisabled}>Trigger</button>
+                                <p><button id="countDownButton${nodeData.id}" class="node-button keyframe-trigger-button" data-node-id="${nodeData.id}" style="width:100px" ${nodeData.isDisabled}>Trigger</button>
                                 <input type="number" id="countDownTime${nodeData.id}" data-node-id="${nodeData.id}" title="Seconds" class="node-input-number count-down-time" min="1" max="3600" value="${nodeData.countTime}" style="width:75px" ${nodeData.isDisabled}></p>
                             </div>`;
                         break;
@@ -2814,7 +2852,7 @@
                         specificContentHTML = `
                             <div class="node-content">
                                 <select class="node-select-field transition-type-selector" data-node-id="${nodeData.id}">${transitionOptions}</select>
-                                <button class="node-button transition-play-button" data-node-id="${nodeData.id}" style="width:50px;margin-right:10px;font-weight:bold">Play</button>
+                                <button class="node-button transition-play-button" data-node-id="${nodeData.id}" style="width:50px;margin-right:10px">Play</button>
                                 <input type="range" data-node-id="${nodeData.id}" title="Duration: ${nodeData.transitionDuration}s" class="node-input-range transition-duration-range" min="0.1" max="10" step="0.1" value="${nodeData.transitionDuration}" style="width:120px">
                             </div>`;
                         break;
@@ -2822,11 +2860,14 @@
                         specificContentHTML = `<div class="node-content"></div>`;
                         break;
                 }
-                let bypassCheck = '';
+                let bypassCheck = '', popOut = '';
                 if (nodeData.type === 'Throughput' || nodeData.type === 'Mixer') {
                     bypassCheck = `<input type="checkbox" class="bypass-check" data-node-id="${nodeData.id}" style="float:right" ${nodeData.bypass}>`;
                 }
-                nodeEl.innerHTML = `<div class="node-header">${nodeData.title}${bypassCheck}</div>${specificContentHTML}${portsHTML}`;
+                if (nodeData.type === 'Viewer') {
+                    popOut = `<button class="node-popout-button viewer-popout-button" data-node-id="${nodeData.id}" style="float:right" title="Pop-out">&#x1F5D7</button>`;
+                }
+                nodeEl.innerHTML = `<div class="node-header">${nodeData.title}${bypassCheck}${popOut}</div>${specificContentHTML}${portsHTML}`;
                 makeDraggable(nodeEl, nodeEl.querySelector('.node-header'), nodeData);
                 graphContainer.appendChild(nodeEl);
 
@@ -2999,7 +3040,20 @@
             }
 
             graphContainer.addEventListener('click', (event) => {
-                if (event.target.classList.contains('transition-play-button')) {
+                if (event.target.classList.contains('viewer-popout-button')) {
+                    const nodeId = parseInt(event.target.dataset.nodeId);
+                    const nodeData = nodes.find(n => n.id === nodeId);
+                    if (nodeData) {
+                        if (!nodeData.popup || nodeData.popup.closed) {
+                            let params = 'width=' + nodeData.canvas.width * 2 + ',height=' + nodeData.canvas.height * 2 + ',';
+                            params += 'left=' + Math.round(Math.random() * screen.width / 2) + ',top=' + Math.round(Math.random() * screen.height / 2);
+                            params += ',toolbar=no,menubar=no,scrollbars=no,resizable=no,location=no,status=no,titlebar=no';
+                            nodeData.popup = window.open("", "", params);
+                        }
+                        else nodeData.popup.focus();
+                    }
+                }
+                else if (event.target.classList.contains('transition-play-button')) {
                     const nodeId = parseInt(event.target.dataset.nodeId);
                     const nodeData = nodes.find(n => n.id === nodeId);
                     if (nodeData && nodeData.playTransition) {
