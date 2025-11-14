@@ -79,8 +79,8 @@
       "x": 446,
       "y": 15,
       "bypass": "checked",
-      "glitchEffectSize": 12,
-      "glitchEffectType": "Shaking"
+      "glitchEffectSize": 9,
+      "glitchEffectType": "Abberation"
     },
     {
       "id": 226779,
@@ -97,8 +97,8 @@
       "x": 268,
       "y": 318,
       "bypass": "checked",
-      "operationType": "Add",
-      "operationWeight": 0.75
+      "operationType": "Max",
+      "operationWeight": 0.5
     },
     {
       "id": 599745,
