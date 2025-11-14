@@ -1,0 +1,120 @@
+{
+  "nodes": [
+    {
+      "id": 112620,
+      "title": "Image",
+      "type": "Input",
+      "x": 10,
+      "y": 8,
+      "imageUrl": "examples/images/flowers.bmp"
+    },
+    {
+      "id": 584358,
+      "title": "Canvas Viewer",
+      "type": "Viewer",
+      "x": 603,
+      "y": 284
+    },
+    {
+      "id": 254918,
+      "title": "Histogram Equalization",
+      "type": "Throughput",
+      "x": 242,
+      "y": 188,
+      "bypass": "checked",
+      "gridSize": 5
+    },
+    {
+      "id": 830631,
+      "title": "Morphology / Rank",
+      "type": "Throughput",
+      "x": 480,
+      "y": 60,
+      "bypass": "checked",
+      "morphologyType": "Median",
+      "morphologicalFilterSize": 9,
+      "morphologyKernelType": [
+        "",
+        "checked",
+        ""
+      ]
+    },
+    {
+      "id": 22083,
+      "title": "Canvas Viewer",
+      "type": "Viewer",
+      "x": 716,
+      "y": 41
+    },
+    {
+      "id": 183023,
+      "title": "Superpixels",
+      "type": "Throughput",
+      "x": 280,
+      "y": 345,
+      "bypass": "checked",
+      "kValue": 5
+    }
+  ],
+  "connections": [
+    {
+      "id": 782843,
+      "fromNode": 112620,
+      "fromPort": 0,
+      "toNode": 254918,
+      "toPort": 0,
+      "color": "hsl(121.70967036610261, 53.56343307766837%, 50.18896813576364%)"
+    },
+    {
+      "id": 18751,
+      "fromNode": 254918,
+      "fromPort": 0,
+      "toNode": 830631,
+      "toPort": 0,
+      "color": "hsl(252.52434392950443, 71.69537369005513%, 46.75030142747871%)"
+    },
+    {
+      "id": 525249,
+      "fromNode": 830631,
+      "fromPort": 0,
+      "toNode": 22083,
+      "toPort": 0,
+      "color": "hsl(291.8320396391183, 56.263116116446625%, 53.08049947707556%)"
+    },
+    {
+      "id": 459949,
+      "fromNode": 183023,
+      "fromPort": 0,
+      "toNode": 584358,
+      "toPort": 0,
+      "color": "hsl(246.5251541051412, 52.62636765935402%, 54.206606587875186%)"
+    },
+    {
+      "id": 448290,
+      "fromNode": 112620,
+      "fromPort": 0,
+      "toNode": 183023,
+      "toPort": 0,
+      "color": "hsl(24.85066800616847, 72.20582515055025%, 49.59372941087837%)"
+    }
+  ],
+  "gestures": [
+    "0",
+    "0",
+    "0",
+    "0",
+    "0",
+    "0",
+    "0",
+    "0",
+    "0",
+    "0",
+    "0",
+    "0",
+    "0",
+    "0",
+    "0",
+    "0",
+    "0"
+  ]
+}
