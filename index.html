@@ -339,6 +339,7 @@
         <p class="example">Glass Texture</p>
         <p class="example">Interactive Lighting</p>
         <p class="example">Optical Flow</p>
+        <p class="example">Poster Techniques</p>
         <p class="example">Pose Segmentation</p>
         <p class="example">Saturation Replacement</p>
         <p class="example">Text Mask</p>
@@ -1365,11 +1366,11 @@
                     node.thresholdValue = 128;
                     node.thresholdingChecked = ["checked", "", ""];
                 }
-                else if (title === 'Connected Components') {
-                    node.connectedComponentsSize = 128;
+                else if (title === 'Superpixels') {
+                    node.kValue = 8;
                 }
                 else if (title === 'Background Subtraction') {
-                    node.fgbg = new cv.BackgroundSubtractorMOG2(500, 16, false);
+                    node.fgbg = new cv.BackgroundSubtractorMOG2();
                 }
                 let blackImage, previousImage;
 
@@ -1956,49 +1957,51 @@
                                     cv.merge(final, dst);
                                     final.delete();
                                 }
-                                else if (title === 'Connected Components') {
-                                    let gray = new cv.Mat();
-                                    cv.cvtColor(src, src, cv.COLOR_RGBA2RGB, 0);
-                                    cv.cvtColor(src, gray, cv.COLOR_RGB2GRAY, 0);
-                                    let binary = new cv.Mat();
-                                    cv.threshold(gray, binary, node.connectedComponentsSize, 255, cv.THRESH_BINARY);
-                                    gray.delete();
-                                    let contours = new cv.MatVector();
-                                    let hierarchy = new cv.Mat();
-                                    cv.findContours(binary, contours, hierarchy, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE);
-                                    binary.delete();
-                                    dst = cv.Mat.zeros(src.rows, src.cols, cv.CV_8UC3);
-                                    for (let i = 0; i < contours.size(); ++i) {
-                                        let contour = contours.get(i);
-                                        let cx = contour.data32S[0];
-                                        let cy = contour.data32S[1];
-                                        contour.delete();
+                                else if (title === 'Superpixels') {
+                                    cv.cvtColor(src, src, cv.COLOR_RGBA2RGB);
+                                    const pixelData = src.data;
+                                    const numPixels = src.cols * src.rows;
 
-                                        let pixel = src.ucharPtr(cy, cx);
-                                        let color = new cv.Scalar(pixel[0], pixel[1], pixel[2]);
-                                        cv.drawContours(dst, contours, i, color, -1, cv.LINE_8, hierarchy, 100);
+                                    let data = new cv.Mat(numPixels, 3, cv.CV_32F);
+                                    let data_ptr = data.data32F;
+
+                                    for (let i = 0; i < numPixels; i++) {
+                                        data_ptr[i * 3 + 0] = pixelData[i * 3 + 0];
+                                        data_ptr[i * 3 + 1] = pixelData[i * 3 + 1];
+                                        data_ptr[i * 3 + 2] = pixelData[i * 3 + 2];
                                     }
-                                    contours.delete(); hierarchy.delete();
+                                    let labels = new cv.Mat();
+                                    let centers = new cv.Mat();
+                                    const criteria = new cv.TermCriteria(cv.TermCriteria_EPS + cv.TermCriteria_MAX_ITER, 10, 1.0);
+                                    cv.kmeans(data, node.kValue, labels, criteria, 3, cv.KMEANS_PP_CENTERS, centers);
+
+                                    data.delete();
+                                    centers.convertTo(centers, cv.CV_8U);
+                                    dst = new cv.Mat(src.rows, src.cols, cv.CV_8UC3);
+
+                                    const labels_ptr = labels.data32S;
+                                    const centers_ptr = centers.data;
+                                    const dst_ptr = dst.data;
+
+                                    for (let i = 0; i < labels_ptr.length; i++) {
+                                        const cluster_id = labels_ptr[i];
+                                        const c_ptr = cluster_id * 3;
+                                        const d_ptr = i * 3;
+                                        dst_ptr[d_ptr + 0] = centers_ptr[c_ptr + 0];
+                                        dst_ptr[d_ptr + 1] = centers_ptr[c_ptr + 1];
+                                        dst_ptr[d_ptr + 2] = centers_ptr[c_ptr + 2];
+                                    }
+                                    labels.delete(); centers.delete();
                                 }
                                 else if (title === 'Background Subtraction') {
                                     cv.cvtColor(src, src, cv.COLOR_RGBA2RGB);
-
                                     let tmp = new cv.Mat();
                                     node.fgbg.apply(src, tmp);
-
-                                    let contours = new cv.MatVector();
-                                    let hierarchy = new cv.Mat();
-                                    cv.findContours(tmp, contours, hierarchy, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE);
+                                    let rgb = new cv.Mat();
+                                    cv.cvtColor(tmp, rgb, cv.COLOR_GRAY2RGB);
                                     tmp.delete();
-
-                                    let mask = cv.Mat.zeros(src.rows, src.cols, cv.CV_8UC3);
-                                    for (let i = 0; i < contours.size(); ++i) {
-                                        cv.drawContours(mask, contours, i, new cv.Scalar(255, 255, 255), -1, cv.LINE_8, hierarchy, 100);
-                                    }
-                                    contours.delete(); hierarchy.delete();
-
-                                    cv.bitwise_and(src, mask, dst);
-                                    mask.delete();
+                                    cv.bitwise_and(src, rgb, dst);
+                                    rgb.delete();
                                 }
                                 else if (title === 'Optical Flow') {
                                     if (node.checkFirstFrame) {
@@ -2822,10 +2825,10 @@
                                 <input type="radio" data-node-id="${nodeData.id}" class="node-input-check adaptive-threshold-check" name="thresholdRadio${nodeData.id}" ${nodeData.thresholdingChecked[2]}><small style="margin:-1px">Adaptive</small></p>
                             </div>`;
                         break;
-                    case 'Connected Components':
+                    case 'Superpixels':
                         specificContentHTML = `
                             <div class="node-content">
-                                <input type="range" data-node-id="${nodeData.id}" title="Threshold: ${nodeData.connectedComponentsSize}" class="node-input-range connected-components-range" min="0" max="255" value="${nodeData.connectedComponentsSize}">
+                                <input type="range" data-node-id="${nodeData.id}" title="Clusters: ${nodeData.kValue}" class="node-input-range connected-components-range" min="2" max="16" value="${nodeData.kValue}">
                             </div>`;
                         break;
                     case 'Character Animation':
@@ -3019,7 +3022,7 @@
                 "Distort": [{ title: "Polar Transformation", type: "Throughput" }, { title: "Glitch Effects", type: "Throughput" }, { title: "Thresholding", type: "Throughput" }],
                 "Mix": [{ title: "Matrix Operations", type: "Mixer" }, { title: "Channel Mixer", type: "Throughput" }, { title: "Color Blending", type: "Mixer" }],
                 "Merge": [{ title: "Concatenation", type: "Mixer" }, { title: "Transitions", type: "Transition" }],
-                "Detect": [{ title: "Connected Components", type: "Throughput" }, { title: "Human Pose", type: "MediaPipe" }, { title: "Background Subtraction", type: "Throughput" }],
+                "Detect": [{ title: "Superpixels", type: "Throughput" }, { title: "Human Pose", type: "MediaPipe" }, { title: "Background Subtraction", type: "Throughput" }],
                 "Visualize": [{ title: "Canvas Viewer", type: "Viewer" }, { title: "Optical Flow", type: "Throughput" }, { title: "Skeleton", type: "Throughput" }]
             };
             for (const category in paletteNodes) {
@@ -3349,8 +3352,8 @@
                     if (event.target.checked) nodeData.thresholdingChecked = ["", "", "checked"];
                 }
                 else if (event.target.classList.contains('connected-components-range')) {
-                    nodeData.connectedComponentsSize = event.target.value * 1;
-                    event.target.title = "Threshold: " + event.target.value;
+                    nodeData.kValue = event.target.value * 1;
+                    event.target.title = "Clusters: " + event.target.value;
                 }
                 else if (event.target.classList.contains('optical-flow-range')) {
                     nodeData.opticalFlowSize = event.target.value * 1.0;
@@ -3625,7 +3628,7 @@
                         morphologyType: n.morphologyType, morphologicalFilterSize: n.morphologicalFilterSize, morphologyKernelType: n.morphologyKernelType,
                         polarEffectSize: n.polarEffectSize, polarEffectType: n.polarEffectType, glitchEffectSize: n.glitchEffectSize, glitchEffectType: n.glitchEffectType,
                         channelMixerValues: n.channelMixerValues, opticalFlowSize: n.opticalFlowSize,
-                        thresholdValue: n.thresholdValue, thresholdingChecked: n.thresholdingChecked, connectedComponentsSize: n.connectedComponentsSize,
+                        thresholdValue: n.thresholdValue, thresholdingChecked: n.thresholdingChecked, kValue: n.kValue,
                         operationType: n.operationType, operationWeight: n.operationWeight, detectionConfidence: n.detectionConfidence,
                         hueBlendChecked: n.hueBlendChecked, satBlendChecked: n.satBlendChecked, valBlendChecked: n.valBlendChecked,
                         concatenationAlignment: n.concatenationAlignment, concatenationChecked: n.concatenationChecked,
@@ -3733,7 +3736,7 @@
                     nd.channelMixerValues = n.channelMixerValues;
                     nd.opticalFlowSize = n.opticalFlowSize;
                     nd.thresholdValue = n.thresholdValue;
-                    nd.connectedComponentsSize = n.connectedComponentsSize;
+                    nd.kValue = n.kValue;
                     nd.operationType = n.operationType;
                     nd.operationWeight = n.operationWeight;
                     nd.concatenationAlignment = n.concatenationAlignment;
