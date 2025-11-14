@@ -310,7 +310,7 @@
         onmouseenter="document.getElementById('examples').style.display='block';">&#x1F4C2;</button>
     <button onclick="saveProject();" title="Save" class="load-save-button" style="right:78px">&#128190;</button>
     <input tabIndex="-1" type="file" id="projectPath" accept=".olive" onchange="loadProjectFromJSON(event);"
-        style="display:none">
+        onclick="this.value=null;" style="display:none">
     <input type="text" id="projectName" class="name-input-field" value="Untitled project" style="right:114px">
     <div id="main-container">
         <div id="node-palette" style="display: none;"> </div>
@@ -337,7 +337,7 @@
         <p class="example">Fading Motion</p>
         <p class="example">Foreground Extraction</p>
         <p class="example">Glass Texture</p>
-        <p class="example">Interactive Dance</p>
+        <p class="example">Interactive Lighting</p>
         <p class="example">Optical Flow</p>
         <p class="example">Pose Segmentation</p>
         <p class="example">Saturation Replacement</p>
