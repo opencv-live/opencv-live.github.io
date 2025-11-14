@@ -79,7 +79,7 @@
       "x": 446,
       "y": 15,
       "bypass": "checked",
-      "glitchEffectSize": 9,
+      "glitchEffectSize": 3,
       "glitchEffectType": "Abberation"
     },
     {
