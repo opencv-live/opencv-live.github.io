@@ -1,0 +1,99 @@
+{
+  "nodes": [
+    {
+      "id": 142396,
+      "title": "Image",
+      "type": "Input",
+      "x": 13,
+      "y": 15,
+      "imageUrl": "examples/images/me.jpg"
+    },
+    {
+      "id": 452961,
+      "title": "Polar Transformation",
+      "type": "Throughput",
+      "x": 255,
+      "y": 96,
+      "bypass": "checked",
+      "polarEffectSize": 175,
+      "polarEffectType": "Fish Eye Effect"
+    },
+    {
+      "id": 354762,
+      "title": "Polar Transformation",
+      "type": "Throughput",
+      "x": 258,
+      "y": 380,
+      "bypass": "checked",
+      "polarEffectSize": 190,
+      "polarEffectType": "Cone Effect"
+    },
+    {
+      "id": 878652,
+      "title": "Canvas Viewer",
+      "type": "Viewer",
+      "x": 507,
+      "y": 20
+    },
+    {
+      "id": 68234,
+      "title": "Canvas Viewer",
+      "type": "Viewer",
+      "x": 752,
+      "y": 75
+    }
+  ],
+  "connections": [
+    {
+      "id": 715178,
+      "fromNode": 452961,
+      "fromPort": 0,
+      "toNode": 878652,
+      "toPort": 0,
+      "color": "hsl(244.43018318299477, 74.18272771634608%, 48.245787664328425%)"
+    },
+    {
+      "id": 821533,
+      "fromNode": 354762,
+      "fromPort": 0,
+      "toNode": 68234,
+      "toPort": 0,
+      "color": "hsl(72.10314012054266, 55.73320942498013%, 51.95593682996018%)"
+    },
+    {
+      "id": 628167,
+      "fromNode": 142396,
+      "fromPort": 0,
+      "toNode": 354762,
+      "toPort": 0,
+      "color": "hsl(187.17162409203834, 62.66533625782401%, 54.68997357749353%)"
+    },
+    {
+      "id": 90779,
+      "fromNode": 142396,
+      "fromPort": 0,
+      "toNode": 452961,
+      "toPort": 0,
+      "color": "hsl(66.06331260084711, 67.8541498151714%, 52.85217084533201%)"
+    }
+  ],
+  "gestures": [
+    "0",
+    "0",
+    "0",
+    "0",
+    "0",
+    "0",
+    "0",
+    "0",
+    "0",
+    "0",
+    "0",
+    "0",
+    "0",
+    "0",
+    "0",
+    "0",
+    "0"
+  ]
+}
