@@ -1,0 +1,79 @@
+{
+  "nodes": [
+    {
+      "id": 261314,
+      "title": "Image",
+      "type": "Input",
+      "x": 29,
+      "y": 305,
+      "imageUrl": "examples/images/uttower_left.jpg"
+    },
+    {
+      "id": 428472,
+      "title": "Image",
+      "type": "Input",
+      "x": 29,
+      "y": 22,
+      "imageUrl": "examples/images/uttower_right.jpg"
+    },
+    {
+      "id": 613767,
+      "title": "Image Stiching",
+      "type": "Features",
+      "x": 354,
+      "y": 347
+    },
+    {
+      "id": 158375,
+      "title": "Canvas Viewer",
+      "type": "Viewer",
+      "x": 650,
+      "y": 111
+    }
+  ],
+  "connections": [
+    {
+      "id": 129836,
+      "fromNode": 428472,
+      "fromPort": 0,
+      "toNode": 613767,
+      "toPort": 0,
+      "color": "hsl(241.70441549041766, 56.19317206689403%, 45.692233467473216%)"
+    },
+    {
+      "id": 124117,
+      "fromNode": 261314,
+      "fromPort": 0,
+      "toNode": 613767,
+      "toPort": 1,
+      "color": "hsl(328.1611019431257, 62.824632108764824%, 51.23715515079339%)"
+    },
+    {
+      "id": 304378,
+      "fromNode": 613767,
+      "fromPort": 0,
+      "toNode": 158375,
+      "toPort": 0,
+      "color": "hsl(280.7189928551248, 67.52185887999818%, 47.80812883314333%)"
+    }
+  ],
+  "gestures": [
+    "0",
+    "0",
+    "0",
+    "0",
+    "0",
+    "0",
+    "0",
+    "0",
+    "0",
+    "0",
+    "0",
+    "0",
+    "0",
+    "0",
+    "0",
+    "0",
+    "0"
+  ]
+}
