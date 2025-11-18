@@ -1,0 +1,97 @@
+{
+  "nodes": [
+    {
+      "id": 573891,
+      "title": "Video / Audio",
+      "type": "Input",
+      "x": 27,
+      "y": 10,
+      "videoUrl": "examples/videos/hip-hop.mp4"
+    },
+    {
+      "id": 260516,
+      "title": "Canvas Viewer",
+      "type": "Viewer",
+      "x": 752,
+      "y": 79
+    },
+    {
+      "id": 459429,
+      "title": "Human Pose",
+      "type": "MediaPipe",
+      "x": 271,
+      "y": 270,
+      "detectionConfidence": 0.5
+    },
+    {
+      "id": 972515,
+      "title": "Gamma Correction",
+      "type": "Throughput",
+      "x": 509,
+      "y": 169,
+      "bypass": "checked",
+      "gammaValue": 0.75
+    }
+  ],
+  "connections": [
+    {
+      "id": 260022,
+      "fromNode": 573891,
+      "fromPort": 0,
+      "toNode": 459429,
+      "toPort": 0,
+      "color": "hsl(292.0136297093411, 64.82810409366357%, 54.262140642058%)"
+    },
+    {
+      "id": 67035,
+      "fromNode": 459429,
+      "fromPort": 1,
+      "toNode": 972515,
+      "toPort": 1,
+      "color": "hsl(34.45943298521009, 57.74289154076564%, 48.92295265406566%)"
+    },
+    {
+      "id": 583440,
+      "fromNode": 972515,
+      "fromPort": 0,
+      "toNode": 260516,
+      "toPort": 0,
+      "color": "hsl(273.2061726726613, 65.99928425634775%, 48.63400964338176%)"
+    },
+    {
+      "id": 311055,
+      "fromNode": 573891,
+      "fromPort": 0,
+      "toNode": 972515,
+      "toPort": 0,
+      "color": "hsl(342.52649097871426, 55.20032804280447%, 49.76554601999471%)"
+    },
+    {
+      "id": 884054,
+      "fromNode": 459429,
+      "fromPort": 1,
+      "toNode": 573891,
+      "toPort": 0,
+      "color": "hsl(328.32587736815253, 64.04863452713363%, 50.7278000750335%)"
+    }
+  ],
+  "gestures": [
+    "8",
+    "8",
+    "0",
+    "0",
+    "0",
+    "0",
+    "7",
+    "0",
+    "0",
+    "0",
+    "0",
+    "0",
+    "0",
+    "0",
+    "0",
+    "0",
+    "0"
+  ]
+}
