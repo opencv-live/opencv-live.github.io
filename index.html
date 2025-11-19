@@ -270,7 +270,7 @@
         }
 
         #examples p {
-            margin: 2px;
+            margin: 1px;
         }
 
         #examples p:hover {
@@ -339,6 +339,7 @@
         <p class="example">Fading Motion</p>
         <p class="example">Foreground Extraction</p>
         <p class="example">Glass Texture</p>
+        <p class="example">Glowing Monkey</p>
         <p class="example">Image Stitching</p>
         <p class="example">Interactive Dance</p>
         <p class="example">Optical Flow</p>
@@ -823,12 +824,14 @@
                         catch { }
                     }
                     else if (sourceControl && sourceControl.length == 5 && sourceControl[3] === 'disabled') {
+                        document.getElementById('fxA' + node.id).style.accentColor = 'darkgoldenrod';
                         let target = sourceControl[1] * 0.1;
                         if (sourceControl[0] > 0) node.fxA += (target - node.fxA) / Math.min(Math.pow(sourceControl[0], 3), 2000);
                         document.getElementById('fxA' + node.id).value = node.fxA;
                         if (Math.abs(node.fxA - Math.round(node.fxA)) < 0.1) node.updateEffect();
                     }
                     else if (sourceControl && sourceControl.length == 3) {
+                        document.getElementById('fxA' + node.id).style.accentColor = 'darkgoldenrod';
                         node.fxA = (sourceControl[0] + sourceControl[1] + sourceControl[2]) * 33;
                         document.getElementById('fxA' + node.id).value = node.fxA;
                         if (Math.abs(node.fxA - Math.round(node.fxA)) < 0.1) node.updateEffect();
@@ -960,8 +963,8 @@
                         }
                     }
                     else if (sourceControl && sourceControl.length == 3) {
-                        node.camera.position.x = sourceControl[0] * 100 - 50;
-                        node.camera.position.y = sourceControl[2] * 100 - 50;
+                        node.camera.position.x = sourceControl[0] * 200 - 100;
+                        node.camera.position.y = sourceControl[2] * 200 - 100;
                     }
                     controls.update();
                     renderer.render(scene, node.camera);
@@ -1332,8 +1335,8 @@
                             }
                         }
                         else if (sourceControl && sourceControl.length == 3) {
-                            node.camera.position.x = sourceControl[0] * 100 - 50;
-                            node.camera.position.y = sourceControl[2] * 100 - 50;
+                            node.camera.position.x = sourceControl[0] * 200 - 100;
+                            node.camera.position.y = sourceControl[2] * 200 - 100;
                         }
                     }
                     controls.update();
