@@ -550,14 +550,12 @@
                     node.mediaElement = document.createElement('video');
                     node.mediaElement.muted = true;
                     node.mediaElement.autoplay = true;
+                    node.mediaElement.controls = true;
 
                     if (title === 'Video / Audio') {
                         node.inputs.push({ name: 'control' });
                         node.videoUrl = '';
-                        node.mediaElement.controls = true;
-                        node.mediaElement.loop = false;
                         node.mediaElement.muted = false;
-                        node.mediaElement.autoplay = false;
                         node.mediaElement.addEventListener('canplay', function () {
                             for (var i = 0; i < 10; i++) setTimeout(renderWires, i * 100);
                         });
@@ -3336,7 +3334,7 @@
                 if (nodeData.type === 'Input' && nodeData.mediaElement) {
                     const contentDiv = nodeEl.querySelector('.node-content');
                     contentDiv.appendChild(nodeData.mediaElement);
-                    if (nodeData.title === 'Camera') {
+                    if (nodeData.title === 'Camera / Microphone') {
                         populateCameraSelector(contentDiv, nodeData);
                     }
                 }
@@ -3474,7 +3472,7 @@
             const graphContainer = document.getElementById('graph-container');
             paletteContainer.style.display = 'block';
             const paletteNodes = {
-                "Capture": [{ title: "Image", type: "Input" }, { title: "Video / Audio", type: "Input" }, { title: "Camera", type: "Input" }],
+                "Capture": [{ title: "Image", type: "Input" }, { title: "Video / Audio", type: "Input" }, { title: "Camera / Microphone", type: "Input" }],
                 "Generate": [{ title: "3D Text", type: "Text" }, { title: "Parametric Lines", type: "Parametric" }, { title: "Countdown / Keyframes", type: "Time" }],
                 "Enhance": [{ title: "Gamma Correction", type: "Throughput" }, { title: "Histogram Equalization", type: "Throughput" }, { title: "Color Adjustment", type: "Throughput" }],
                 "Filter": [{ title: "Convolution", type: "Throughput" }, { title: "Morphology / Rank", type: "Throughput" }, { title: "Sound Filters & Effects", type: "Audio" }],
