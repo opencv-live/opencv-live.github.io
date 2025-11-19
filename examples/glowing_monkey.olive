@@ -1,0 +1,135 @@
+{
+  "nodes": [
+    {
+      "id": 989445,
+      "title": "Video / Audio",
+      "type": "Input",
+      "x": 26,
+      "y": 20,
+      "videoUrl": "examples/sounds/Polso allegro.mp3"
+    },
+    {
+      "id": 741523,
+      "title": "Sound Filters & Effects",
+      "type": "Audio",
+      "x": 25,
+      "y": 339,
+      "fxName": "panning",
+      "fxA": 50,
+      "sliderAtitle": "Panning: 0"
+    },
+    {
+      "id": 465804,
+      "title": "Canvas Viewer",
+      "type": "Viewer",
+      "x": 711,
+      "y": 55
+    },
+    {
+      "id": 533007,
+      "title": "Image",
+      "type": "Input",
+      "x": 253,
+      "y": 20,
+      "imageUrl": "examples/images/mandrill.jpg"
+    },
+    {
+      "id": 559895,
+      "title": "Color Adjustment",
+      "type": "Throughput",
+      "x": 482,
+      "y": 189,
+      "bypass": "checked",
+      "selectedColor": "#0000ff",
+      "oldHSV": [
+        120,
+        255
+      ],
+      "newHSV": [
+        -180,
+        -255
+      ],
+      "fullRangeChecked": "",
+      "colorRangeChecked": true,
+      "colorInvertChecked": "checked"
+    },
+    {
+      "id": 981091,
+      "title": "Gamma Correction",
+      "type": "Throughput",
+      "x": 710,
+      "y": 354,
+      "bypass": "checked",
+      "gammaValue": 0
+    }
+  ],
+  "connections": [
+    {
+      "id": 564109,
+      "fromNode": 989445,
+      "fromPort": 0,
+      "toNode": 741523,
+      "toPort": 0,
+      "color": "hsl(307.06037958267933, 63.91621461023142%, 54.84959204208766%)"
+    },
+    {
+      "id": 889430,
+      "fromNode": 533007,
+      "fromPort": 0,
+      "toNode": 559895,
+      "toPort": 0,
+      "color": "hsl(320.9246149546078, 72.41076495244252%, 45.12075902133079%)"
+    },
+    {
+      "id": 708855,
+      "fromNode": 741523,
+      "fromPort": 0,
+      "toNode": 559895,
+      "toPort": 1,
+      "color": "hsl(168.38767662754776, 60.28426191216865%, 50.36350440117229%)"
+    },
+    {
+      "id": 836266,
+      "fromNode": 559895,
+      "fromPort": 0,
+      "toNode": 981091,
+      "toPort": 0,
+      "color": "hsl(349.48659188271915, 62.54398430323192%, 46.3905267204531%)"
+    },
+    {
+      "id": 293621,
+      "fromNode": 741523,
+      "fromPort": 0,
+      "toNode": 981091,
+      "toPort": 1,
+      "color": "hsl(125.0609431278797, 67.55012460573849%, 45.99283331166442%)"
+    },
+    {
+      "id": 937303,
+      "fromNode": 981091,
+      "fromPort": 0,
+      "toNode": 465804,
+      "toPort": 0,
+      "color": "hsl(163.75119973268966, 52.02903020273824%, 48.94811036831714%)"
+    }
+  ],
+  "gestures": [
+    "0",
+    "0",
+    "0",
+    "0",
+    "0",
+    "0",
+    "0",
+    "0",
+    "0",
+    "0",
+    "0",
+    "0",
+    "0",
+    "0",
+    "0",
+    "0",
+    "0"
+  ]
+}
