@@ -1164,6 +1164,7 @@
                 node.inputs.push({ name: 'input' });
                 node.inputs.push({ name: 'control' });
                 node.outputs.push({ name: 'output' });
+                node.inputExists = false;
 
                 const scene = new THREE.Scene();
                 node.camera = new THREE.PerspectiveCamera(45, screen.width / screen.height, 1, 1000);
@@ -1181,8 +1182,8 @@
 
                 node.ambientLight = new THREE.AmbientLight(0xffffff, 1);
                 scene.add(node.ambientLight);
-                node.pointLight = new THREE.PointLight(0xff0000, 2);
 
+                node.pointLight = new THREE.PointLight(0xff0000, 2);
                 const pointSphere = new THREE.SphereGeometry(0.1, 16, 16);
                 const pointColor = new THREE.MeshStandardMaterial({ color: 0x0077ff });
                 node.pointHelper = new THREE.Mesh(pointSphere, pointColor);
@@ -1275,7 +1276,7 @@
 
                     if (node.isCustomModel && node.loadedModel) {
                         currentModel = node.loadedModel;
-                        currentModel.traverse(child => { if (child.isMesh) child.material = material; });
+                        if (node.inputExists) currentModel.traverse(child => { if (child.isMesh) child.material = material; });
                     } else {
                         currentModel = new THREE.Mesh(geometries[node.primitiveType], material);
                     }
@@ -1294,6 +1295,10 @@
                     const sourceElement = getInputData(node, 0);
                     const sourceIsValid = sourceElement && (sourceElement.naturalWidth > 0 || sourceElement.videoWidth > 0 || sourceElement.width > 0);
                     if (sourceIsValid) {
+                        if (!node.inputExists) {
+                            node.inputExists = true;
+                            updateObject();
+                        }
                         standardMaterial.map.image = sourceElement;
                         standardMaterial.map.needsUpdate = true;
 
@@ -1337,6 +1342,8 @@
                             node.camera.position.y = sourceControl[2] * 200 - 100;
                         }
                     }
+                    else node.inputExists = false;
+
                     controls.update();
                     renderer.render(scene, node.camera);
 
@@ -3229,8 +3236,8 @@
                                 <input tabIndex="-1" type="file" title="Upload GLTF model" class="node-input-file 3d-model-loader" data-node-id="${nodeData.id}" accept=".glb, .gltf">
                                 <select class="node-select-field 3d-primitive-selector" data-node-id="${nodeData.id}">${primitiveOptions}</select>
                                 <input type="color" class="node-input-color mapping-light-color" data-node-id="${nodeData.id}" title="Spot Light Color" value="#${nodeData.pointLight.color.getHex().toString(16)}">
-                                <input type="range" class="node-input-range mapping-light-ambient" data-node-id="${nodeData.id}" title="Ambient Light Intensity" min="0" max="2" step="0.1" value="${nodeData.ambientLight.intensity}" style="width:144px">
-                                <input type="range" class="node-input-range mapping-light-value" data-node-id="${nodeData.id}" title="Spot Light Intensity" min="0" max="2" step="0.1" value="${nodeData.pointLight.intensity}" style="width:144px">
+                                <input type="range" class="node-input-range mapping-light-ambient" data-node-id="${nodeData.id}" title="Ambient Light Intensity" min="0" max="10" step="0.1" value="${nodeData.ambientLight.intensity}" style="width:144px">
+                                <input type="range" class="node-input-range mapping-light-value" data-node-id="${nodeData.id}" title="Spot Light Intensity" min="0" max="20" step="0.1" value="${nodeData.pointLight.intensity}" style="width:144px">
                                 <br><br>
                                 <button class="node-fullscreen-button" onclick="this.nextElementSibling.requestFullscreen();">Render 3D Scene</button>
                             </div>`;
