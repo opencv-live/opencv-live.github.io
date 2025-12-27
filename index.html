@@ -1164,7 +1164,7 @@
                 node.inputs.push({ name: 'input' });
                 node.inputs.push({ name: 'control' });
                 node.outputs.push({ name: 'output' });
-                node.inputExists = false;
+                node.inputExists = true;
 
                 const scene = new THREE.Scene();
                 node.camera = new THREE.PerspectiveCamera(45, screen.width / screen.height, 1, 1000);
