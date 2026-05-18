@@ -176,6 +176,15 @@
             padding: 0;
         }
 
+        .node-flip-button {
+            background-color: transparent;
+            cursor: pointer;
+            border: 0;
+            margin-right: 3px;
+            padding: 0;
+            font-weight: bold;
+        }
+
         .node-fullscreen-button {
             font-weight: bold;
             width: 100%;
@@ -535,6 +544,7 @@
 
             if (type === 'Input') {
                 node.outputs.push({ name: 'output' });
+                node.isFlipped = false;
 
                 if (title === 'Image') {
                     node.imageUrl = '';
@@ -596,8 +606,6 @@
                             });
                         };
                     }
-                    else node.mediaElement.style.transform = 'rotateY(180deg)';
-
                     node.mediaElement.playsInline = true;
                     node.mediaElement.className = 'media-preview';
                 }
@@ -641,6 +649,9 @@
                             node.lastRate = sourceControl[0] + sourceControl[1] + sourceControl[2];
                         }
                     }
+                    if (node.isFlipped) node.mediaElement.style.transform = 'rotateY(180deg)';
+                    else node.mediaElement.style.transform = 'rotateY(0deg)';
+
                     node.outputValues.output = node.mediaElement;
                     node.mediaElement.style.zoom = 1;
                     if (!document.fullscreenElement) node.mediaElement.style.zoom = 190 / node.mediaElement.naturalWidth;
@@ -3329,14 +3340,17 @@
                         specificContentHTML = `<div class="node-content"></div>`;
                         break;
                 }
-                let bypassCheck = '', popOut = '';
+                let bypassCheck = '', popOut = '', flipButton = '';
                 if (nodeData.type === 'Throughput' || nodeData.type === 'Mixer') {
                     bypassCheck = `<input type="checkbox" class="bypass-check" data-node-id="${nodeData.id}" style="float:right" ${nodeData.bypass}>`;
                 }
                 if (nodeData.type === 'Viewer') {
                     popOut = `<button class="node-popout-button viewer-popout-button" data-node-id="${nodeData.id}" style="float:right" title="Pop-out">&#x1F5D7</button>`;
                 }
-                nodeEl.innerHTML = `<div class="node-header">${nodeData.title}${bypassCheck}${popOut}</div>${specificContentHTML}${portsHTML}`;
+                if (nodeData.type === 'Input' && nodeData.title === 'Camera / Microphone') {
+                    flipButton = `<button class="node-flip-button input-flip-button" data-node-id="${nodeData.id}" style="float:right" title="Flip left-right">&#8644</button>`;
+                }
+                nodeEl.innerHTML = `<div class="node-header">${nodeData.title}${bypassCheck}${popOut}${flipButton}</div>${specificContentHTML}${portsHTML}`;
                 makeDraggable(nodeEl, nodeEl.querySelector('.node-header'), nodeData);
                 graphContainer.appendChild(nodeEl);
 
@@ -3522,6 +3536,11 @@
                         }
                         else nodeData.popup.focus();
                     }
+                }
+                else if (event.target.classList.contains('input-flip-button')) {
+                    const nodeId = parseInt(event.target.dataset.nodeId);
+                    const nodeData = nodes.find(n => n.id === nodeId);
+                    if (nodeData) nodeData.isFlipped = !nodeData.isFlipped;
                 }
                 else if (event.target.classList.contains('transition-play-button')) {
                     const nodeId = parseInt(event.target.dataset.nodeId);
@@ -4086,7 +4105,7 @@
                 }
                 const payload = {
                     nodes: nodes.map(n => ({
-                        id: n.id, title: n.title, type: n.type, x: n.x, y: n.y, bypass: n.bypass,
+                        id: n.id, title: n.title, type: n.type, x: n.x, y: n.y, bypass: n.bypass, isFlipped: n.isFlipped,
                         imageUrl: n.imageUrl, videoUrl: n.videoUrl, fxName: n.fxName, fxA: n.fxA, sliderAtitle: n.sliderAtitle,
                         nodeText: n.text, textColor: n.textColor, textSize: n.textSize, textHeight: n.textHeight, fontName: n.fontName, fontUrls: n.fontUrls,
                         curveColor: n.curveColor, paramA: n.paramA, paramB: n.paramB, curveName: n.curveName, curveType: n.curveType, equationX: n.equationX, equationY: n.equationY, animationSpeed: n.animationSpeed,
@@ -4188,6 +4207,7 @@
                         nd.camera.updateProjectionMatrix();
                     }
                     if (n.bypass) nd.bypass = n.bypass;
+                    if (n.isFlipped) nd.isFlipped = n.isFlipped;
 
                     nd.gridSize = n.gridSize;
                     nd.gammaValue = n.gammaValue;
