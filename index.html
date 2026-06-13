@@ -6,10 +6,9 @@
     <style>
         html,
         body {
-            height: 100%;
             margin: 0;
             padding: 0;
-            background-color: #282828;
+            background-color: #1a1a1a;
             color: #eee;
             font-family: sans-serif;
             user-select: none;
@@ -17,16 +16,13 @@
 
         #main-container {
             display: flex;
-            height: 100%;
-            background-color: #1a1a1a;
         }
 
         #node-palette {
             width: 200px;
-            background-color: #282828;
+            background-image: linear-gradient(to bottom, #282828, #1a1a1a);
             box-sizing: border-box;
             z-index: 800;
-            min-height: 480px;
             text-align: center;
             font-size: small;
             overflow-x: hidden;
@@ -1428,6 +1424,299 @@
                     }
                 };
             }
+            else if (type === 'Interactive') {
+                node.inputs.push({ name: 'input' });
+                node.outputs.push({ name: 'output' });
+                node.inputs.push({ name: 'control' });
+
+                node.checkFirstFrame = true;
+                node.interEffectSize = 20;
+                node.interEffectType = 'Mesh Liquify';
+                node.interEffects = ['Mesh Liquify', 'Swirl Effect', 'Wave Displacement', 'Tiles Explode'];
+
+                node.interCanvas = document.createElement('canvas');
+                node.interCanvas.className = 'inner-canvas';
+
+                node.onExecute = () => {
+                    const sourceElement = getInputData(node, 0);
+                    const sourceIsValid = sourceElement && (sourceElement.naturalWidth > 0 || sourceElement.videoWidth > 0 || sourceElement.width > 0);
+                    if (sourceIsValid) {
+                        let previousWidth = node.interCanvas.width;
+                        let previousHeight = node.interCanvas.height;
+
+                        node.interCanvas.width = sourceElement.naturalWidth || sourceElement.videoWidth || sourceElement.width;
+                        node.interCanvas.height = sourceElement.naturalHeight || sourceElement.videoHeight || sourceElement.height;
+
+                        if (node.interCanvas.width !== previousWidth || node.interCanvas.height !== previousHeight) node.checkFirstFrame = true;
+
+                        if (node.checkFirstFrame) {
+                            node.scene = new THREE.Scene();
+                            node.renderer = new THREE.WebGLRenderer({ canvas: node.interCanvas });
+                            node.texture = sourceElement.tagName === 'VIDEO' ? new THREE.VideoTexture(sourceElement) : new THREE.Texture(sourceElement);
+
+                            if (node.interEffectType === 'Mesh Liquify') {
+                                const material = new THREE.MeshBasicMaterial({ map: node.texture, side: THREE.DoubleSide });
+                                node.geometry = new THREE.PlaneGeometry(2, 2, 500, 500);
+                                node.originalPositions = node.geometry.attributes.position.clone();
+                                node.mesh = new THREE.Mesh(node.geometry, material);
+                                node.interCam = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
+                            }
+                            else if (node.interEffectType === 'Swirl Effect') {
+                                node.twirlMaterial = new THREE.ShaderMaterial({
+                                    uniforms: {
+                                        u_texture: { value: node.texture },
+                                        u_center: { value: new THREE.Vector2(0.5, 0.5) },
+                                        u_radius: { value: node.interEffectSize / 25 },
+                                        u_strength: { value: 3.0 }
+                                    },
+                                    vertexShader: `
+                                        varying vec2 vUv;
+                                        void main() {
+                                            vUv = uv;
+                                            gl_Position = vec4(position, 1.0);
+                                    }`,
+                                    fragmentShader: `
+                                        uniform sampler2D u_texture;
+                                        uniform vec2 u_center;
+                                        uniform float u_radius;
+                                        uniform float u_strength;
+                                        varying vec2 vUv;
+
+                                        void main() {
+                                            vec2 uv = vUv;
+                                            vec2 dir = uv - u_center;
+                                            float dist = length(dir);
+
+                                            if (dist < u_radius) {
+                                                float percent = (u_radius - dist) / u_radius;
+                                                float theta = percent * percent * u_strength;
+                                                float s = sin(theta);
+                                                float c = cos(theta);
+                                                uv = u_center + vec2(dir.x * c - dir.y * s, dir.x * s + dir.y * c);
+                                            }
+                                            gl_FragColor = texture2D(u_texture, uv);
+                                        }`
+                                });
+                                const geometry = new THREE.PlaneGeometry(2, 2);
+                                node.mesh = new THREE.Mesh(geometry, node.twirlMaterial);
+                                node.interCam = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
+                            }
+                            else if (node.interEffectType === 'Wave Displacement') {
+                                node.funhouseMaterial = new THREE.ShaderMaterial({
+                                    uniforms: {
+                                        u_texture: { value: node.texture },
+                                        u_center: { value: new THREE.Vector2(0.5, 0.5) },
+                                        u_intensity: { value: node.interEffectSize / 25 },
+                                        u_time: { value: 0.0 }
+                                    },
+                                    vertexShader: `
+                                        varying vec2 vUv;
+                                        void main() {
+                                            vUv = uv;
+                                            gl_Position = vec4(position, 1.0);
+                                        }`,
+                                    fragmentShader: `
+                                        uniform sampler2D u_texture;
+                                        uniform vec2 u_center;
+                                        uniform float u_intensity;
+                                        uniform float u_time;
+                                        varying vec2 vUv;
+
+                                        void main() {
+                                            vec2 uv = vUv;
+                                            float dist = distance(uv, u_center);
+                                            float wave = sin(dist * 5.0 - u_time * 5.0) * 0.05 * u_intensity;
+                                            uv.x += u_center.x * wave * (1.0 - dist);
+                                            uv.y += u_center.y * wave * (1.0 - dist);
+                                            gl_FragColor = texture2D(u_texture, uv);
+                                        }`
+                                });
+                                node.clock = new THREE.Clock();
+                                const geometry = new THREE.PlaneGeometry(2, 2);
+                                node.mesh = new THREE.Mesh(geometry, node.funhouseMaterial);
+                                node.interCam = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
+                            }
+                            else if (node.interEffectType === 'Tiles Explode') {
+                                const cols = 80;
+                                const rows = 80;
+                                const numParticles = cols * rows;
+
+                                const geometry = new THREE.BufferGeometry();
+                                const positions = new Float32Array(numParticles * 3);
+                                const uvs = new Float32Array(numParticles * 2);
+
+                                let idx = 0;
+                                let uvIdx = 0;
+                                for (let y = 0; y < rows; y++) {
+                                    for (let x = 0; x < cols; x++) {
+                                        const u = x / (cols - 1);
+                                        const v = y / (rows - 1);
+                                        positions[idx] = u - 0.5;
+                                        positions[idx + 1] = v - 0.5;
+                                        positions[idx + 2] = 0; // Z-axis
+                                        uvs[uvIdx] = u;
+                                        uvs[uvIdx + 1] = v;
+                                        idx += 3;
+                                        uvIdx += 2;
+                                    }
+                                }
+                                geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+                                geometry.setAttribute('uv', new THREE.BufferAttribute(uvs, 2));
+
+                                node.particleMaterial = new THREE.ShaderMaterial({
+                                    uniforms: {
+                                        u_texture: { value: node.texture },
+                                        u_center: { value: new THREE.Vector2(0.5, 0.5) },
+                                        u_radius: { value: 1.0 },
+                                        u_pointSize: { value: 1.0 },
+                                        u_force: { value: node.interEffectSize / 100 }
+                                    },
+                                    vertexShader: `
+                                        uniform vec2 u_center;
+                                        uniform float u_radius;
+                                        uniform float u_pointSize;
+                                        uniform float u_force;
+                                        varying vec2 vUv;
+
+                                        void main() {
+                                            vUv = uv;
+                                            vec3 pos = position;
+                                            vec2 target = u_center - vec2(0.5);
+                                            float dist = distance(pos.xy, target);
+
+                                            if (dist < u_radius) {
+                                                float push = (1.0 - (dist / u_radius)) * u_force;
+                                                vec2 dir = normalize(pos.xy - target);
+                                                pos.xy += dir * push;
+                                                pos.z += push * 0.5;
+                                            }
+                                            vec4 mvPosition = modelViewMatrix * vec4(pos, 1.0);
+                                            gl_Position = projectionMatrix * mvPosition;
+                                            gl_PointSize = u_pointSize * (1.0 / -mvPosition.z);
+                                        }`,
+                                    fragmentShader: `
+                                        uniform sampler2D u_texture;
+                                        varying vec2 vUv;
+
+                                        void main() {
+                                            vec4 color = texture2D(u_texture, vUv);
+                                            if (color.a < 0.1) discard;
+                                            gl_FragColor = color;
+                                        }`,
+                                    transparent: true
+                                });
+                                node.mesh = new THREE.Points(geometry, node.particleMaterial);
+                                node.smoothedX = 0.5;
+                                node.smoothedY = 0.5;
+                                node.interCam = new THREE.PerspectiveCamera();
+                                node.interCam.position.z = 1;
+                            }
+                            node.scene.add(node.mesh);
+                            node.texture.needsUpdate = true;
+                            node.checkFirstFrame = false;
+                        }
+                        const sourceControl = getInputData(node, 1);
+                        try {
+                            let targetLX = 0, targetLY = 0, targetRX = 0, targetRY = 0, centerX = 0.5, centerY = 0.5;
+
+                            if (sourceControl && sourceControl.length == 2) {
+                                let check = true;
+
+                                if (sourceControl[0][15]) {
+                                    targetLX = ((1 - sourceControl[0][15].x) * 2) - 1;
+                                    targetLY = ((1 - sourceControl[0][15].y) * 2) - 1;
+                                    check = false;
+                                }
+                                if (sourceControl[0][16]) {
+                                    targetRX = ((1 - sourceControl[0][16].x) * 2) - 1;
+                                    targetRY = ((1 - sourceControl[0][16].y) * 2) - 1;
+                                    check = false;
+                                }
+                                if (check) return;
+                            }
+                            else if (sourceControl && sourceControl.length == 5 && sourceControl[3] === 'disabled') {
+                                document.getElementById('inter' + node.id).style.accentColor = 'darkgoldenrod';
+                                let target = Math.round(sourceControl[1] * 0.012) * 2 + 1;
+                                if (sourceControl[0] > 0) {
+                                    node.interEffectSize += (target - node.interEffectSize) / Math.min(Math.pow(sourceControl[0], 3), 2000);
+                                }
+                                document.getElementById('inter' + node.id).value = node.interEffectSize;
+                            }
+                            else if (sourceControl && sourceControl.length == 3) {
+                                document.getElementById('inter' + node.id).style.accentColor = 'darkgoldenrod';
+                                node.interEffectSize = Math.round((sourceControl[0] + sourceControl[1] + sourceControl[2]) * 4) * 2 + 1;
+                                document.getElementById('inter' + node.id).value = node.interEffectSize;
+                            }
+                            else document.getElementById('inter' + node.id).style.accentColor = '';
+
+                            if (node.interEffectType === 'Mesh Liquify') {
+                                const positions = node.geometry.attributes.position;
+
+                                for (let i = 0; i < positions.count; i++) {
+                                    let origX = node.originalPositions.getX(i);
+                                    let origY = node.originalPositions.getY(i);
+                                    let dxL = origX - targetLX;
+                                    let dyL = origY - targetLY;
+                                    let distL = Math.sqrt(dxL * dxL + dyL * dyL);
+                                    let dxR = origX - targetRX;
+                                    let dyR = origY - targetRY;
+                                    let distR = Math.sqrt(dxR * dxR + dyR * dyR);
+
+                                    if (distL < node.interEffectSize / 25) {
+                                        let force = (1.0 - (distL / node.interEffectSize * 25)) * (1 - Math.sqrt(origX * origX + origY * origY));
+                                        positions.setX(i, origX + dxL * force);
+                                        positions.setY(i, origY + dyL * force);
+                                    }
+                                    else if (distR < node.interEffectSize / 25) {
+                                        let force = (1.0 - (distR / node.interEffectSize * 25)) * (1 - Math.sqrt(origX * origX + origY * origY));
+                                        positions.setX(i, origX + dxR * force);
+                                        positions.setY(i, origY + dyR * force);
+                                    }
+                                    else {
+                                        positions.setX(i, origX);
+                                        positions.setY(i, origY);
+                                    }
+                                }
+                                positions.needsUpdate = true;
+                            }
+                            else {
+                                if (targetLX < -1 || targetLX > 1) targetLX = 0;
+                                if (targetLY < -1 || targetLY > 1) targetLY = 0;
+                                if (targetRX < -1 || targetRX > 1) targetRX = 0;
+                                if (targetRY < -1 || targetRY > 1) targetRY = 0;
+
+                                centerX = (targetLX / 2 + targetRX / 2 + 0.5);
+                                centerY = (targetLY / 2 + targetRY / 2 + 0.5);
+
+                                if (node.interEffectType === 'Swirl Effect') {
+                                    node.twirlMaterial.uniforms.u_center.value.set(centerX, centerY);
+                                    node.twirlMaterial.uniforms.u_strength.value = node.interEffectSize / 5 - 2.5;
+                                    node.twirlMaterial.uniforms.u_radius.value = 1 - Math.sqrt((centerX - 0.5) * (centerX - 0.5) + (centerY - 0.5) * (centerY - 0.5));
+                                }
+                                else if (node.interEffectType === 'Wave Displacement') {
+                                    node.funhouseMaterial.uniforms.u_center.value.set(centerX, centerY);
+                                    node.funhouseMaterial.uniforms.u_intensity.value = node.interEffectSize / 5;
+                                    node.funhouseMaterial.uniforms.u_time.value = node.clock.getElapsedTime();
+                                }
+                                else if (node.interEffectType === 'Tiles Explode') {
+                                    node.smoothedX += (centerX - node.smoothedX) * 0.15;
+                                    node.smoothedY += (centerY - node.smoothedY) * 0.15;
+                                    node.particleMaterial.uniforms.u_center.value.set(node.smoothedX, node.smoothedY);
+                                    node.particleMaterial.uniforms.u_radius.value = 1 - Math.sqrt((centerX - 0.5) * (centerX - 0.5) + (centerY - 0.5) * (centerY - 0.5));
+                                    node.particleMaterial.uniforms.u_force.value = node.interEffectSize / 100;
+                                    node.particleMaterial.uniforms.u_pointSize.value = 0.01 * Math.sqrt(node.interCanvas.width * node.interCanvas.height);
+                                }
+                            }
+                            if (sourceElement.tagName === 'VIDEO') node.texture.needsUpdate = true;
+                        }
+                        catch (err) { console.log("Three.js Error:", err); }
+
+                        node.renderer.setSize(node.interCanvas.width, node.interCanvas.height);
+                        node.renderer.render(node.scene, node.interCam);
+                        node.outputValues.output = node.interCanvas;
+                    }
+                };
+            }
             else if (type === 'Throughput') {
                 node.inputs.push({ name: 'input' });
                 node.outputs.push({ name: 'output' });
@@ -1475,17 +1764,11 @@
                     node.morphologicalFilterSize = 9;
                     node.morphologyKernelType = ["checked", "", ""];
                 }
-                else if (title === 'Polar Transformation') {
-                    node.polarEffectSize = 100.0;
-                    node.polarEffectType = 'Polar Coordinates';
-                    node.polarEffects = ['Polar Coordinates', 'Fish Eye Effect', 'Cone Effect', 'Swirl Effect'];
-                    node.polarEnabled = '';
-                }
                 else if (title === 'Glitch Effects') {
                     node.inputs.push({ name: 'control' });
                     node.glitchEffectSize = 5;
                     node.glitchEffectType = 'Shaking';
-                    node.glitchEffects = ['Shaking', 'Abberation', 'Fade', 'Glass'];
+                    node.glitchEffects = ['Shaking', 'Abberation', 'Fade', 'Glass', 'Caricature'];
                 }
                 else if (title === 'Channel Mixer') {
                     node.channelMixerValues = [1, 0, 0, 0, 1, 0, 0, 0, 1];
@@ -1913,42 +2196,6 @@
                                         cv.morphologyEx(src, dst, node.morphologicalFilterName[index], kernel);
                                     }
                                 }
-                                else if (title === 'Polar Transformation') {
-                                    if (node.lastState === node.polarEffectType + node.polarEffectSize + mean) {
-                                        src.delete(); dst.delete();
-                                        return;
-                                    }
-                                    node.lastState = node.polarEffectType + node.polarEffectSize;
-
-                                    let p = new cv.Mat.zeros(src.rows, src.cols, cv.CV_8UC3);
-
-                                    document.getElementById('polarRange' + node.id).disabled = '';
-                                    node.polarEnabled = '';
-
-                                    if (node.polarEffectType === "Polar Coordinates") {
-                                        document.getElementById('polarRange' + node.id).disabled = 'disabled';
-                                        node.polarEnabled = 'disabled';
-                                    }
-                                    for (var x = 0; x < p.cols; x++) {
-                                        for (var y = 0; y < p.rows; y++) {
-                                            let cart, polar = cartesian2polar(x - p.cols / 2, y - p.rows / 2);
-
-                                            if (node.polarEffectType === "Polar Coordinates") cart = [polar[0], polar[1]];
-                                            else if (node.polarEffectType === "Fish Eye Effect")
-                                                cart = polar2cartesian(polar[0] * polar[0] / node.polarEffectSize, polar[1]);
-                                            else if (node.polarEffectType === "Cone Effect")
-                                                cart = polar2cartesian(Math.sqrt(polar[0] * node.polarEffectSize), polar[1]);
-                                            else cart = polar2cartesian(polar[0], polar[1] + polar[0] / node.polarEffectSize);
-
-                                            let pixel = src.ucharPtr(Math.round(cart[1]) + p.rows / 2, Math.round(cart[0]) + p.cols / 2);
-                                            p.data[y * p.cols * p.channels() + x * p.channels()] = pixel[0];
-                                            p.data[y * p.cols * p.channels() + x * p.channels() + 1] = pixel[1];
-                                            p.data[y * p.cols * p.channels() + x * p.channels() + 2] = pixel[2];
-                                        }
-                                    }
-                                    p.copyTo(dst);
-                                    p.delete();
-                                }
                                 else if (title === 'Glitch Effects') {
                                     let controlParams = '';
                                     const sourceControl = getInputData(node, 1);
@@ -2026,7 +2273,7 @@
                                         }
                                         blackImage.copyTo(dst);
                                     }
-                                    else {
+                                    else if (node.glitchEffectType === 'Glass') {
                                         cv.cvtColor(src, dst, cv.COLOR_RGBA2RGB, 0);
                                         for (var x = 0; x < src.cols; x++) {
                                             for (var y = 0; y < src.rows; y++) {
@@ -2041,6 +2288,23 @@
                                                 catch { }
                                             }
                                         }
+                                    }
+                                    else if (node.glitchEffectType === 'Caricature') {
+                                        let p = new cv.Mat.zeros(src.rows, src.cols, cv.CV_8UC3);
+
+                                        for (var x = 0; x < p.cols; x++) {
+                                            for (var y = 0; y < p.rows; y++) {
+                                                let cart, polar = cartesian2polar(x - p.cols / 2, y - p.rows / 2);
+                                                cart = polar2cartesian(Math.sqrt(polar[0] * node.glitchEffectSize * 10), polar[1]);
+
+                                                let pixel = src.ucharPtr(Math.round(cart[1]) + p.rows / 2, Math.round(cart[0]) + p.cols / 2);
+                                                p.data[y * p.cols * p.channels() + x * p.channels()] = pixel[0];
+                                                p.data[y * p.cols * p.channels() + x * p.channels() + 1] = pixel[1];
+                                                p.data[y * p.cols * p.channels() + x * p.channels() + 2] = pixel[2];
+                                            }
+                                        }
+                                        p.copyTo(dst);
+                                        p.delete();
                                     }
                                     M1.delete(); M3.delete();
                                 }
@@ -3078,8 +3342,8 @@
                 const outputsHTML = nodeData.outputs.map((port, i) => `<div style="display: flex; align-items: center;"><span class="port-label">${port.name}</span><div class="port port-output" data-node-id="${nodeData.id}" data-port-index="${i}"></div></div>`).join('');
                 const portsHTML = `<div class="node-ports-content"><div class="ports">${inputsHTML}</div><div class="ports">${outputsHTML}</div></div>`;
 
-                let primitiveOptions = '', morphologyOptions = '', convolutionOptions = '', polarOptions = '';
-                let glitchOptions = '', matrixOptions = '', transitionOptions = '';
+                let primitiveOptions = '', morphologyOptions = '', convolutionOptions = '';
+                let glitchOptions = '', interOptions = '', matrixOptions = '', transitionOptions = '';
                 let specificContentHTML = '';
 
                 switch (nodeData.title) {
@@ -3217,20 +3481,20 @@
                                 <input type="radio" id="crossKernel${nodeData.id}" data-node-id="${nodeData.id}" class="node-input-check morphology-kernel-type" name="morphKernel${nodeData.id}" ${nodeData.morphologyKernelType[2]}><small>Cross</small></p>
                             </div>`;
                         break;
-                    case 'Polar Transformation':
-                        nodeData.polarEffects.forEach(name => { polarOptions += `<option value="${name}" ${nodeData.polarEffectType === name ? 'selected' : ''}>${name}</option>`; });
-                        specificContentHTML = `
-                            <div class="node-content">
-                                <select class="node-select-field polar-effect-selector" data-node-id="${nodeData.id}">${polarOptions}</select>
-                                <input type="range" id="polarRange${nodeData.id}" data-node-id="${nodeData.id}" title="Distortion ammount" class="node-input-range polar-range" min="1" max="1000" value="${nodeData.polarEffectSize}" ${nodeData.polarEnabled}>
-                            </div>`;
-                        break;
                     case 'Glitch Effects':
                         nodeData.glitchEffects.forEach(name => { glitchOptions += `<option value="${name}" ${nodeData.glitchEffectType === name ? 'selected' : ''}>${name}</option>`; });
                         specificContentHTML = `
                             <div class="node-content">
                                 <select class="node-select-field glitch-effect-selector" data-node-id="${nodeData.id}">${glitchOptions}</select>
                                 <input type="range" id="glitch${nodeData.id}" data-node-id="${nodeData.id}" title="Distortion ammount" class="node-input-range glitch-range" min="1" max="25" value="${nodeData.glitchEffectSize}">
+                            </div>`;
+                        break;
+                    case 'Interactive Art':
+                        nodeData.interEffects.forEach(name => { interOptions += `<option value="${name}" ${nodeData.interEffectType === name ? 'selected' : ''}>${name}</option>`; });
+                        specificContentHTML = `
+                            <div class="node-content">
+                                <select class="node-select-field inter-effect-selector" data-node-id="${nodeData.id}">${interOptions}</select>
+                                <input type="range" id="inter${nodeData.id}" data-node-id="${nodeData.id}" title="Distortion ammount" class="node-input-range inter-range" min="1" max="25" value="${nodeData.interEffectSize}">
                             </div>`;
                         break;
                     case 'Projection':
@@ -3500,7 +3764,7 @@
                 "Enhance": [{ title: "Gamma Correction", type: "Throughput" }, { title: "Histogram Equalization", type: "Throughput" }, { title: "Color Adjustment", type: "Throughput" }],
                 "Filter": [{ title: "Convolution", type: "Throughput" }, { title: "Morphology / Rank", type: "Throughput" }, { title: "Sound Filters & Effects", type: "Audio" }],
                 "Render": [{ title: "Projection", type: "3DScene" }, { title: "Mapping / Lighting", type: "3DScene" }, { title: "Character Animation", type: "Character" }],
-                "Distort": [{ title: "Polar Transformation", type: "Throughput" }, { title: "Glitch Effects", type: "Throughput" }, { title: "Thresholding", type: "Throughput" }],
+                "Distort": [{ title: "Glitch Effects", type: "Throughput" }, { title: "Interactive Art", type: "Interactive" }, { title: "Thresholding", type: "Throughput" }],
                 "Mix": [{ title: "Matrix Operations", type: "Mixer" }, { title: "Channel Mixer", type: "Throughput" }, { title: "Color Blending", type: "Mixer" }],
                 "Merge": [{ title: "Concatenation", type: "Mixer" }, { title: "Transitions", type: "Transition" }, { title: "Image Stitching", type: "Features" }],
                 "Detect": [{ title: "Superpixels", type: "Throughput" }, { title: "Human Pose", type: "MediaPipe" }, { title: "Background Subtraction", type: "Throughput" }],
@@ -3766,17 +4030,18 @@
                     if (document.getElementById('squareKernel' + nodeId).checked) nodeData.morphologyKernelType = ["checked", "", ""];
                     else if (document.getElementById('crossKernel' + nodeId).checked) nodeData.morphologyKernelType = ["", "", "checked"];
                 }
-                else if (event.target.classList.contains('polar-effect-selector')) {
-                    nodeData.polarEffectType = event.target.value;
-                }
-                else if (event.target.classList.contains('polar-range')) {
-                    nodeData.polarEffectSize = event.target.value * 1.0;
-                }
                 else if (event.target.classList.contains('glitch-effect-selector')) {
                     nodeData.glitchEffectType = event.target.value;
                 }
                 else if (event.target.classList.contains('glitch-range')) {
                     nodeData.glitchEffectSize = event.target.value * 1;
+                }
+                else if (event.target.classList.contains('inter-effect-selector')) {
+                    nodeData.interEffectType = event.target.value;
+                    nodeData.checkFirstFrame = true;
+                }
+                else if (event.target.classList.contains('inter-range')) {
+                    nodeData.interEffectSize = event.target.value * 1;
                 }
                 else if (event.target.classList.contains('matrix-operation-selector')) {
                     nodeData.operationType = event.target.value;
@@ -4116,7 +4381,7 @@
                         selectedColor: n.selectedColor, oldHSV: n.oldHSV, newHSV: n.newHSV, fullRangeChecked: n.fullRangeChecked, colorRangeChecked: n.colorRangeChecked, colorInvertChecked: n.colorInvertChecked,
                         convolutionType: n.convolutionType, convolutionalFilterSize: n.convolutionalFilterSize, customKernel: n.customKernel,
                         morphologyType: n.morphologyType, morphologicalFilterSize: n.morphologicalFilterSize, morphologyKernelType: n.morphologyKernelType,
-                        polarEffectSize: n.polarEffectSize, polarEffectType: n.polarEffectType, glitchEffectSize: n.glitchEffectSize, glitchEffectType: n.glitchEffectType,
+                        glitchEffectSize: n.glitchEffectSize, glitchEffectType: n.glitchEffectType, interEffectSize: n.interEffectSize, interEffectType: n.interEffectType,
                         channelMixerValues: n.channelMixerValues, opticalFlowSize: n.opticalFlowSize,
                         thresholdValue: n.thresholdValue, thresholdingChecked: n.thresholdingChecked, kValue: n.kValue,
                         operationType: n.operationType, operationWeight: n.operationWeight, detectionConfidence: n.detectionConfidence,
@@ -4220,10 +4485,10 @@
                     nd.morphologyType = n.morphologyType;
                     nd.morphologicalFilterSize = n.morphologicalFilterSize;
                     nd.morphologyKernelType = n.morphologyKernelType;
-                    nd.polarEffectSize = n.polarEffectSize;
-                    nd.polarEffectType = n.polarEffectType;
                     nd.glitchEffectSize = n.glitchEffectSize;
                     nd.glitchEffectType = n.glitchEffectType;
+                    nd.interEffectSize = n.interEffectSize;
+                    nd.interEffectType = n.interEffectType;
                     nd.channelMixerValues = n.channelMixerValues;
                     nd.opticalFlowSize = n.opticalFlowSize;
                     nd.thresholdValue = n.thresholdValue;
