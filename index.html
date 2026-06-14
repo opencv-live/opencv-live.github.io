@@ -3489,7 +3489,7 @@
                                 <input type="range" id="glitch${nodeData.id}" data-node-id="${nodeData.id}" title="Distortion ammount" class="node-input-range glitch-range" min="1" max="25" value="${nodeData.glitchEffectSize}">
                             </div>`;
                         break;
-                    case 'Interactive Art':
+                    case 'Image Warping':
                         nodeData.interEffects.forEach(name => { interOptions += `<option value="${name}" ${nodeData.interEffectType === name ? 'selected' : ''}>${name}</option>`; });
                         specificContentHTML = `
                             <div class="node-content">
@@ -3764,7 +3764,7 @@
                 "Enhance": [{ title: "Gamma Correction", type: "Throughput" }, { title: "Histogram Equalization", type: "Throughput" }, { title: "Color Adjustment", type: "Throughput" }],
                 "Filter": [{ title: "Convolution", type: "Throughput" }, { title: "Morphology / Rank", type: "Throughput" }, { title: "Sound Filters & Effects", type: "Audio" }],
                 "Render": [{ title: "Projection", type: "3DScene" }, { title: "Mapping / Lighting", type: "3DScene" }, { title: "Character Animation", type: "Character" }],
-                "Distort": [{ title: "Glitch Effects", type: "Throughput" }, { title: "Interactive Art", type: "Interactive" }, { title: "Thresholding", type: "Throughput" }],
+                "Distort": [{ title: "Glitch Effects", type: "Throughput" }, { title: "Image Warping", type: "Interactive" }, { title: "Thresholding", type: "Throughput" }],
                 "Mix": [{ title: "Matrix Operations", type: "Mixer" }, { title: "Channel Mixer", type: "Throughput" }, { title: "Color Blending", type: "Mixer" }],
                 "Merge": [{ title: "Concatenation", type: "Mixer" }, { title: "Transitions", type: "Transition" }, { title: "Image Stitching", type: "Features" }],
                 "Detect": [{ title: "Superpixels", type: "Throughput" }, { title: "Human Pose", type: "MediaPipe" }, { title: "Background Subtraction", type: "Throughput" }],
