@@ -1432,7 +1432,7 @@
                 node.checkFirstFrame = true;
                 node.interEffectSize = 20;
                 node.interEffectType = 'Mesh Liquify';
-                node.interEffects = ['Mesh Liquify', 'Swirl Effect', 'Wave Displacement', 'Tiles Explode'];
+                node.interEffects = ['Mesh Liquify', 'Swirl Effect', 'Wave Displacement', 'Tiles Explode', 'Dynamic Pixelation'];
 
                 node.interCanvas = document.createElement('canvas');
                 node.interCanvas.className = 'inner-canvas';
@@ -1611,6 +1611,34 @@
                                 node.interCam = new THREE.PerspectiveCamera();
                                 node.interCam.position.z = 1;
                             }
+                            else if (node.interEffectType === 'Dynamic Pixelation') {
+                                node.mosaicMaterial = new THREE.ShaderMaterial({
+                                    uniforms: {
+                                        u_texture: { value: node.texture },
+                                        u_center: { value: new THREE.Vector2(0.5, 0.5) },
+                                        u_radius: { value: node.interEffectSize / 25 }
+                                    },
+                                    vertexShader: `
+                                        varying vec2 vUv;
+                                        void main() {
+                                            vUv = uv;
+                                            gl_Position = vec4(position, 1.0);
+                                        }`,
+                                    fragmentShader: `
+                                        float dist = distance(uv, u_center);
+                                        if (dist < u_radius) {
+                                            float pixelSize = 50.0 * (1.0 - (dist / u_radius)); 
+                                            vec2 pixelatedUv = floor(uv * pixelSize) / pixelSize;
+                                            gl_FragColor = texture2D(u_texture, pixelatedUv);
+                                        }
+                                        else {
+                                            gl_FragColor = texture2D(u_texture, uv);
+                                        }`
+                                });
+                                const geometry = new THREE.PlaneGeometry(2, 2);
+                                node.mesh = new THREE.Mesh(geometry, node.funhouseMaterial);
+                                node.interCam = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
+                            }
                             node.scene.add(node.mesh);
                             node.texture.needsUpdate = true;
                             node.checkFirstFrame = false;
@@ -1705,6 +1733,10 @@
                                     node.particleMaterial.uniforms.u_radius.value = 1 - Math.sqrt((centerX - 0.5) * (centerX - 0.5) + (centerY - 0.5) * (centerY - 0.5));
                                     node.particleMaterial.uniforms.u_force.value = node.interEffectSize / 100;
                                     node.particleMaterial.uniforms.u_pointSize.value = 0.01 * Math.sqrt(node.interCanvas.width * node.interCanvas.height);
+                                }
+                                else if (node.interEffectType === 'Dynamic Pixelation') {
+                                    node.mosaicMaterial.uniforms.u_center.value.set(centerX, centerY);
+                                    node.mosaicMaterial.uniforms.u_radius.value = node.interEffectSize / 25;
                                 }
                             }
                             if (sourceElement.tagName === 'VIDEO') node.texture.needsUpdate = true;
