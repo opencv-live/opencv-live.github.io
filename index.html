@@ -1625,14 +1625,22 @@
                                             gl_Position = vec4(position, 1.0);
                                         }`,
                                     fragmentShader: `
-                                        float dist = distance(uv, u_center);
-                                        if (dist < u_radius) {
-                                            float pixelSize = 50.0 * (1.0 - (dist / u_radius)); 
-                                            vec2 pixelatedUv = floor(uv * pixelSize) / pixelSize;
-                                            gl_FragColor = texture2D(u_texture, pixelatedUv);
-                                        }
-                                        else {
-                                            gl_FragColor = texture2D(u_texture, uv);
+                                        uniform sampler2D u_texture;
+                                        uniform vec2 u_center;
+                                        uniform float u_radius;
+                                        varying vec2 vUv;
+
+                                        void main() {
+                                            vec2 uv = vUv;
+                                            float dist = distance(uv, u_center);
+
+                                            if (dist < u_radius) {
+                                                float t = dist / u_radius;
+                                                float gridSize = mix(15.0, 300.0, t * t); 
+                                                vec2 pixelatedUv = floor(uv * gridSize) / gridSize;
+                                                gl_FragColor = texture2D(u_texture, pixelatedUv);
+                                            }
+                                            else gl_FragColor = texture2D(u_texture, uv);
                                         }`
                                 });
                                 const geometry = new THREE.PlaneGeometry(2, 2);
