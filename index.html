@@ -1636,7 +1636,7 @@
                                         }`
                                 });
                                 const geometry = new THREE.PlaneGeometry(2, 2);
-                                node.mesh = new THREE.Mesh(geometry, node.funhouseMaterial);
+                                node.mesh = new THREE.Mesh(geometry, node.mosaicMaterial);
                                 node.interCam = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
                             }
                             node.scene.add(node.mesh);
