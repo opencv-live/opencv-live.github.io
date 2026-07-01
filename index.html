@@ -1432,10 +1432,11 @@
                 node.checkFirstFrame = true;
                 node.interEffectSize = 20;
                 node.interEffectType = 'Mesh Liquify';
-                node.interEffects = ['Mesh Liquify', 'Swirl Effect', 'Wave Displacement', 'Tiles Explode', 'Dynamic Pixelation', 'Kaleidoscope', 'Dynamic Glitch', 'Thermal Vision'];
+                node.interEffects = ['Mesh Liquify', 'Swirl Effect', 'Wave Displacement', 'Dynamic Pixelation', 'Kaleidoscope', 'Dynamic Glitch', 'Thermal Vision'];
 
                 node.interCanvas = document.createElement('canvas');
                 node.interCanvas.className = 'inner-canvas';
+                node.interCam = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
 
                 node.onExecute = () => {
                     const sourceElement = getInputData(node, 0);
@@ -1455,14 +1456,12 @@
                             node.texture = sourceElement.tagName === 'VIDEO' ? new THREE.VideoTexture(sourceElement) : new THREE.Texture(sourceElement);
 
                             if (node.interEffectType === 'Mesh Liquify') {
-                                const material = new THREE.MeshBasicMaterial({ map: node.texture, side: THREE.DoubleSide });
+                                node.material = new THREE.MeshBasicMaterial({ map: node.texture, side: THREE.DoubleSide });
                                 node.geometry = new THREE.PlaneGeometry(2, 2, 500, 500);
                                 node.originalPositions = node.geometry.attributes.position.clone();
-                                node.mesh = new THREE.Mesh(node.geometry, material);
-                                node.interCam = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
                             }
                             else if (node.interEffectType === 'Swirl Effect') {
-                                node.twirlMaterial = new THREE.ShaderMaterial({
+                                node.material = new THREE.ShaderMaterial({
                                     uniforms: {
                                         u_texture: { value: node.texture },
                                         u_center: { value: new THREE.Vector2(0.5, 0.5) },
@@ -1474,7 +1473,7 @@
                                         void main() {
                                             vUv = uv;
                                             gl_Position = vec4(position, 1.0);
-                                    }`,
+                                        }`,
                                     fragmentShader: `
                                         uniform sampler2D u_texture;
                                         uniform vec2 u_center;
@@ -1497,12 +1496,10 @@
                                             gl_FragColor = texture2D(u_texture, uv);
                                         }`
                                 });
-                                const geometry = new THREE.PlaneGeometry(2, 2);
-                                node.mesh = new THREE.Mesh(geometry, node.twirlMaterial);
-                                node.interCam = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
+                                node.geometry = new THREE.PlaneGeometry(2, 2);
                             }
                             else if (node.interEffectType === 'Wave Displacement') {
-                                node.funhouseMaterial = new THREE.ShaderMaterial({
+                                node.material = new THREE.ShaderMaterial({
                                     uniforms: {
                                         u_texture: { value: node.texture },
                                         u_center: { value: new THREE.Vector2(0.5, 0.5) },
@@ -1531,88 +1528,10 @@
                                             gl_FragColor = texture2D(u_texture, uv);
                                         }`
                                 });
-                                node.clock = new THREE.Clock();
-                                const geometry = new THREE.PlaneGeometry(2, 2);
-                                node.mesh = new THREE.Mesh(geometry, node.funhouseMaterial);
-                                node.interCam = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
-                            }
-                            else if (node.interEffectType === 'Tiles Explode') {
-                                const cols = 80;
-                                const rows = 80;
-                                const numParticles = cols * rows;
-
-                                const geometry = new THREE.BufferGeometry();
-                                const positions = new Float32Array(numParticles * 3);
-                                const uvs = new Float32Array(numParticles * 2);
-
-                                let idx = 0;
-                                let uvIdx = 0;
-                                for (let y = 0; y < rows; y++) {
-                                    for (let x = 0; x < cols; x++) {
-                                        const u = x / (cols - 1);
-                                        const v = y / (rows - 1);
-                                        positions[idx] = u - 0.5;
-                                        positions[idx + 1] = v - 0.5;
-                                        positions[idx + 2] = 0; // Z-axis
-                                        uvs[uvIdx] = u;
-                                        uvs[uvIdx + 1] = v;
-                                        idx += 3;
-                                        uvIdx += 2;
-                                    }
-                                }
-                                geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-                                geometry.setAttribute('uv', new THREE.BufferAttribute(uvs, 2));
-
-                                node.particleMaterial = new THREE.ShaderMaterial({
-                                    uniforms: {
-                                        u_texture: { value: node.texture },
-                                        u_center: { value: new THREE.Vector2(0.5, 0.5) },
-                                        u_radius: { value: 1.0 },
-                                        u_pointSize: { value: 1.0 },
-                                        u_force: { value: node.interEffectSize / 100 }
-                                    },
-                                    vertexShader: `
-                                        uniform vec2 u_center;
-                                        uniform float u_radius;
-                                        uniform float u_pointSize;
-                                        uniform float u_force;
-                                        varying vec2 vUv;
-
-                                        void main() {
-                                            vUv = uv;
-                                            vec3 pos = position;
-                                            vec2 target = u_center - vec2(0.5);
-                                            float dist = distance(pos.xy, target);
-
-                                            if (dist < u_radius) {
-                                                float push = (1.0 - (dist / u_radius)) * u_force;
-                                                vec2 dir = normalize(pos.xy - target);
-                                                pos.xy += dir * push;
-                                                pos.z += push * 0.5;
-                                            }
-                                            vec4 mvPosition = modelViewMatrix * vec4(pos, 1.0);
-                                            gl_Position = projectionMatrix * mvPosition;
-                                            gl_PointSize = u_pointSize * (1.0 / -mvPosition.z);
-                                        }`,
-                                    fragmentShader: `
-                                        uniform sampler2D u_texture;
-                                        varying vec2 vUv;
-
-                                        void main() {
-                                            vec4 color = texture2D(u_texture, vUv);
-                                            if (color.a < 0.1) discard;
-                                            gl_FragColor = color;
-                                        }`,
-                                    transparent: true
-                                });
-                                node.mesh = new THREE.Points(geometry, node.particleMaterial);
-                                node.smoothedX = 0.5;
-                                node.smoothedY = 0.5;
-                                node.interCam = new THREE.PerspectiveCamera();
-                                node.interCam.position.z = 1;
+                                node.geometry = new THREE.PlaneGeometry(2, 2);
                             }
                             else if (node.interEffectType === 'Dynamic Pixelation') {
-                                node.mosaicMaterial = new THREE.ShaderMaterial({
+                                node.material = new THREE.ShaderMaterial({
                                     uniforms: {
                                         u_texture: { value: node.texture },
                                         u_center: { value: new THREE.Vector2(0.5, 0.5) },
@@ -1643,12 +1562,10 @@
                                             else gl_FragColor = texture2D(u_texture, uv);
                                         }`
                                 });
-                                const geometry = new THREE.PlaneGeometry(2, 2);
-                                node.mesh = new THREE.Mesh(geometry, node.mosaicMaterial);
-                                node.interCam = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
+                                node.geometry = new THREE.PlaneGeometry(2, 2);
                             }
                             else if (node.interEffectType === 'Kaleidoscope') {
-                                node.kaleidoMaterial = new THREE.ShaderMaterial({
+                                node.material = new THREE.ShaderMaterial({
                                     uniforms: {
                                         u_texture: { value: node.texture },
                                         u_center: { value: new THREE.Vector2(0.5, 0.5) },
@@ -1680,12 +1597,10 @@
                                         gl_FragColor = texture2D(u_texture, newUv);
                                     }`
                                 });
-                                const geometry = new THREE.PlaneGeometry(2, 2);
-                                node.mesh = new THREE.Mesh(geometry, node.kaleidoMaterial);
-                                node.interCam = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
+                                node.geometry = new THREE.PlaneGeometry(2, 2);
                             }
                             else if (node.interEffectType === 'Dynamic Glitch') {
-                                node.glitchMaterial = new THREE.ShaderMaterial({
+                                node.material = new THREE.ShaderMaterial({
                                     uniforms: {
                                         u_texture: { value: node.texture },
                                         u_velocity: { value: 0.0 },
@@ -1709,7 +1624,7 @@
 
                                         void main() {
                                             vec2 uv = vUv;
-                                            if (u_velocity > 0.15) {
+                                            if (u_velocity > 0.001) {
                                                 float sliceY = floor(uv.y * u_belts);
                                                 if (hash(sliceY + floor(u_time * 10.0)) > 0.6) {
                                                     uv.x += (hash(sliceY) - 0.5) * u_velocity * 0.3;
@@ -1718,15 +1633,10 @@
                                             gl_FragColor = texture2D(u_texture, uv);
                                         }`
                                 });
-                                node.clock = new THREE.Clock();
-                                node.lastX = 0.5;
-                                node.lastY = 0.5;
-                                const geometry = new THREE.PlaneGeometry(2, 2);
-                                node.mesh = new THREE.Mesh(geometry, node.glitchMaterial);
-                                node.interCam = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
+                                node.geometry = new THREE.PlaneGeometry(2, 2);
                             }
                             else if (node.interEffectType === 'Thermal Vision') {
-                                node.thermalMaterial = new THREE.ShaderMaterial({
+                                node.material = new THREE.ShaderMaterial({
                                     uniforms: {
                                         u_texture: { value: node.texture },
                                         u_center: { value: new THREE.Vector2(0.5, 0.5) },
@@ -1763,32 +1673,32 @@
                                             gl_FragColor = vec4(finalColor, 1.0);
                                         }`
                                 });
-                                const geometry = new THREE.PlaneGeometry(2, 2);
-                                node.mesh = new THREE.Mesh(geometry, node.thermalMaterial);
-                                node.interCam = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
+                                node.geometry = new THREE.PlaneGeometry(2, 2);
                             }
-                            node.scene.add(node.mesh);
+                            const mesh = new THREE.Mesh(node.geometry, node.material);
+                            node.scene.add(mesh);
                             node.texture.needsUpdate = true;
                             node.checkFirstFrame = false;
+                            node.clock = new THREE.Clock();
                         }
                         const sourceControl = getInputData(node, 1);
                         try {
-                            let targetLX = 0, targetLY = 0, targetRX = 0, targetRY = 0, centerX = 0.5, centerY = 0.5;
+                            let targetX = 0, targetY = 0, centerX = 0.5, centerY = 0.5;
 
                             if (sourceControl && sourceControl.length == 2) {
-                                let check = true;
+                                targetX = 1000; targetY = 1000; centerX = 1000; centerY = 1000;
 
-                                if (sourceControl[0][15]) {
-                                    targetLX = ((1 - sourceControl[0][15].x) * 2) - 1;
-                                    targetLY = ((1 - sourceControl[0][15].y) * 2) - 1;
-                                    check = false;
-                                }
                                 if (sourceControl[0][16]) {
-                                    targetRX = ((1 - sourceControl[0][16].x) * 2) - 1;
-                                    targetRY = ((1 - sourceControl[0][16].y) * 2) - 1;
-                                    check = false;
+                                    targetX = sourceControl[0][16].x - 0.5;
+                                    targetY = 0.5 - sourceControl[0][16].y;
                                 }
-                                if (check) return;
+                                else if (sourceControl[0][15]) {
+                                    targetX = sourceControl[0][15].x - 0.5;
+                                    targetY = 0.5 - sourceControl[0][15].y;
+                                }
+                                if (targetX > -0.5 && targetX < 0.5 && targetY > -0.5 && targetY < 0.5) {
+                                    centerX = targetX + 0.5; centerY = targetY + 0.5;
+                                }
                             }
                             else if (sourceControl && sourceControl.length == 5 && sourceControl[3] === 'disabled') {
                                 document.getElementById('inter' + node.id).style.accentColor = 'darkgoldenrod';
@@ -1811,22 +1721,14 @@
                                 for (let i = 0; i < positions.count; i++) {
                                     let origX = node.originalPositions.getX(i);
                                     let origY = node.originalPositions.getY(i);
-                                    let dxL = origX - targetLX;
-                                    let dyL = origY - targetLY;
-                                    let distL = Math.sqrt(dxL * dxL + dyL * dyL);
-                                    let dxR = origX - targetRX;
-                                    let dyR = origY - targetRY;
-                                    let distR = Math.sqrt(dxR * dxR + dyR * dyR);
-
-                                    if (distL < node.interEffectSize / 25) {
-                                        let force = (1.0 - (distL / node.interEffectSize * 25)) * (1 - Math.sqrt(origX * origX + origY * origY));
-                                        positions.setX(i, origX + dxL * force);
-                                        positions.setY(i, origY + dyL * force);
-                                    }
-                                    else if (distR < node.interEffectSize / 25) {
-                                        let force = (1.0 - (distR / node.interEffectSize * 25)) * (1 - Math.sqrt(origX * origX + origY * origY));
-                                        positions.setX(i, origX + dxR * force);
-                                        positions.setY(i, origY + dyR * force);
+                                    let dx = origX - targetX;
+                                    let dy = origY - targetY;
+                                    let dist = Math.sqrt(dx * dx + dy * dy);
+ 
+                                    if (dist < node.interEffectSize / 25) {
+                                        let force = (1.0 - (dist / node.interEffectSize * 25)) * (1 - Math.sqrt(origX * origX + origY * origY));
+                                        positions.setX(i, origX + dx * force);
+                                        positions.setY(i, origY + dy * force);
                                     }
                                     else {
                                         positions.setX(i, origX);
@@ -1836,55 +1738,32 @@
                                 positions.needsUpdate = true;
                             }
                             else {
-                                if (targetLX < -1 || targetLX > 1) targetLX = 0;
-                                if (targetLY < -1 || targetLY > 1) targetLY = 0;
-                                if (targetRX < -1 || targetRX > 1) targetRX = 0;
-                                if (targetRY < -1 || targetRY > 1) targetRY = 0;
-
-                                centerX = (targetLX / 2 + targetRX / 2 + 0.5);
-                                centerY = (targetLY / 2 + targetRY / 2 + 0.5);
-
                                 if (node.interEffectType === 'Swirl Effect') {
-                                    node.twirlMaterial.uniforms.u_center.value.set(centerX, centerY);
-                                    node.twirlMaterial.uniforms.u_strength.value = node.interEffectSize / 5 - 2.5;
-                                    node.twirlMaterial.uniforms.u_radius.value = 1 - Math.sqrt((centerX - 0.5) * (centerX - 0.5) + (centerY - 0.5) * (centerY - 0.5));
+                                    node.material.uniforms.u_center.value.set(centerX, centerY);
+                                    node.material.uniforms.u_strength.value = node.interEffectSize / 5 - 2.5;
+                                    node.material.uniforms.u_radius.value = 1 - Math.sqrt((centerX - 0.5) * (centerX - 0.5) + (centerY - 0.5) * (centerY - 0.5));
                                 }
                                 else if (node.interEffectType === 'Wave Displacement') {
-                                    node.funhouseMaterial.uniforms.u_center.value.set(centerX, centerY);
-                                    node.funhouseMaterial.uniforms.u_intensity.value = node.interEffectSize / 5;
-                                    node.funhouseMaterial.uniforms.u_time.value = node.clock.getElapsedTime();
-                                }
-                                else if (node.interEffectType === 'Tiles Explode') {
-                                    node.smoothedX += (centerX - node.smoothedX) * 0.15;
-                                    node.smoothedY += (centerY - node.smoothedY) * 0.15;
-                                    node.particleMaterial.uniforms.u_center.value.set(node.smoothedX, node.smoothedY);
-                                    node.particleMaterial.uniforms.u_radius.value = 1 - Math.sqrt((centerX - 0.5) * (centerX - 0.5) + (centerY - 0.5) * (centerY - 0.5));
-                                    node.particleMaterial.uniforms.u_force.value = node.interEffectSize / 100;
-                                    node.particleMaterial.uniforms.u_pointSize.value = 0.01 * Math.sqrt(node.interCanvas.width * node.interCanvas.height);
+                                    node.material.uniforms.u_center.value.set(centerX, centerY);
+                                    node.material.uniforms.u_intensity.value = node.interEffectSize / 5;
+                                    node.material.uniforms.u_time.value = node.clock.getElapsedTime();
                                 }
                                 else if (node.interEffectType === 'Dynamic Pixelation') {
-                                    node.mosaicMaterial.uniforms.u_center.value.set(centerX, centerY);
-                                    node.mosaicMaterial.uniforms.u_radius.value = node.interEffectSize / 25;
+                                    node.material.uniforms.u_center.value.set(centerX, centerY);
+                                    node.material.uniforms.u_radius.value = node.interEffectSize / 25;
                                 }
                                 else if (node.interEffectType === 'Kaleidoscope') {
-                                    node.kaleidoMaterial.uniforms.u_center.value.set(centerX, centerY);
-                                    node.kaleidoMaterial.uniforms.u_sides.value = node.interEffectSize / 2;
+                                    node.material.uniforms.u_center.value.set(centerX, centerY);
+                                    node.material.uniforms.u_sides.value = node.interEffectSize / 2;
                                 }
                                 else if (node.interEffectType === 'Dynamic Glitch') {
-                                    const dx = centerX - node.lastX;
-                                    const dy = centerY - node.lastY;
-                                    const velocity = Math.sqrt(dx * dx + dy * dy);
-
-                                    node.lastX = centerX;
-                                    node.lastY = centerY;
-
-                                    node.glitchMaterial.uniforms.u_velocity.value = velocity;
-                                    node.glitchMaterial.uniforms.u_belts.value = node.interEffectSize;
-                                    node.glitchMaterial.uniforms.u_time.value = node.clock.getElapsedTime();
+                                    node.material.uniforms.u_velocity.value = Math.abs(centerX - centerY) + 0.01;
+                                    node.material.uniforms.u_belts.value = node.interEffectSize;
+                                    node.material.uniforms.u_time.value = node.clock.getElapsedTime();
                                 }
                                 else if (node.interEffectType === 'Thermal Vision') {
-                                    node.thermalMaterial.uniforms.u_center.value.set(centerX, centerY);
-                                    node.thermalMaterial.uniforms.u_radius.value = node.interEffectSize / 25;
+                                    node.material.uniforms.u_center.value.set(centerX, centerY);
+                                    node.material.uniforms.u_radius.value = node.interEffectSize / 25;
                                 }
                             }
                             if (sourceElement.tagName === 'VIDEO') node.texture.needsUpdate = true;
