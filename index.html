@@ -1794,7 +1794,7 @@
                     node.inputs.push({ name: 'control' });
                     node.glitchEffectSize = 5;
                     node.glitchEffectType = 'Shaking';
-                    node.glitchEffects = ['Shaking', 'Abberation', 'Fade', 'Glass', 'Caricature'];
+                    node.glitchEffects = ['Shaking', 'Abberation', 'Fade', 'Glass', 'Caricature', 'Slice Glitch'];
                 }
                 else if (title === 'Channel Mixer') {
                     node.channelMixerValues = [1, 0, 0, 0, 1, 0, 0, 0, 1];
@@ -2331,6 +2331,49 @@
                                         }
                                         p.copyTo(dst);
                                         p.delete();
+                                    }
+                                    else if (node.glitchEffectType === 'Slice Glitch') {
+                                        src.copyTo(dst);
+
+                                        const numSlices = Math.random() * 5 * node.glitchEffectSize;
+                                        const sliceHeight = Math.floor(src.rows / numSlices);
+
+                                        for (let i = 0; i < numSlices; i++) {
+                                            if (Math.random() > 1 - node.glitchEffectSize / 100) {
+                                                let maxOffset = Math.floor(src.cols * node.glitchEffectSize * 0.005);
+                                                if (maxOffset < 1) maxOffset = 1;
+
+                                                let shiftX = Math.floor((Math.random() - 0.5) * maxOffset);
+                                                if (shiftX === 0) continue;
+
+                                                let y = i * sliceHeight;
+                                                let currentSliceHeight = (y + sliceHeight > src.rows) ? (src.rows - y) : sliceHeight;
+                                                if (currentSliceHeight <= 0) continue;
+
+                                                let srcX, destX, roiWidth;
+                                                if (shiftX > 0) {
+                                                    srcX = 0;
+                                                    destX = shiftX;
+                                                    roiWidth = src.cols - shiftX;
+                                                }
+                                                else {
+                                                    srcX = -shiftX;
+                                                    destX = 0;
+                                                    roiWidth = src.cols + shiftX;
+                                                }
+                                                if (roiWidth > 0) {
+                                                    let srcRect = new cv.Rect(srcX, y, roiWidth, currentSliceHeight);
+                                                    let destRect = new cv.Rect(destX, y, roiWidth, currentSliceHeight);
+
+                                                    let srcRoi = src.roi(srcRect);
+                                                    let destRoi = dst.roi(destRect);
+
+                                                    srcRoi.copyTo(destRoi);
+                                                    srcRoi.delete();
+                                                    destRoi.delete();
+                                                }
+                                            }
+                                        }
                                     }
                                     M1.delete(); M3.delete();
                                 }
