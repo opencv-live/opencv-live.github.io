@@ -1443,7 +1443,7 @@
 
                 node.interEffectSize = 20;
                 node.interEffectType = 'Mesh Liquify';
-                node.interEffects = ['Mesh Liquify', 'Swirl Effect', 'Dynamic Pixelation', 'Kaleidoscope', 'Water Ripple', 'Thermal Vision'];
+                node.interEffects = ['Mesh Liquify', 'Swirl Effect', 'Pixelation', 'Water Ripple', 'Kaleidoscope', 'Thermal Vision'];
 
                 node.interCanvas = document.createElement('canvas');
                 node.interCanvas.className = 'inner-canvas';
@@ -1467,9 +1467,38 @@
                             node.texture = sourceElement.tagName === 'VIDEO' ? new THREE.VideoTexture(sourceElement) : new THREE.Texture(sourceElement);
 
                             if (node.interEffectType === 'Mesh Liquify') {
-                                node.material = new THREE.MeshBasicMaterial({ map: node.texture, side: THREE.DoubleSide });
-                                node.geometry = new THREE.PlaneGeometry(2, 2, 500, 500);
-                                node.originalPositions = node.geometry.attributes.position.clone();
+                                node.material = new THREE.ShaderMaterial({
+                                    uniforms: {
+                                        u_texture: { value: node.texture },
+                                        u_center: { value: new THREE.Vector2(0.5, 0.5) },
+                                        u_radius: { value: node.interEffectSize / 50 },
+                                        u_zoom: { value: node.interEffectSize / 25 + 1 }
+                                    },
+                                    vertexShader: `
+                                        varying vec2 vUv;
+                                        void main() { vUv = uv; gl_Position = vec4(position, 1.0); }
+                                    `,
+                                    fragmentShader: `
+                                        uniform sampler2D u_texture;
+                                        uniform vec2 u_center;
+                                        uniform float u_radius;
+                                        uniform float u_zoom;
+                                        varying vec2 vUv;
+
+                                        void main() {
+                                            vec2 uv = vUv;
+                                            vec2 dir = uv - u_center;
+                                            float dist = length(dir);
+
+                                            if (dist < u_radius) {
+                                                float normDist = dist / u_radius;
+                                                float distortion = pow(normDist, u_zoom);
+                                                vec2 newUv = u_center + normalize(dir) * distortion * u_radius;
+                                                gl_FragColor = texture2D(u_texture, newUv);
+                                            }
+                                            else gl_FragColor = texture2D(u_texture, uv);
+                                        }`
+                                });
                             }
                             else if (node.interEffectType === 'Swirl Effect') {
                                 node.material = new THREE.ShaderMaterial({
@@ -1507,9 +1536,8 @@
                                             gl_FragColor = texture2D(u_texture, uv);
                                         }`
                                 });
-                                node.geometry = new THREE.PlaneGeometry(2, 2);
                             }
-                            else if (node.interEffectType === 'Dynamic Pixelation') {
+                            else if (node.interEffectType === 'Pixelation') {
                                 node.material = new THREE.ShaderMaterial({
                                     uniforms: {
                                         u_texture: { value: node.texture },
@@ -1541,7 +1569,37 @@
                                             else gl_FragColor = texture2D(u_texture, uv);
                                         }`
                                 });
-                                node.geometry = new THREE.PlaneGeometry(2, 2);
+                            }
+                            else if (node.interEffectType === 'Water Ripple') {
+                                node.material = new THREE.ShaderMaterial({
+                                    uniforms: {
+                                        u_texture: { value: node.texture },
+                                        u_center: { value: new THREE.Vector2(0.5, 0.5) },
+                                        u_intensity: { value: node.interEffectSize / 1000 },
+                                        u_time: { value: 0.0 }
+                                    },
+                                    vertexShader: `
+                                        varying vec2 vUv;
+                                        void main() { vUv = uv; gl_Position = vec4(position, 1.0); }
+                                    `,
+                                    fragmentShader: `
+                                        uniform sampler2D u_texture;
+                                        uniform vec2 u_center;
+                                        uniform float u_intensity;
+                                        uniform float u_time;
+                                        varying vec2 vUv;
+
+                                        void main() {
+                                            vec2 uv = vUv;
+                                            vec2 dir = uv - u_center;
+                                            float dist = length(dir);
+
+                                            float ripple = sin(dist * 25.0 - u_time * 5.0) * u_intensity;
+                                            ripple *= exp(-dist * 5.0); 
+                                            uv += normalize(dir) * ripple;
+                                            gl_FragColor = texture2D(u_texture, uv);
+                                        }`
+                                });
                             }
                             else if (node.interEffectType === 'Kaleidoscope') {
                                 node.material = new THREE.ShaderMaterial({
@@ -1576,39 +1634,6 @@
                                         gl_FragColor = texture2D(u_texture, newUv);
                                     }`
                                 });
-                                node.geometry = new THREE.PlaneGeometry(2, 2);
-                            }
-                            else if (node.interEffectType === 'Water Ripple') {
-                                node.material = new THREE.ShaderMaterial({
-                                    uniforms: {
-                                        u_texture: { value: node.texture },
-                                        u_center: { value: new THREE.Vector2(0.5, 0.5) },
-                                        u_intensity: { value: node.interEffectSize / 1000 },
-                                        u_time: { value: 0.0 }
-                                    },
-                                    vertexShader: `
-                                        varying vec2 vUv;
-                                        void main() { vUv = uv; gl_Position = vec4(position, 1.0); }
-                                    `,
-                                    fragmentShader: `
-                                        uniform sampler2D u_texture;
-                                        uniform vec2 u_center;
-                                        uniform float u_intensity;
-                                        uniform float u_time;
-                                        varying vec2 vUv;
-
-                                        void main() {
-                                            vec2 uv = vUv;
-                                            vec2 dir = uv - u_center;
-                                            float dist = length(dir);
-
-                                            float ripple = sin(dist * 25.0 - u_time * 5.0) * u_intensity;
-                                            ripple *= exp(-dist * 5.0); 
-                                            uv += normalize(dir) * ripple;
-                                            gl_FragColor = texture2D(u_texture, uv);
-                                        }`
-                                });
-                                node.geometry = new THREE.PlaneGeometry(2, 2);
                             }
                             else if (node.interEffectType === 'Thermal Vision') {
                                 node.material = new THREE.ShaderMaterial({
@@ -1648,9 +1673,10 @@
                                             gl_FragColor = vec4(finalColor, 1.0);
                                         }`
                                 });
-                                node.geometry = new THREE.PlaneGeometry(2, 2);
                             }
-                            const mesh = new THREE.Mesh(node.geometry, node.material);
+                            const geometry = new THREE.PlaneGeometry(2, 2);
+                            const mesh = new THREE.Mesh(geometry, node.material);
+
                             node.scene.add(mesh);
                             node.texture.needsUpdate = true;
                             node.checkFirstFrame = false;
@@ -1685,51 +1711,28 @@
                             else document.getElementById('inter' + node.id).style.accentColor = '';
 
                             if (node.interEffectType === 'Mesh Liquify') {
-                                const positions = node.geometry.attributes.position;
-
-                                for (let i = 0; i < positions.count; i++) {
-                                    let origX = node.originalPositions.getX(i);
-                                    let origY = node.originalPositions.getY(i);
-                                    let dx = origX - centerX + 0.5;
-                                    let dy = origY - centerY + 0.5;
-                                    let dist = Math.sqrt(dx * dx + dy * dy);
-
-                                    if (dist < node.interEffectSize / 25) {
-                                        let force = (1.0 - (dist / node.interEffectSize * 25)) * (1 - Math.sqrt(origX * origX + origY * origY));
-                                        positions.setX(i, origX + dx * force);
-                                        positions.setY(i, origY + dy * force);
-                                    }
-                                    else {
-                                        positions.setX(i, origX);
-                                        positions.setY(i, origY);
-                                    }
-                                }
-                                positions.needsUpdate = true;
+                                node.material.uniforms.u_zoom.value = node.interEffectSize / 25 + 1;
+                                node.material.uniforms.u_radius.value = node.interEffectSize / 50;
                             }
-                            else {
-                                if (node.interEffectType === 'Swirl Effect') {
-                                    node.material.uniforms.u_center.value.set(centerX, centerY);
-                                    node.material.uniforms.u_strength.value = node.interEffectSize / 5 - 2.5;
-                                    node.material.uniforms.u_radius.value = 1 - Math.sqrt((centerX - 0.5) * (centerX - 0.5) + (centerY - 0.5) * (centerY - 0.5));
-                                }
-                                else if (node.interEffectType === 'Dynamic Pixelation') {
-                                    node.material.uniforms.u_center.value.set(centerX, centerY);
-                                    node.material.uniforms.u_radius.value = node.interEffectSize / 25;
-                                }
-                                else if (node.interEffectType === 'Kaleidoscope') {
-                                    node.material.uniforms.u_center.value.set(centerX, centerY);
-                                    node.material.uniforms.u_sides.value = node.interEffectSize;
-                                }
-                                else if (node.interEffectType === 'Water Ripple') {
-                                    node.material.uniforms.u_center.value.set(centerX, centerY);
-                                    node.material.uniforms.u_intensity.value = node.interEffectSize / 1000;
-                                    node.material.uniforms.u_time.value = node.clock.getElapsedTime();
-                                }
-                                else if (node.interEffectType === 'Thermal Vision') {
-                                    node.material.uniforms.u_center.value.set(centerX, centerY);
-                                    node.material.uniforms.u_radius.value = node.interEffectSize / 25;
-                                }
+                            else if (node.interEffectType === 'Swirl Effect') {
+                                node.material.uniforms.u_strength.value = node.interEffectSize / 5 - 2.5;
+                                node.material.uniforms.u_radius.value = 1 - Math.sqrt((centerX - 0.5) * (centerX - 0.5) + (centerY - 0.5) * (centerY - 0.5));
                             }
+                            else if (node.interEffectType === 'Pixelation') {
+                                node.material.uniforms.u_radius.value = node.interEffectSize / 25;
+                            }
+                            else if (node.interEffectType === 'Water Ripple') {
+                                node.material.uniforms.u_intensity.value = node.interEffectSize / 1000;
+                                node.material.uniforms.u_time.value = node.clock.getElapsedTime();
+                            }
+                            else if (node.interEffectType === 'Kaleidoscope') {
+                                node.material.uniforms.u_sides.value = node.interEffectSize;
+                            }
+                            else if (node.interEffectType === 'Thermal Vision') {
+                                node.material.uniforms.u_radius.value = node.interEffectSize / 25;
+                            }
+                            node.material.uniforms.u_center.value.set(centerX, centerY);
+
                             if (sourceElement.tagName === 'VIDEO') node.texture.needsUpdate = true;
                         }
                         catch (err) { console.log("Three.js Error:", err); }
