@@ -181,6 +181,15 @@
             font-weight: bold;
         }
 
+        .node-hand-button {
+            background-color: transparent;
+            cursor: pointer;
+            border: 0;
+            margin-top: -1px;
+            padding: 0;
+            font-weight: bold;
+        }
+
         .node-fullscreen-button {
             font-weight: bold;
             width: 100%;
@@ -1430,9 +1439,11 @@
                 node.inputs.push({ name: 'control' });
 
                 node.checkFirstFrame = true;
+                node.rightHand = true;
+
                 node.interEffectSize = 20;
                 node.interEffectType = 'Mesh Liquify';
-                node.interEffects = ['Mesh Liquify', 'Swirl Effect', 'Wave Displacement', 'Dynamic Pixelation', 'Kaleidoscope', 'Dynamic Glitch', 'Thermal Vision'];
+                node.interEffects = ['Mesh Liquify', 'Swirl Effect', 'Dynamic Pixelation', 'Kaleidoscope', 'Water Ripple', 'Thermal Vision'];
 
                 node.interCanvas = document.createElement('canvas');
                 node.interCanvas.className = 'inner-canvas';
@@ -1465,8 +1476,8 @@
                                     uniforms: {
                                         u_texture: { value: node.texture },
                                         u_center: { value: new THREE.Vector2(0.5, 0.5) },
-                                        u_radius: { value: node.interEffectSize / 25 },
-                                        u_strength: { value: 3.0 }
+                                        u_radius: { value: 1 },
+                                        u_strength: { value: node.interEffectSize / 5 - 2.5 }
                                     },
                                     vertexShader: `
                                         varying vec2 vUv;
@@ -1493,38 +1504,6 @@
                                                 float c = cos(theta);
                                                 uv = u_center + vec2(dir.x * c - dir.y * s, dir.x * s + dir.y * c);
                                             }
-                                            gl_FragColor = texture2D(u_texture, uv);
-                                        }`
-                                });
-                                node.geometry = new THREE.PlaneGeometry(2, 2);
-                            }
-                            else if (node.interEffectType === 'Wave Displacement') {
-                                node.material = new THREE.ShaderMaterial({
-                                    uniforms: {
-                                        u_texture: { value: node.texture },
-                                        u_center: { value: new THREE.Vector2(0.5, 0.5) },
-                                        u_intensity: { value: node.interEffectSize / 25 },
-                                        u_time: { value: 0.0 }
-                                    },
-                                    vertexShader: `
-                                        varying vec2 vUv;
-                                        void main() {
-                                            vUv = uv;
-                                            gl_Position = vec4(position, 1.0);
-                                        }`,
-                                    fragmentShader: `
-                                        uniform sampler2D u_texture;
-                                        uniform vec2 u_center;
-                                        uniform float u_intensity;
-                                        uniform float u_time;
-                                        varying vec2 vUv;
-
-                                        void main() {
-                                            vec2 uv = vUv;
-                                            float dist = distance(uv, u_center);
-                                            float wave = sin(dist * 5.0 - u_time * 5.0) * 0.05 * u_intensity;
-                                            uv.x += u_center.x * wave * (1.0 - dist);
-                                            uv.y += u_center.y * wave * (1.0 - dist);
                                             gl_FragColor = texture2D(u_texture, uv);
                                         }`
                                 });
@@ -1569,7 +1548,7 @@
                                     uniforms: {
                                         u_texture: { value: node.texture },
                                         u_center: { value: new THREE.Vector2(0.5, 0.5) },
-                                        u_sides: { value: node.interEffectSize / 2 }
+                                        u_sides: { value: node.interEffectSize }
                                     },
                                     vertexShader: `
                                         varying vec2 vUv;
@@ -1599,37 +1578,33 @@
                                 });
                                 node.geometry = new THREE.PlaneGeometry(2, 2);
                             }
-                            else if (node.interEffectType === 'Dynamic Glitch') {
+                            else if (node.interEffectType === 'Water Ripple') {
                                 node.material = new THREE.ShaderMaterial({
                                     uniforms: {
                                         u_texture: { value: node.texture },
-                                        u_velocity: { value: 0.0 },
-                                        u_belts: { value: node.interEffectSize },
+                                        u_center: { value: new THREE.Vector2(0.5, 0.5) },
+                                        u_intensity: { value: node.interEffectSize / 1000 },
                                         u_time: { value: 0.0 }
                                     },
                                     vertexShader: `
                                         varying vec2 vUv;
-                                        void main() {
-                                            vUv = uv;
-                                            gl_Position = vec4(position, 1.0);
-                                        }`,
+                                        void main() { vUv = uv; gl_Position = vec4(position, 1.0); }
+                                    `,
                                     fragmentShader: `
                                         uniform sampler2D u_texture;
-                                        uniform float u_velocity;
-                                        uniform float u_belts;
+                                        uniform vec2 u_center;
+                                        uniform float u_intensity;
                                         uniform float u_time;
                                         varying vec2 vUv;
 
-                                        float hash(float n) { return fract(sin(n) * 43758.5453123); }
-
                                         void main() {
                                             vec2 uv = vUv;
-                                            if (u_velocity > 0.001) {
-                                                float sliceY = floor(uv.y * u_belts);
-                                                if (hash(sliceY + floor(u_time * 10.0)) > 0.6) {
-                                                    uv.x += (hash(sliceY) - 0.5) * u_velocity * 0.3;
-                                                }
-                                            }
+                                            vec2 dir = uv - u_center;
+                                            float dist = length(dir);
+
+                                            float ripple = sin(dist * 25.0 - u_time * 5.0) * u_intensity;
+                                            ripple *= exp(-dist * 5.0); 
+                                            uv += normalize(dir) * ripple;
                                             gl_FragColor = texture2D(u_texture, uv);
                                         }`
                                 });
@@ -1683,21 +1658,15 @@
                         }
                         const sourceControl = getInputData(node, 1);
                         try {
-                            let targetX = 0, targetY = 0, centerX = 0.5, centerY = 0.5;
-
+                            let centerX = 0.5, centerY = 0.5;
                             if (sourceControl && sourceControl.length == 2) {
-                                targetX = 1000; targetY = 1000; centerX = 1000; centerY = 1000;
+                                centerX = 1000; centerY = 1000;
 
-                                if (sourceControl[0][16]) {
-                                    targetX = sourceControl[0][16].x - 0.5;
-                                    targetY = 0.5 - sourceControl[0][16].y;
-                                }
-                                else if (sourceControl[0][15]) {
-                                    targetX = sourceControl[0][15].x - 0.5;
-                                    targetY = 0.5 - sourceControl[0][15].y;
-                                }
-                                if (targetX > -0.5 && targetX < 0.5 && targetY > -0.5 && targetY < 0.5) {
-                                    centerX = targetX + 0.5; centerY = targetY + 0.5;
+                                let hand = 15;
+                                if (node.rightHand) hand = 16;
+                                if (sourceControl[0][hand]) {
+                                    centerX = sourceControl[0][hand].x;
+                                    centerY = 1 - sourceControl[0][hand].y;
                                 }
                             }
                             else if (sourceControl && sourceControl.length == 5 && sourceControl[3] === 'disabled') {
@@ -1721,10 +1690,10 @@
                                 for (let i = 0; i < positions.count; i++) {
                                     let origX = node.originalPositions.getX(i);
                                     let origY = node.originalPositions.getY(i);
-                                    let dx = origX - targetX;
-                                    let dy = origY - targetY;
+                                    let dx = origX - centerX + 0.5;
+                                    let dy = origY - centerY + 0.5;
                                     let dist = Math.sqrt(dx * dx + dy * dy);
- 
+
                                     if (dist < node.interEffectSize / 25) {
                                         let force = (1.0 - (dist / node.interEffectSize * 25)) * (1 - Math.sqrt(origX * origX + origY * origY));
                                         positions.setX(i, origX + dx * force);
@@ -1743,22 +1712,17 @@
                                     node.material.uniforms.u_strength.value = node.interEffectSize / 5 - 2.5;
                                     node.material.uniforms.u_radius.value = 1 - Math.sqrt((centerX - 0.5) * (centerX - 0.5) + (centerY - 0.5) * (centerY - 0.5));
                                 }
-                                else if (node.interEffectType === 'Wave Displacement') {
-                                    node.material.uniforms.u_center.value.set(centerX, centerY);
-                                    node.material.uniforms.u_intensity.value = node.interEffectSize / 5;
-                                    node.material.uniforms.u_time.value = node.clock.getElapsedTime();
-                                }
                                 else if (node.interEffectType === 'Dynamic Pixelation') {
                                     node.material.uniforms.u_center.value.set(centerX, centerY);
                                     node.material.uniforms.u_radius.value = node.interEffectSize / 25;
                                 }
                                 else if (node.interEffectType === 'Kaleidoscope') {
                                     node.material.uniforms.u_center.value.set(centerX, centerY);
-                                    node.material.uniforms.u_sides.value = node.interEffectSize / 2;
+                                    node.material.uniforms.u_sides.value = node.interEffectSize;
                                 }
-                                else if (node.interEffectType === 'Dynamic Glitch') {
-                                    node.material.uniforms.u_velocity.value = Math.abs(centerX - centerY) + 0.01;
-                                    node.material.uniforms.u_belts.value = node.interEffectSize;
+                                else if (node.interEffectType === 'Water Ripple') {
+                                    node.material.uniforms.u_center.value.set(centerX, centerY);
+                                    node.material.uniforms.u_intensity.value = node.interEffectSize / 1000;
                                     node.material.uniforms.u_time.value = node.clock.getElapsedTime();
                                 }
                                 else if (node.interEffectType === 'Thermal Vision') {
@@ -3663,17 +3627,20 @@
                         specificContentHTML = `<div class="node-content"></div>`;
                         break;
                 }
-                let bypassCheck = '', popOut = '', flipButton = '';
+                let bypassCheck = '', popOut = '', flipButton = '', changeHand = '';
                 if (nodeData.type === 'Throughput' || nodeData.type === 'Mixer') {
                     bypassCheck = `<input type="checkbox" class="bypass-check" data-node-id="${nodeData.id}" style="float:right" ${nodeData.bypass}>`;
                 }
                 if (nodeData.type === 'Viewer') {
-                    popOut = `<button class="node-popout-button viewer-popout-button" data-node-id="${nodeData.id}" style="float:right" title="Pop-out">&#x1F5D7</button>`;
+                    popOut = `<button class="node-popout-button viewer-popout-button" data-node-id="${nodeData.id}" style="float:right" title="Pop-out">&#x1F5D7;</button>`;
                 }
                 if (nodeData.type === 'Input' && nodeData.title === 'Camera / Microphone') {
-                    flipButton = `<button class="node-flip-button input-flip-button" data-node-id="${nodeData.id}" style="float:right" title="Flip left-right">&#8644</button>`;
+                    flipButton = `<button class="node-flip-button input-flip-button" data-node-id="${nodeData.id}" style="float:right" title="Flip left-right">&#8644;</button>`;
                 }
-                nodeEl.innerHTML = `<div class="node-header">${nodeData.title}${bypassCheck}${popOut}${flipButton}</div>${specificContentHTML}${portsHTML}`;
+                if (nodeData.type === 'Interactive') {
+                    changeHand = `<button class="node-hand-button input-hand-button" data-node-id="${nodeData.id}" style="float:right" title="Right hand">&#129306;</button>`;
+                }
+                nodeEl.innerHTML = `<div class="node-header">${nodeData.title}${bypassCheck}${popOut}${flipButton}${changeHand}</div>${specificContentHTML}${portsHTML}`;
                 makeDraggable(nodeEl, nodeEl.querySelector('.node-header'), nodeData);
                 graphContainer.appendChild(nodeEl);
 
@@ -3864,6 +3831,19 @@
                     const nodeId = parseInt(event.target.dataset.nodeId);
                     const nodeData = nodes.find(n => n.id === nodeId);
                     if (nodeData) nodeData.isFlipped = !nodeData.isFlipped;
+                }
+                else if (event.target.classList.contains('input-hand-button')) {
+                    const nodeId = parseInt(event.target.dataset.nodeId);
+                    const nodeData = nodes.find(n => n.id === nodeId);
+                    if (nodeData) nodeData.rightHand = !nodeData.rightHand;
+                    if (nodeData.rightHand) {
+                        event.target.innerHTML = '&#129306;';
+                        event.target.title = 'Right hand';
+                    }
+                    else {
+                        event.target.innerHTML = '&#9995;';
+                        event.target.title = 'Left hand';
+                    }
                 }
                 else if (event.target.classList.contains('transition-play-button')) {
                     const nodeId = parseInt(event.target.dataset.nodeId);
@@ -4429,7 +4409,7 @@
                 }
                 const payload = {
                     nodes: nodes.map(n => ({
-                        id: n.id, title: n.title, type: n.type, x: n.x, y: n.y, bypass: n.bypass, isFlipped: n.isFlipped,
+                        id: n.id, title: n.title, type: n.type, x: n.x, y: n.y, bypass: n.bypass, isFlipped: n.isFlipped, rightHand: n.rightHand,
                         imageUrl: n.imageUrl, videoUrl: n.videoUrl, fxName: n.fxName, fxA: n.fxA, sliderAtitle: n.sliderAtitle,
                         nodeText: n.text, textColor: n.textColor, textSize: n.textSize, textHeight: n.textHeight, fontName: n.fontName, fontUrls: n.fontUrls,
                         curveColor: n.curveColor, paramA: n.paramA, paramB: n.paramB, curveName: n.curveName, curveType: n.curveType, equationX: n.equationX, equationY: n.equationY, animationSpeed: n.animationSpeed,
@@ -4532,6 +4512,7 @@
                     }
                     if (n.bypass) nd.bypass = n.bypass;
                     if (n.isFlipped) nd.isFlipped = n.isFlipped;
+                    if (n.rightHand) nd.rightHand = n.rightHand;
 
                     nd.gridSize = n.gridSize;
                     nd.gammaValue = n.gammaValue;
