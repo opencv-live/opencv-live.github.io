@@ -211,6 +211,19 @@
             overflow: hidden;
         }
 
+        .custom-shader-field {
+            min-width: 100%;
+            max-width: 100%;
+            min-height: 55px;
+            overflow: hidden;
+            margin-top: -20px;
+            margin-bottom: -20px;
+            background-color: transparent;
+            font-size: xx-small;
+            color: silver;
+            outline: none;
+        }
+
         .ports {
             display: flex;
             flex-direction: column;
@@ -1435,253 +1448,58 @@
             }
             else if (type === 'Interactive') {
                 node.inputs.push({ name: 'input' });
-                node.outputs.push({ name: 'output' });
                 node.inputs.push({ name: 'control' });
+                node.outputs.push({ name: 'output' });
 
-                node.checkFirstFrame = true;
+                node.canvas = document.createElement('canvas');
+                node.canvas.className = 'inner-canvas';
+
+                const scene = new THREE.Scene();
+                const camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
+                const renderer = new THREE.WebGLRenderer({ canvas: node.canvas });
+                const clock = new THREE.Clock();
+
                 node.rightHand = true;
+                node.interEffectSize = 0.75;
+                node.interEffectType = 'Liquify';
+                node.interEffects = ['Liquify', 'Swirl', 'Pixelation', 'Ripple', 'Kaleidoscope', 'Thermal'];
 
-                node.interEffectSize = 20;
-                node.interEffectType = 'Mesh Liquify';
-                node.interEffects = ['Mesh Liquify', 'Swirl Effect', 'Pixelation', 'Water Ripple', 'Kaleidoscope', 'Thermal Vision'];
+                const shaderLeft = 'uniform sampler2D INPUT; uniform vec2 POINT; uniform float RANGE; uniform float TIME; varying vec2 UV; ';
 
-                node.interCanvas = document.createElement('canvas');
-                node.interCanvas.className = 'inner-canvas';
-                node.interCam = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
+                node.warpingShaders = {
+                    Liquify: `void main() { vec2 dir = UV - POINT; float dist = length(dir); if (dist < 0.5 * RANGE) { float normDist = dist / (0.5 * RANGE); float distortion = pow(normDist, RANGE + 1.0); vec2 newUV = POINT + normalize(dir) * distortion * RANGE / 2.0; gl_FragColor = texture2D(INPUT, newUV); } else gl_FragColor = texture2D(INPUT, UV); }`,
+                    Swirl: `void main() { vec2 uv = UV; vec2 dir = uv - POINT; float dist = length(dir); if (dist < 1.0) { float percent = 1.0 - dist; float theta = percent * percent * (RANGE * 5.0 - 2.5); float s = sin(theta); float c = cos(theta); uv = POINT + vec2(dir.x * c - dir.y * s, dir.x * s + dir.y * c); } gl_FragColor = texture2D(INPUT, uv); }`,
+                    Pixelation: `void main() { float dist = distance(UV, POINT); if (dist < RANGE) { float t = dist / RANGE; float gridSize = mix(15.0, 300.0, t * t); vec2 pixelatedUV = floor(UV * gridSize) / gridSize; gl_FragColor = texture2D(INPUT, pixelatedUV); } else gl_FragColor = texture2D(INPUT, UV); }`,
+                    Ripple: `void main() { vec2 uv = UV; vec2 dir = uv - POINT; float dist = length(dir); float ripple = sin(dist * 25.0 - TIME * 5.0) * (RANGE / 40.0); ripple *= exp(-dist * 5.0); uv += normalize(dir) * ripple; gl_FragColor = texture2D(INPUT, uv); }`,
+                    Kaleidoscope: `void main() { vec2 dir = UV - POINT; float r = length(dir); float a = atan(dir.y, dir.x); float angleStep = 6.2831853 / (RANGE * 16.0); a = mod(a, angleStep); if (a > angleStep * 0.5) { a = angleStep - a; } vec2 newUV = POINT + vec2(cos(a), sin(a)) * r; gl_FragColor = texture2D(INPUT, newUV); }`,
+                    Thermal: `void main() { vec4 texColor = texture2D(INPUT, UV); float gray = dot(texColor.rgb, vec3(0.299, 0.587, 0.114)); float dist = distance(UV, POINT); float heat = 1.0 - clamp(dist / RANGE, 0.0, 1.0); float totalThermal = clamp(gray * 0.3 + heat * 0.7, 0.0, 1.0); vec3 cold = vec3(0.0, 0.0, 0.5); vec3 warm = vec3(0.8, 0.0, 0.2); vec3 hot = vec3(1.0, 0.9, 0.0); vec3 finalColor; if (totalThermal < 0.5) { finalColor = mix(cold, warm, totalThermal * 2.0); } else finalColor = mix(warm, hot, (totalThermal - 0.5) * 2.0); gl_FragColor = vec4(finalColor, 1.0); }`
+                };
+                const material = new THREE.ShaderMaterial({
+                    uniforms: {
+                        INPUT: { value: null },
+                        POINT: { value: new THREE.Vector2(0.5, 0.5) },
+                        RANGE: { value: node.interEffectSize },
+                        TIME: { value: 0.0 }
+                    },
+                    vertexShader: 'varying vec2 UV; void main() { UV = uv; gl_Position = vec4(position, 1.0); }',
+                    fragmentShader: shaderLeft + node.warpingShaders.liquify
+                });
+                const plane = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), material);
+                scene.add(plane);
 
                 node.onExecute = () => {
                     const sourceElement = getInputData(node, 0);
                     const sourceIsValid = sourceElement && (sourceElement.naturalWidth > 0 || sourceElement.videoWidth > 0 || sourceElement.width > 0);
                     if (sourceIsValid) {
-                        let previousWidth = node.interCanvas.width;
-                        let previousHeight = node.interCanvas.height;
-
-                        node.interCanvas.width = sourceElement.naturalWidth || sourceElement.videoWidth || sourceElement.width;
-                        node.interCanvas.height = sourceElement.naturalHeight || sourceElement.videoHeight || sourceElement.height;
-
-                        if (node.interCanvas.width !== previousWidth || node.interCanvas.height !== previousHeight) node.checkFirstFrame = true;
-
-                        if (node.checkFirstFrame) {
-                            node.scene = new THREE.Scene();
-                            node.renderer = new THREE.WebGLRenderer({ canvas: node.interCanvas });
-                            node.texture = sourceElement.tagName === 'VIDEO' ? new THREE.VideoTexture(sourceElement) : new THREE.Texture(sourceElement);
-
-                            if (node.interEffectType === 'Mesh Liquify') {
-                                node.material = new THREE.ShaderMaterial({
-                                    uniforms: {
-                                        u_texture: { value: node.texture },
-                                        u_center: { value: new THREE.Vector2(0.5, 0.5) },
-                                        u_radius: { value: node.interEffectSize / 50 },
-                                        u_zoom: { value: node.interEffectSize / 25 + 1 }
-                                    },
-                                    vertexShader: `
-                                        varying vec2 vUv;
-                                        void main() { vUv = uv; gl_Position = vec4(position, 1.0); }
-                                    `,
-                                    fragmentShader: `
-                                        uniform sampler2D u_texture;
-                                        uniform vec2 u_center;
-                                        uniform float u_radius;
-                                        uniform float u_zoom;
-                                        varying vec2 vUv;
-
-                                        void main() {
-                                            vec2 uv = vUv;
-                                            vec2 dir = uv - u_center;
-                                            float dist = length(dir);
-
-                                            if (dist < u_radius) {
-                                                float normDist = dist / u_radius;
-                                                float distortion = pow(normDist, u_zoom);
-                                                vec2 newUv = u_center + normalize(dir) * distortion * u_radius;
-                                                gl_FragColor = texture2D(u_texture, newUv);
-                                            }
-                                            else gl_FragColor = texture2D(u_texture, uv);
-                                        }`
-                                });
-                            }
-                            else if (node.interEffectType === 'Swirl Effect') {
-                                node.material = new THREE.ShaderMaterial({
-                                    uniforms: {
-                                        u_texture: { value: node.texture },
-                                        u_center: { value: new THREE.Vector2(0.5, 0.5) },
-                                        u_radius: { value: 1 },
-                                        u_strength: { value: node.interEffectSize / 5 - 2.5 }
-                                    },
-                                    vertexShader: `
-                                        varying vec2 vUv;
-                                        void main() {
-                                            vUv = uv;
-                                            gl_Position = vec4(position, 1.0);
-                                        }`,
-                                    fragmentShader: `
-                                        uniform sampler2D u_texture;
-                                        uniform vec2 u_center;
-                                        uniform float u_radius;
-                                        uniform float u_strength;
-                                        varying vec2 vUv;
-
-                                        void main() {
-                                            vec2 uv = vUv;
-                                            vec2 dir = uv - u_center;
-                                            float dist = length(dir);
-
-                                            if (dist < u_radius) {
-                                                float percent = (u_radius - dist) / u_radius;
-                                                float theta = percent * percent * u_strength;
-                                                float s = sin(theta);
-                                                float c = cos(theta);
-                                                uv = u_center + vec2(dir.x * c - dir.y * s, dir.x * s + dir.y * c);
-                                            }
-                                            gl_FragColor = texture2D(u_texture, uv);
-                                        }`
-                                });
-                            }
-                            else if (node.interEffectType === 'Pixelation') {
-                                node.material = new THREE.ShaderMaterial({
-                                    uniforms: {
-                                        u_texture: { value: node.texture },
-                                        u_center: { value: new THREE.Vector2(0.5, 0.5) },
-                                        u_radius: { value: node.interEffectSize / 25 }
-                                    },
-                                    vertexShader: `
-                                        varying vec2 vUv;
-                                        void main() {
-                                            vUv = uv;
-                                            gl_Position = vec4(position, 1.0);
-                                        }`,
-                                    fragmentShader: `
-                                        uniform sampler2D u_texture;
-                                        uniform vec2 u_center;
-                                        uniform float u_radius;
-                                        varying vec2 vUv;
-
-                                        void main() {
-                                            vec2 uv = vUv;
-                                            float dist = distance(uv, u_center);
-
-                                            if (dist < u_radius) {
-                                                float t = dist / u_radius;
-                                                float gridSize = mix(15.0, 300.0, t * t); 
-                                                vec2 pixelatedUv = floor(uv * gridSize) / gridSize;
-                                                gl_FragColor = texture2D(u_texture, pixelatedUv);
-                                            }
-                                            else gl_FragColor = texture2D(u_texture, uv);
-                                        }`
-                                });
-                            }
-                            else if (node.interEffectType === 'Water Ripple') {
-                                node.material = new THREE.ShaderMaterial({
-                                    uniforms: {
-                                        u_texture: { value: node.texture },
-                                        u_center: { value: new THREE.Vector2(0.5, 0.5) },
-                                        u_intensity: { value: node.interEffectSize / 1000 },
-                                        u_time: { value: 0.0 }
-                                    },
-                                    vertexShader: `
-                                        varying vec2 vUv;
-                                        void main() { vUv = uv; gl_Position = vec4(position, 1.0); }
-                                    `,
-                                    fragmentShader: `
-                                        uniform sampler2D u_texture;
-                                        uniform vec2 u_center;
-                                        uniform float u_intensity;
-                                        uniform float u_time;
-                                        varying vec2 vUv;
-
-                                        void main() {
-                                            vec2 uv = vUv;
-                                            vec2 dir = uv - u_center;
-                                            float dist = length(dir);
-
-                                            float ripple = sin(dist * 25.0 - u_time * 5.0) * u_intensity;
-                                            ripple *= exp(-dist * 5.0); 
-                                            uv += normalize(dir) * ripple;
-                                            gl_FragColor = texture2D(u_texture, uv);
-                                        }`
-                                });
-                            }
-                            else if (node.interEffectType === 'Kaleidoscope') {
-                                node.material = new THREE.ShaderMaterial({
-                                    uniforms: {
-                                        u_texture: { value: node.texture },
-                                        u_center: { value: new THREE.Vector2(0.5, 0.5) },
-                                        u_sides: { value: node.interEffectSize }
-                                    },
-                                    vertexShader: `
-                                        varying vec2 vUv;
-                                        void main() {
-                                            vUv = uv;
-                                            gl_Position = vec4(position, 1.0);
-                                        }`,
-                                    fragmentShader: `
-                                        uniform sampler2D u_texture;
-                                        uniform vec2 u_center;
-                                        uniform float u_sides;
-                                        varying vec2 vUv;
-
-                                        void main() {
-                                            vec2 uv = vUv;
-                                            vec2 dir = uv - u_center;
-                                            float r = length(dir);
-                                            float a = atan(dir.y, dir.x);
-                                            float angleStep = 6.2831853 / u_sides;
-                                            a = mod(a, angleStep);
-                                            if (a > angleStep * 0.5) {
-                                            a = angleStep - a;
-                                        }
-                                        vec2 newUv = u_center + vec2(cos(a), sin(a)) * r;
-                                        gl_FragColor = texture2D(u_texture, newUv);
-                                    }`
-                                });
-                            }
-                            else if (node.interEffectType === 'Thermal Vision') {
-                                node.material = new THREE.ShaderMaterial({
-                                    uniforms: {
-                                        u_texture: { value: node.texture },
-                                        u_center: { value: new THREE.Vector2(0.5, 0.5) },
-                                        u_radius: { value: node.interEffectSize / 25 }
-                                    },
-                                    vertexShader: `
-                                        varying vec2 vUv;
-                                        void main() {
-                                            vUv = uv;
-                                            gl_Position = vec4(position, 1.0);
-                                        }`,
-                                    fragmentShader: `
-                                        uniform sampler2D u_texture;
-                                        uniform vec2 u_center;
-                                        uniform float u_radius;
-                                        varying vec2 vUv;
-
-                                        void main() {
-                                            vec4 texColor = texture2D(u_texture, vUv);
-                                            float gray = dot(texColor.rgb, vec3(0.299, 0.587, 0.114));
-                                            float dist = distance(vUv, u_center);
-                                            float heat = 1.0 - clamp(dist / u_radius, 0.0, 1.0);
-                                            float totalThermal = clamp(gray * 0.3 + heat * 0.7, 0.0, 1.0);
-
-                                            vec3 cold = vec3(0.0, 0.0, 0.5);   // Μπλε
-                                            vec3 warm = vec3(0.8, 0.0, 0.2);   // Κόκκινο/Μοβ
-                                            vec3 hot = vec3(1.0, 0.9, 0.0);    // Κίτρινο/Λευκό
-                                            vec3 finalColor;
-                                            if (totalThermal < 0.5) {
-                                                finalColor = mix(cold, warm, totalThermal * 2.0);
-                                            }
-                                            else finalColor = mix(warm, hot, (totalThermal - 0.5) * 2.0);
-
-                                            gl_FragColor = vec4(finalColor, 1.0);
-                                        }`
-                                });
-                            }
-                            const geometry = new THREE.PlaneGeometry(2, 2);
-                            const mesh = new THREE.Mesh(geometry, node.material);
-
-                            node.scene.add(mesh);
-                            node.texture.needsUpdate = true;
-                            node.checkFirstFrame = false;
-                            node.clock = new THREE.Clock();
+                        const newWidth = sourceElement.naturalWidth || sourceElement.videoWidth || sourceElement.width;
+                        const newHeight = sourceElement.naturalHeight || sourceElement.videoHeight || sourceElement.height;
+                        if (node.canvas.width !== newWidth || node.canvas.height !== newHeight) {
+                            renderer.setSize(newWidth, newHeight, false);
                         }
+                        material.uniforms.INPUT.value = new THREE.CanvasTexture(sourceElement);
+                        material.fragmentShader = shaderLeft + node.warpingShaders[node.interEffectType];
+                        material.needsUpdate = true;
+
                         const sourceControl = getInputData(node, 1);
                         try {
                             let centerX = 0.5, centerY = 0.5;
@@ -1710,36 +1528,14 @@
                             }
                             else document.getElementById('inter' + node.id).style.accentColor = '';
 
-                            if (node.interEffectType === 'Mesh Liquify') {
-                                node.material.uniforms.u_zoom.value = node.interEffectSize / 25 + 1;
-                                node.material.uniforms.u_radius.value = node.interEffectSize / 50;
-                            }
-                            else if (node.interEffectType === 'Swirl Effect') {
-                                node.material.uniforms.u_strength.value = node.interEffectSize / 5 - 2.5;
-                                node.material.uniforms.u_radius.value = 1 - Math.sqrt((centerX - 0.5) * (centerX - 0.5) + (centerY - 0.5) * (centerY - 0.5));
-                            }
-                            else if (node.interEffectType === 'Pixelation') {
-                                node.material.uniforms.u_radius.value = node.interEffectSize / 25;
-                            }
-                            else if (node.interEffectType === 'Water Ripple') {
-                                node.material.uniforms.u_intensity.value = node.interEffectSize / 1000;
-                                node.material.uniforms.u_time.value = node.clock.getElapsedTime();
-                            }
-                            else if (node.interEffectType === 'Kaleidoscope') {
-                                node.material.uniforms.u_sides.value = node.interEffectSize;
-                            }
-                            else if (node.interEffectType === 'Thermal Vision') {
-                                node.material.uniforms.u_radius.value = node.interEffectSize / 25;
-                            }
-                            node.material.uniforms.u_center.value.set(centerX, centerY);
-
-                            if (sourceElement.tagName === 'VIDEO') node.texture.needsUpdate = true;
+                            material.uniforms.POINT.value.set(centerX, centerY);
+                            material.uniforms.RANGE.value = node.interEffectSize;
+                            material.uniforms.TIME.value = clock.getElapsedTime();
                         }
                         catch (err) { console.log("Three.js Error:", err); }
 
-                        node.renderer.setSize(node.interCanvas.width, node.interCanvas.height);
-                        node.renderer.render(node.scene, node.interCam);
-                        node.outputValues.output = node.interCanvas;
+                        renderer.render(scene, camera);
+                        node.outputValues.output = node.canvas;
                     }
                 };
             }
@@ -2675,42 +2471,17 @@
                 const camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
                 const renderer = new THREE.WebGLRenderer({ canvas: node.canvas, antialias: true });
 
-                const shaders = {
-                    Fade: `
-                        uniform sampler2D tex1; uniform sampler2D tex2; uniform float progress; varying vec2 vUv;
-                        void main() { gl_FragColor = mix(texture2D(tex1, vUv), texture2D(tex2, vUv), progress); }`,
-                    Wipe: `
-                        uniform sampler2D tex1; uniform sampler2D tex2; uniform float progress; varying vec2 vUv;
-                        void main() { gl_FragColor = mix(texture2D(tex1, vUv), texture2D(tex2, vUv), step(vUv.x, progress)); }`,
-                    Upwards: `
-                        uniform sampler2D tex1; uniform sampler2D tex2; uniform float progress; varying vec2 vUv;
-                        void main() { gl_FragColor = mix(texture2D(tex1, vUv), texture2D(tex2, vUv), step(vUv.y, progress)); }`,
-                    Diagonal: `
-                        uniform sampler2D tex1; uniform sampler2D tex2; uniform float progress; varying vec2 vUv;
-                        void main() { 
-                            float d = vUv.x + vUv.y;
-                            gl_FragColor = mix(texture2D(tex1, vUv), texture2D(tex2, vUv), step(d, progress * 2.0));
-                        }`,
-                    Iris: `
-                        uniform sampler2D tex1; uniform sampler2D tex2; uniform float progress; varying vec2 vUv;
-                        void main() { 
-                            float dist = distance(vUv, vec2(0.5));
-                            gl_FragColor = mix(texture2D(tex1, vUv), texture2D(tex2, vUv), step(dist, progress * 0.707)); // 0.707 is sqrt(2)/2
-                        }`,
-                    Radial: `
-                        uniform sampler2D tex1; uniform sampler2D tex2; uniform float progress; varying vec2 vUv;
-                        const float PI = 3.141592653589793;
-                        void main() {
-                            float angle = atan(vUv.y - 0.5, vUv.x - 0.5);
-                            float p = (angle + PI) / (2.0 * PI);
-                            gl_FragColor = mix(texture2D(tex1, vUv), texture2D(tex2, vUv), step(p, progress));
-                        }`,
-                    Dissolve: `
-                        uniform sampler2D tex1; uniform sampler2D tex2; uniform float progress; varying vec2 vUv;
-                        float random(vec2 st) { return fract(sin(dot(st.xy, vec2(12.9898,78.233))) * 43758.5453123); }
-                        void main() { 
-                            gl_FragColor = mix(texture2D(tex1, vUv), texture2D(tex2, vUv), step(random(vUv), progress));
-                        }`
+                const shaderLeft = 'uniform sampler2D tex1; uniform sampler2D tex2; uniform float progress; varying vec2 UV; void main() { gl_FragColor = mix(texture2D(tex1, UV), texture2D(tex2, UV), ';
+                const shaderRight = '); }';
+
+                node.transitionShaders = {
+                    Fade: `progress`,
+                    Wipe: `step(UV.x, progress)`,
+                    Upwards: `step(UV.y, progress)`,
+                    Diagonal: `step(UV.x + UV.y, progress * 2.0)`,
+                    Iris: `step(distance(UV, vec2(0.5)), progress * 0.707)`,
+                    Radial: `step((atan(UV.y - 0.5, UV.x - 0.5) + 3.14) / (2.0 * 3.14), progress)`,
+                    Dissolve: `step(fract(sin(dot(UV.xy, vec2(12.9898,78.233))) * 43758.5453123), progress)`
                 };
 
                 const material = new THREE.ShaderMaterial({
@@ -2719,8 +2490,8 @@
                         tex2: { value: null },
                         progress: { value: 0 }
                     },
-                    vertexShader: 'varying vec2 vUv; void main() { vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }',
-                    fragmentShader: shaders.fade
+                    vertexShader: 'varying vec2 UV; void main() { UV = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }',
+                    fragmentShader: shaderLeft + node.transitionShaders.fade + shaderRight
                 });
 
                 const plane = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), material);
@@ -2744,7 +2515,7 @@
                         material.uniforms.tex1.value = new THREE.CanvasTexture(source1);
                         material.uniforms.tex2.value = new THREE.CanvasTexture(source2);
                         material.uniforms.progress.value = node.progress;
-                        material.fragmentShader = shaders[node.transitionType];
+                        material.fragmentShader = shaderLeft + node.transitionShaders[node.transitionType] + shaderRight;
                         material.needsUpdate = true;
 
                         const sourceControl = getInputData(node, 2);
@@ -3563,7 +3334,8 @@
                         specificContentHTML = `
                             <div class="node-content">
                                 <select class="node-select-field inter-effect-selector" data-node-id="${nodeData.id}">${interOptions}</select>
-                                <input type="range" id="inter${nodeData.id}" data-node-id="${nodeData.id}" title="Distortion ammount" class="node-input-range inter-range" min="1" max="25" value="${nodeData.interEffectSize}">
+                                <p><textarea id="interInput${nodeData.id}" type="text" class="node-input-field custom-shader-field warp-shader" data-node-id="${nodeData.id}">${nodeData.warpingShaders[nodeData.interEffectType].replace(/; /g, ';\n').replace(/} /g, '}\n')}</textarea></p>
+                                <input type="range" id="inter${nodeData.id}" data-node-id="${nodeData.id}" title="Range value: ${nodeData.interEffectSize}" class="node-input-range inter-range" min="0.01" max="1" step="0.01" value="${nodeData.interEffectSize}" style="margin-top:10px">
                             </div>`;
                         break;
                     case 'Projection':
@@ -3665,7 +3437,8 @@
                         specificContentHTML = `
                             <div class="node-content">
                                 <select class="node-select-field transition-type-selector" data-node-id="${nodeData.id}">${transitionOptions}</select>
-                                <button class="node-button transition-play-button" data-node-id="${nodeData.id}" style="width:50px;margin-right:10px">Play</button>
+                                <p><textarea id="transInput${nodeData.id}" type="text" class="node-input-field custom-shader-field trans-shader" data-node-id="${nodeData.id}">${nodeData.transitionShaders[nodeData.transitionType]}</textarea></p>
+                                <button class="node-button transition-play-button" data-node-id="${nodeData.id}" style="width:50px;margin:5px">Play</button>
                                 <input type="range" data-node-id="${nodeData.id}" title="Duration: ${nodeData.transitionDuration}s" class="node-input-range transition-duration-range" min="0.1" max="10" step="0.1" value="${nodeData.transitionDuration}" style="width:120px">
                             </div>`;
                         break;
@@ -4123,10 +3896,10 @@
                 }
                 else if (event.target.classList.contains('inter-effect-selector')) {
                     nodeData.interEffectType = event.target.value;
-                    nodeData.checkFirstFrame = true;
                 }
                 else if (event.target.classList.contains('inter-range')) {
                     nodeData.interEffectSize = event.target.value * 1;
+                    event.target.title = "Range value: " + nodeData.interEffectSize;
                 }
                 else if (event.target.classList.contains('matrix-operation-selector')) {
                     nodeData.operationType = event.target.value;
@@ -4338,7 +4111,7 @@
                             nodeData.changeFont('custom');
                         }
                     }
-                    else if (nodeData && nodeData.title !== 'Convolution') {
+                    else if (nodeData && nodeData.title !== 'Convolution' && nodeData.title !== 'Transitions' && nodeData.title !== 'Image Warping' && nodeData.title !== 'Parametric Lines') {
                         urlExists(inputEl.value).then(exists => {
                             if (exists) {
                                 nodeData.mediaElement.src = inputEl.value;
@@ -4357,6 +4130,20 @@
                     const nodeId = parseInt(nodeEl.dataset.nodeId);
                     const nodeData = nodes.find(n => n.id === nodeId);
                     nodeData.customKernel = inputEl.value.split(",");
+                }
+                else if (event.target.classList.contains('trans-shader')) {
+                    const inputEl = event.target;
+                    const nodeEl = inputEl.closest('.node');
+                    const nodeId = parseInt(nodeEl.dataset.nodeId);
+                    const nodeData = nodes.find(n => n.id === nodeId);
+                    nodeData.transitionShaders[nodeData.transitionType] = event.target.value;
+                }
+                else if (event.target.classList.contains('warp-shader')) {
+                    const inputEl = event.target;
+                    const nodeEl = inputEl.closest('.node');
+                    const nodeId = parseInt(nodeEl.dataset.nodeId);
+                    const nodeData = nodes.find(n => n.id === nodeId);
+                    nodeData.warpingShaders[nodeData.interEffectType] = event.target.value;
                 }
                 else if (event.target.classList.contains('text-input')) {
                     const nodeId = parseInt(event.target.dataset.nodeId);
@@ -4466,13 +4253,13 @@
                         selectedColor: n.selectedColor, oldHSV: n.oldHSV, newHSV: n.newHSV, fullRangeChecked: n.fullRangeChecked, colorRangeChecked: n.colorRangeChecked, colorInvertChecked: n.colorInvertChecked,
                         convolutionType: n.convolutionType, convolutionalFilterSize: n.convolutionalFilterSize, customKernel: n.customKernel,
                         morphologyType: n.morphologyType, morphologicalFilterSize: n.morphologicalFilterSize, morphologyKernelType: n.morphologyKernelType,
-                        glitchEffectSize: n.glitchEffectSize, glitchEffectType: n.glitchEffectType, interEffectSize: n.interEffectSize, interEffectType: n.interEffectType,
+                        glitchEffectSize: n.glitchEffectSize, glitchEffectType: n.glitchEffectType, interEffectSize: n.interEffectSize, interEffectType: n.interEffectType, warpingShaders: n.warpingShaders,
                         channelMixerValues: n.channelMixerValues, opticalFlowSize: n.opticalFlowSize,
                         thresholdValue: n.thresholdValue, thresholdingChecked: n.thresholdingChecked, kValue: n.kValue,
                         operationType: n.operationType, operationWeight: n.operationWeight, detectionConfidence: n.detectionConfidence,
                         hueBlendChecked: n.hueBlendChecked, satBlendChecked: n.satBlendChecked, valBlendChecked: n.valBlendChecked,
                         concatenationAlignment: n.concatenationAlignment, concatenationChecked: n.concatenationChecked,
-                        transitionType: n.transitionType, transitionDuration: n.transitionDuration
+                        transitionType: n.transitionType, transitionDuration: n.transitionDuration, transitionShaders: n.transitionShaders
                     })), connections, gestures
                 };
                 try {
@@ -4575,6 +4362,8 @@
                     nd.glitchEffectType = n.glitchEffectType;
                     nd.interEffectSize = n.interEffectSize;
                     nd.interEffectType = n.interEffectType;
+                    if (n.warpingShaders) nd.warpingShaders = n.warpingShaders;
+
                     nd.channelMixerValues = n.channelMixerValues;
                     nd.opticalFlowSize = n.opticalFlowSize;
                     nd.thresholdValue = n.thresholdValue;
@@ -4584,6 +4373,7 @@
                     nd.concatenationAlignment = n.concatenationAlignment;
                     nd.transitionType = n.transitionType;
                     nd.transitionDuration = n.transitionDuration;
+                    if (n.transitionShaders) nd.transitionShaders = n.transitionShaders;
 
                     nd.nodeText = n.nodeText;
                     nd.textColor = n.textColor;
