@@ -1464,21 +1464,21 @@
                 node.interEffectType = 'Liquify';
                 node.interEffects = ['Liquify', 'Swirl', 'Pixelation', 'Ripple', 'Kaleidoscope', 'Thermal'];
 
-                const shaderLeft = 'uniform sampler2D INPUT; uniform vec2 POINT; uniform float RANGE; uniform float TIME; varying vec2 UV; ';
+                const shaderLeft = 'uniform sampler2D INPUT; uniform vec2 CENTER; uniform float RADIUS; uniform float TIME; varying vec2 UV; ';
 
                 node.warpingShaders = {
-                    Liquify: `void main() { vec2 dir = UV - POINT; float dist = length(dir); if (dist < 0.5 * RANGE) { float normDist = dist / (0.5 * RANGE); float distortion = pow(normDist, RANGE + 1.0); vec2 newUV = POINT + normalize(dir) * distortion * RANGE / 2.0; gl_FragColor = texture2D(INPUT, newUV); } else gl_FragColor = texture2D(INPUT, UV); }`,
-                    Swirl: `void main() { vec2 uv = UV; vec2 dir = uv - POINT; float dist = length(dir); if (dist < 1.0) { float percent = 1.0 - dist; float theta = percent * percent * (RANGE * 5.0 - 2.5); float s = sin(theta); float c = cos(theta); uv = POINT + vec2(dir.x * c - dir.y * s, dir.x * s + dir.y * c); } gl_FragColor = texture2D(INPUT, uv); }`,
-                    Pixelation: `void main() { float dist = distance(UV, POINT); if (dist < RANGE) { float t = dist / RANGE; float gridSize = mix(15.0, 300.0, t * t); vec2 pixelatedUV = floor(UV * gridSize) / gridSize; gl_FragColor = texture2D(INPUT, pixelatedUV); } else gl_FragColor = texture2D(INPUT, UV); }`,
-                    Ripple: `void main() { vec2 uv = UV; vec2 dir = uv - POINT; float dist = length(dir); float ripple = sin(dist * 25.0 - TIME * 5.0) * (RANGE / 40.0); ripple *= exp(-dist * 5.0); uv += normalize(dir) * ripple; gl_FragColor = texture2D(INPUT, uv); }`,
-                    Kaleidoscope: `void main() { vec2 dir = UV - POINT; float r = length(dir); float a = atan(dir.y, dir.x); float angleStep = 6.2831853 / (RANGE * 16.0); a = mod(a, angleStep); if (a > angleStep * 0.5) { a = angleStep - a; } vec2 newUV = POINT + vec2(cos(a), sin(a)) * r; gl_FragColor = texture2D(INPUT, newUV); }`,
-                    Thermal: `void main() { vec4 texColor = texture2D(INPUT, UV); float gray = dot(texColor.rgb, vec3(0.299, 0.587, 0.114)); float dist = distance(UV, POINT); float heat = 1.0 - clamp(dist / RANGE, 0.0, 1.0); float totalThermal = clamp(gray * 0.3 + heat * 0.7, 0.0, 1.0); vec3 cold = vec3(0.0, 0.0, 0.5); vec3 warm = vec3(0.8, 0.0, 0.2); vec3 hot = vec3(1.0, 0.9, 0.0); vec3 finalColor; if (totalThermal < 0.5) { finalColor = mix(cold, warm, totalThermal * 2.0); } else finalColor = mix(warm, hot, (totalThermal - 0.5) * 2.0); gl_FragColor = vec4(finalColor, 1.0); }`
+                    Liquify: `void main() { vec2 dir = UV - CENTER; float dist = length(dir); if (dist < 0.5 * RADIUS) { float normDist = dist / (0.5 * RADIUS); float distortion = pow(normDist, RADIUS + 1.0); vec2 newUV = CENTER + normalize(dir) * distortion * RADIUS / 2.0; gl_FragColor = texture2D(INPUT, newUV); } else gl_FragColor = texture2D(INPUT, UV); }`,
+                    Swirl: `void main() { vec2 uv = UV; vec2 dir = uv - CENTER; float dist = length(dir); if (dist < 1.0) { float percent = 1.0 - dist; float theta = percent * percent * (RADIUS * 5.0 - 2.5); float s = sin(theta); float c = cos(theta); uv = CENTER + vec2(dir.x * c - dir.y * s, dir.x * s + dir.y * c); } gl_FragColor = texture2D(INPUT, uv); }`,
+                    Pixelation: `void main() { float dist = distance(UV, CENTER); if (dist < RADIUS) { float t = dist / RADIUS; float gridSize = mix(15.0, 300.0, t * t); vec2 pixelatedUV = floor(UV * gridSize) / gridSize; gl_FragColor = texture2D(INPUT, pixelatedUV); } else gl_FragColor = texture2D(INPUT, UV); }`,
+                    Ripple: `void main() { vec2 uv = UV; vec2 dir = uv - CENTER; float dist = length(dir); float ripple = sin(dist * 25.0 - TIME * 5.0) * (RADIUS / 40.0); ripple *= exp(-dist * 5.0); uv += normalize(dir) * ripple; gl_FragColor = texture2D(INPUT, uv); }`,
+                    Kaleidoscope: `void main() { vec2 dir = UV - CENTER; float r = length(dir); float a = atan(dir.y, dir.x); float angleStep = 6.2831853 / (RADIUS * 16.0); a = mod(a, angleStep); if (a > angleStep * 0.5) { a = angleStep - a; } vec2 newUV = CENTER + vec2(cos(a), sin(a)) * r; gl_FragColor = texture2D(INPUT, newUV); }`,
+                    Thermal: `void main() { vec4 texColor = texture2D(INPUT, UV); float gray = dot(texColor.rgb, vec3(0.299, 0.587, 0.114)); float dist = distance(UV, CENTER); float heat = 1.0 - clamp(dist / RADIUS, 0.0, 1.0); float totalThermal = clamp(gray * 0.3 + heat * 0.7, 0.0, 1.0); vec3 cold = vec3(0.0, 0.0, 0.5); vec3 warm = vec3(0.8, 0.0, 0.2); vec3 hot = vec3(1.0, 0.9, 0.0); vec3 finalColor; if (totalThermal < 0.5) { finalColor = mix(cold, warm, totalThermal * 2.0); } else finalColor = mix(warm, hot, (totalThermal - 0.5) * 2.0); gl_FragColor = vec4(finalColor, 1.0); }`
                 };
                 const material = new THREE.ShaderMaterial({
                     uniforms: {
                         INPUT: { value: null },
-                        POINT: { value: new THREE.Vector2(0.5, 0.5) },
-                        RANGE: { value: node.interEffectSize },
+                        CENTER: { value: new THREE.Vector2(0.5, 0.5) },
+                        RADIUS: { value: node.interEffectSize },
                         TIME: { value: 0.0 }
                     },
                     vertexShader: 'varying vec2 UV; void main() { UV = uv; gl_Position = vec4(position, 1.0); }',
@@ -1517,19 +1517,19 @@
                                 document.getElementById('inter' + node.id).style.accentColor = 'darkgoldenrod';
                                 let target = Math.round(sourceControl[1] * 0.012) * 2 + 1;
                                 if (sourceControl[0] > 0) {
-                                    node.interEffectSize += (target - node.interEffectSize) / Math.min(Math.pow(sourceControl[0], 3), 2000);
+                                    node.interEffectSize += (target - node.interEffectSize) / Math.min(Math.pow(sourceControl[0], 3), 2000) / 2000.0;
                                 }
                                 document.getElementById('inter' + node.id).value = node.interEffectSize;
                             }
                             else if (sourceControl && sourceControl.length == 3) {
                                 document.getElementById('inter' + node.id).style.accentColor = 'darkgoldenrod';
-                                node.interEffectSize = Math.round((sourceControl[0] + sourceControl[1] + sourceControl[2]) * 4) * 2 + 1;
+                                node.interEffectSize = Math.round((sourceControl[0] + sourceControl[1] + sourceControl[2]) * 4) / 10.0;
                                 document.getElementById('inter' + node.id).value = node.interEffectSize;
                             }
                             else document.getElementById('inter' + node.id).style.accentColor = '';
 
-                            material.uniforms.POINT.value.set(centerX, centerY);
-                            material.uniforms.RANGE.value = node.interEffectSize;
+                            material.uniforms.CENTER.value.set(centerX, centerY);
+                            material.uniforms.RADIUS.value = node.interEffectSize;
                             material.uniforms.TIME.value = clock.getElapsedTime();
                         }
                         catch (err) { console.log("Three.js Error:", err); }
@@ -1602,11 +1602,17 @@
                     node.thresholdValue = 128;
                     node.thresholdingChecked = ["checked", "", ""];
                 }
+                else if (title === 'Skeleton') {
+                    node.previousCode = '';
+                    node.skeletonCode = `let channels = new cv.MatVector(); cv.split(INPUT, channels); let R = channels.get(0); let G = channels.get(1); let B = channels.get(2); channels.delete(); let final = new cv.MatVector(); let tmpR = new cv.Mat(), dstR = new cv.Mat(); cv.threshold(R, tmpR, 0, 255, cv.THRESH_BINARY_INV + cv.THRESH_OTSU); R.delete(); cv.distanceTransform(tmpR, dstR, cv.DIST_L2, 5); tmpR.delete(); cv.normalize(dstR, dstR, 1, 0, cv.NORM_INF); final.push_back(dstR); dstR.delete(); let tmpG = new cv.Mat(), dstG = new cv.Mat(); cv.threshold(G, tmpG, 0, 255, cv.THRESH_BINARY_INV + cv.THRESH_OTSU); G.delete(); cv.distanceTransform(tmpG, dstG, cv.DIST_L2, 5); tmpG.delete(); cv.normalize(dstG, dstG, 1, 0, cv.NORM_INF); final.push_back(dstG); dstG.delete(); let tmpB = new cv.Mat(), dstB = new cv.Mat(); cv.threshold(B, tmpB, 0, 255, cv.THRESH_BINARY_INV + cv.THRESH_OTSU); B.delete(); cv.distanceTransform(tmpB, dstB, cv.DIST_L2, 5); tmpB.delete(); cv.normalize(dstB, dstB, 1, 0, cv.NORM_INF); final.push_back(dstB); dstB.delete(); cv.merge(final, OUTPUT); final.delete();`;
+                }
                 else if (title === 'Superpixels') {
                     node.kValue = 8;
                 }
                 else if (title === 'Background Subtraction') {
+                    node.previousCode = '';
                     node.fgbg = new cv.BackgroundSubtractorMOG2();
+                    node.backsubCode = `cv.cvtColor(INPUT, INPUT, cv.COLOR_RGBA2RGB); let tmp = new cv.Mat(); node.fgbg.apply(INPUT, tmp); let rgb = new cv.Mat(); cv.cvtColor(tmp, rgb, cv.COLOR_GRAY2RGB); tmp.delete(); cv.bitwise_and(INPUT, rgb, OUTPUT); rgb.delete();`
                 }
                 let blackImage, previousImage;
 
@@ -2292,51 +2298,20 @@
                                     final.delete();
                                 }
                                 else if (title === 'Skeleton') {
-                                    if (node.lastState === mean) {
+                                    if (node.lastState === mean && node.previousCode === node.skeletonCode) {
                                         src.delete(); dst.delete();
                                         return;
                                     }
                                     node.lastState = '';
 
-                                    let channels = new cv.MatVector();
-                                    cv.split(src, channels);
-                                    let R = channels.get(0);
-                                    let G = channels.get(1);
-                                    let B = channels.get(2);
-                                    channels.delete();
-
-                                    let final = new cv.MatVector();
-                                    let block = node.thresholdValue * 2 + 1;
-
-                                    let tmpR = new cv.Mat(), dstR = new cv.Mat();
-                                    cv.threshold(R, tmpR, 0, 255, cv.THRESH_BINARY_INV + cv.THRESH_OTSU);
-                                    R.delete();
-                                    cv.distanceTransform(tmpR, dstR, cv.DIST_L2, 5);
-                                    tmpR.delete();
-                                    cv.normalize(dstR, dstR, 1, 0, cv.NORM_INF);
-                                    final.push_back(dstR);
-                                    dstR.delete();
-
-                                    let tmpG = new cv.Mat(), dstG = new cv.Mat();
-                                    cv.threshold(G, tmpG, 0, 255, cv.THRESH_BINARY_INV + cv.THRESH_OTSU);
-                                    G.delete();
-                                    cv.distanceTransform(tmpG, dstG, cv.DIST_L2, 5);
-                                    tmpG.delete();
-                                    cv.normalize(dstG, dstG, 1, 0, cv.NORM_INF);
-                                    final.push_back(dstG);
-                                    dstG.delete();
-
-                                    let tmpB = new cv.Mat(), dstB = new cv.Mat();
-                                    cv.threshold(B, tmpB, 0, 255, cv.THRESH_BINARY_INV + cv.THRESH_OTSU);
-                                    B.delete();
-                                    cv.distanceTransform(tmpB, dstB, cv.DIST_L2, 5);
-                                    tmpB.delete();
-                                    cv.normalize(dstB, dstB, 1, 0, cv.NORM_INF);
-                                    final.push_back(dstB);
-                                    dstB.delete();
-
-                                    cv.merge(final, dst);
-                                    final.delete();
+                                    try {
+                                        eval(node.skeletonCode.replace(/INPUT/g, 'src').replace(/OUTPUT/g, 'dst'));
+                                        node.previousCode = node.skeletonCode;
+                                    }
+                                    catch {
+                                        src.delete(); dst.delete();
+                                        return;
+                                    }
                                 }
                                 else if (title === 'Superpixels') {
                                     if (node.lastState === node.kValue + mean) {
@@ -2381,20 +2356,20 @@
                                     labels.delete(); centers.delete();
                                 }
                                 else if (title === 'Background Subtraction') {
-                                    if (node.lastState === mean) {
+                                    if (node.lastState === mean && node.previousCode === node.backsubCode) {
                                         src.delete(); dst.delete();
                                         return;
                                     }
                                     node.lastState = '';
 
-                                    cv.cvtColor(src, src, cv.COLOR_RGBA2RGB);
-                                    let tmp = new cv.Mat();
-                                    node.fgbg.apply(src, tmp);
-                                    let rgb = new cv.Mat();
-                                    cv.cvtColor(tmp, rgb, cv.COLOR_GRAY2RGB);
-                                    tmp.delete();
-                                    cv.bitwise_and(src, rgb, dst);
-                                    rgb.delete();
+                                    try {
+                                        eval(node.backsubCode.replace(/INPUT/g, 'src').replace(/OUTPUT/g, 'dst'));
+                                        node.previousCode = node.backsubCode;
+                                    }
+                                    catch {
+                                        src.delete(); dst.delete();
+                                        return;
+                                    }
                                 }
                                 else if (title === 'Optical Flow') {
                                     if (node.lastState === node.opticalFlowSize + mean) {
@@ -2565,6 +2540,19 @@
                     node.operationType = 'Min';
                     node.matrixOperations = ['Min', 'Max', 'Add', 'Subtract', 'Multiply', 'Divide'];
                     node.operationWeight = 0.5;
+                    node.previousCode = '';
+
+                    const presetLeft = `temp1 = new cv.Mat(), temp2 = new cv.Mat(); INPUT1.convertTo(temp1, cv.CV_32F); INPUT2.convertTo(temp2, cv.CV_32F); let weight1 = new cv.Scalar(1 - WEIGHT, 1 - WEIGHT, 1 - WEIGHT, 1 - WEIGHT); let matrix1 = new cv.Mat(temp1.rows, temp1.cols, temp1.type(), weight1); cv.multiply(temp1, matrix1, temp1); matrix1.delete(); let weight2 = new cv.Scalar(WEIGHT, WEIGHT, WEIGHT, WEIGHT); let matrix2 = new cv.Mat(temp2.rows, temp2.cols, temp2.type(), weight2); cv.multiply(temp2, matrix2, temp2); matrix2.delete(); `;
+                    const presetRight = `temp1.delete(); temp2.delete(); cv.normalize(OUTPUT, OUTPUT, 0, 1, cv.NORM_MINMAX, -1); `;
+
+                    node.operationCode = {
+                        Min: presetLeft + `cv.min(temp1, temp2, OUTPUT); ` + presetRight,
+                        Max: presetLeft + `cv.max(temp1, temp2, OUTPUT); ` + presetRight,
+                        Add: presetLeft + `cv.add(temp1, temp2, OUTPUT); ` + presetRight,
+                        Subtract: presetLeft + `cv.absdiff(temp1, temp2, OUTPUT); ` + presetRight,
+                        Multiply: presetLeft + `cv.multiply(temp1, temp2, OUTPUT); ` + presetRight,
+                        Divide: `cv.threshold(INPUT2, INPUT2, 1, 255, cv.THRESH_BINARY); cv.divide(INPUT1, INPUT2, OUTPUT); cv.normalize(OUTPUT, OUTPUT, 0, 255, cv.NORM_MINMAX);`
+                    };
                 }
                 else if (title === 'Color Blending') {
                     node.hueBlendChecked = "checked";
@@ -2656,40 +2644,20 @@
                                     }
                                     else document.getElementById('weights' + node.id).style.accentColor = '';
 
-                                    if (node.lastState === controlParams + node.operationType + node.operationWeight + mean2 + mean1) {
+                                    if (node.lastState === controlParams + node.operationType + node.operationWeight + mean2 + mean1 && node.previousCode === node.operationCode[node.operationType]) {
                                         src1.delete(); src2.delete(); dst.delete();
                                         return;
                                     }
                                     node.lastState = controlParams + node.operationType + node.operationWeight;
 
-                                    temp1 = new cv.Mat(), temp2 = new cv.Mat();
-                                    src1.convertTo(temp1, cv.CV_32F);
-                                    src2.convertTo(temp2, cv.CV_32F);
-
-                                    let weight1 = new cv.Scalar(1 - node.operationWeight, 1 - node.operationWeight, 1 - node.operationWeight, 1 - node.operationWeight);
-                                    let matrix1 = new cv.Mat(temp1.rows, temp1.cols, temp1.type(), weight1);
-                                    cv.multiply(temp1, matrix1, temp1);
-                                    matrix1.delete();
-
-                                    let weight2 = new cv.Scalar(node.operationWeight, node.operationWeight, node.operationWeight, node.operationWeight);
-                                    let matrix2 = new cv.Mat(temp2.rows, temp2.cols, temp2.type(), weight2);
-                                    cv.multiply(temp2, matrix2, temp2);
-                                    matrix2.delete();
-
-                                    if (node.operationType === 'Min') cv.min(temp1, temp2, dst);
-                                    else if (node.operationType === 'Max') cv.max(temp1, temp2, dst);
-                                    else if (node.operationType === 'Add') cv.add(temp1, temp2, dst);
-                                    else if (node.operationType === 'Subtract') cv.absdiff(temp1, temp2, dst);
-                                    else if (node.operationType === 'Multiply') cv.multiply(temp1, temp2, dst);
-
-                                    temp1.delete(); temp2.delete();
-
-                                    if (node.operationType === 'Divide') {
-                                        cv.threshold(src2, src2, 1, 255, cv.THRESH_BINARY);
-                                        cv.divide(src1, src2, dst);
-                                        cv.normalize(dst, dst, 0, 255, cv.NORM_MINMAX);
+                                    try {
+                                        eval(node.operationCode[node.operationType].replace(/INPUT1/g, 'src1').replace(/INPUT2/g, 'src2').replace(/OUTPUT/g, 'dst').replace(/WEIGHT/g, 'node.operationWeight'));
+                                        node.previousCode = node.operationCode[node.operationType];
                                     }
-                                    else cv.normalize(dst, dst, 0, 1, cv.NORM_MINMAX, -1);
+                                    catch {
+                                        src1.delete(); src2.delete(); dst.delete();
+                                        return;
+                                    }
                                 }
                                 else if (title === 'Color Blending') {
                                     if (node.lastState === node.hueBlendChecked + node.satBlendChecked + node.valBlendChecked + mean2 + mean1) {
@@ -3335,7 +3303,7 @@
                             <div class="node-content">
                                 <select class="node-select-field inter-effect-selector" data-node-id="${nodeData.id}">${interOptions}</select>
                                 <p><textarea id="interInput${nodeData.id}" type="text" class="node-input-field custom-shader-field warp-shader" data-node-id="${nodeData.id}">${nodeData.warpingShaders[nodeData.interEffectType].replace(/; /g, ';\n').replace(/} /g, '}\n')}</textarea></p>
-                                <input type="range" id="inter${nodeData.id}" data-node-id="${nodeData.id}" title="Range value: ${nodeData.interEffectSize}" class="node-input-range inter-range" min="0.01" max="1" step="0.01" value="${nodeData.interEffectSize}" style="margin-top:10px">
+                                <input type="range" id="inter${nodeData.id}" data-node-id="${nodeData.id}" title="Radius: ${nodeData.interEffectSize}" class="node-input-range inter-range" min="0.01" max="1" step="0.01" value="${nodeData.interEffectSize}" style="margin-top:10px">
                             </div>`;
                         break;
                     case 'Projection':
@@ -3365,6 +3333,7 @@
                         specificContentHTML = `
                             <div class="node-content">
                                 <select class="node-select-field matrix-operation-selector" data-node-id="${nodeData.id}">${matrixOptions}</select>
+                                <p><textarea id="matrixInput${nodeData.id}" type="text" class="node-input-field custom-shader-field operation-code" data-node-id="${nodeData.id}">${nodeData.operationCode[nodeData.operationType].replace(/; /g, ';\n').replace(/} /g, '}\n')}</textarea></p>
                                 <input type="range" id="weights${nodeData.id}" data-node-id="${nodeData.id}" title="Weights: ${nodeData.operationWeight}, ${1 - nodeData.operationWeight}" class="node-input-range matrix-operation-range" min="0.01" max="0.99" step="0.01" value="${nodeData.operationWeight}">
                             </div>`;
                         break;
@@ -3407,6 +3376,12 @@
                                 <input type="radio" data-node-id="${nodeData.id}" class="node-input-check adaptive-threshold-check" name="thresholdRadio${nodeData.id}" ${nodeData.thresholdingChecked[2]}><small style="margin:-1px">Adaptive</small></p>
                             </div>`;
                         break;
+                    case 'Skeleton':
+                        specificContentHTML = `
+                            <div class="node-content">
+                                <p><textarea id="skelInput${nodeData.id}" type="text" class="node-input-field custom-shader-field skeleton-code" data-node-id="${nodeData.id}">${nodeData.skeletonCode.replace(/; /g, ';\n').replace(/} /g, '}\n')}</textarea></p>
+                            </div>`;
+                        break;
                     case 'Superpixels':
                         specificContentHTML = `
                             <div class="node-content">
@@ -3424,6 +3399,12 @@
                         specificContentHTML = `
                             <div class="node-content">
                                 <input type="range" id="confidenceRange${nodeData.id}" data-node-id="${nodeData.id}" title="Detection confidence: ${nodeData.detectionConfidence}" class="node-input-range confidence-range" min="0" max="1" step="0.1" value="${nodeData.detectionConfidence}" ${nodeData.sliderDisabled}>
+                            </div>`;
+                        break;
+                    case 'Background Subtraction':
+                        specificContentHTML = `
+                            <div class="node-content">
+                                <p><textarea id="backInput${nodeData.id}" type="text" class="node-input-field custom-shader-field backsub-code" data-node-id="${nodeData.id}">${nodeData.backsubCode.replace(/; /g, ';\n').replace(/} /g, '}\n')}</textarea></p>
                             </div>`;
                         break;
                     case 'Optical Flow':
@@ -3899,7 +3880,7 @@
                 }
                 else if (event.target.classList.contains('inter-range')) {
                     nodeData.interEffectSize = event.target.value * 1;
-                    event.target.title = "Range value: " + nodeData.interEffectSize;
+                    event.target.title = "Radius: " + nodeData.interEffectSize;
                 }
                 else if (event.target.classList.contains('matrix-operation-selector')) {
                     nodeData.operationType = event.target.value;
@@ -4111,7 +4092,7 @@
                             nodeData.changeFont('custom');
                         }
                     }
-                    else if (nodeData && nodeData.title !== 'Convolution' && nodeData.title !== 'Transitions' && nodeData.title !== 'Image Warping' && nodeData.title !== 'Parametric Lines') {
+                    else if (nodeData && nodeData.title !== 'Convolution' && nodeData.title !== 'Transitions' && nodeData.title !== 'Image Warping' && nodeData.title !== 'Parametric Lines' && nodeData.title !== 'Skeleton' && nodeData.title !== 'Background Subtraction' && nodeData.title !== 'Matrix Operations') {
                         urlExists(inputEl.value).then(exists => {
                             if (exists) {
                                 nodeData.mediaElement.src = inputEl.value;
@@ -4144,6 +4125,27 @@
                     const nodeId = parseInt(nodeEl.dataset.nodeId);
                     const nodeData = nodes.find(n => n.id === nodeId);
                     nodeData.warpingShaders[nodeData.interEffectType] = event.target.value;
+                }
+                else if (event.target.classList.contains('skeleton-code')) {
+                    const inputEl = event.target;
+                    const nodeEl = inputEl.closest('.node');
+                    const nodeId = parseInt(nodeEl.dataset.nodeId);
+                    const nodeData = nodes.find(n => n.id === nodeId);
+                    nodeData.skeletonCode = event.target.value;
+                }
+                else if (event.target.classList.contains('backsub-code')) {
+                    const inputEl = event.target;
+                    const nodeEl = inputEl.closest('.node');
+                    const nodeId = parseInt(nodeEl.dataset.nodeId);
+                    const nodeData = nodes.find(n => n.id === nodeId);
+                    nodeData.backsubCode = event.target.value;
+                }
+                else if (event.target.classList.contains('operation-code')) {
+                    const inputEl = event.target;
+                    const nodeEl = inputEl.closest('.node');
+                    const nodeId = parseInt(nodeEl.dataset.nodeId);
+                    const nodeData = nodes.find(n => n.id === nodeId);
+                    nodeData.operationCode[nodeData.operationType] = event.target.value;
                 }
                 else if (event.target.classList.contains('text-input')) {
                     const nodeId = parseInt(event.target.dataset.nodeId);
@@ -4254,9 +4256,9 @@
                         convolutionType: n.convolutionType, convolutionalFilterSize: n.convolutionalFilterSize, customKernel: n.customKernel,
                         morphologyType: n.morphologyType, morphologicalFilterSize: n.morphologicalFilterSize, morphologyKernelType: n.morphologyKernelType,
                         glitchEffectSize: n.glitchEffectSize, glitchEffectType: n.glitchEffectType, interEffectSize: n.interEffectSize, interEffectType: n.interEffectType, warpingShaders: n.warpingShaders,
-                        channelMixerValues: n.channelMixerValues, opticalFlowSize: n.opticalFlowSize,
+                        channelMixerValues: n.channelMixerValues, opticalFlowSize: n.opticalFlowSize, skeletonCode: n.skeletonCode, backsubCode: n.backsubCode,
                         thresholdValue: n.thresholdValue, thresholdingChecked: n.thresholdingChecked, kValue: n.kValue,
-                        operationType: n.operationType, operationWeight: n.operationWeight, detectionConfidence: n.detectionConfidence,
+                        operationType: n.operationType, operationWeight: n.operationWeight, operationCode: n.operationCode, detectionConfidence: n.detectionConfidence,
                         hueBlendChecked: n.hueBlendChecked, satBlendChecked: n.satBlendChecked, valBlendChecked: n.valBlendChecked,
                         concatenationAlignment: n.concatenationAlignment, concatenationChecked: n.concatenationChecked,
                         transitionType: n.transitionType, transitionDuration: n.transitionDuration, transitionShaders: n.transitionShaders
@@ -4370,6 +4372,8 @@
                     nd.kValue = n.kValue;
                     nd.operationType = n.operationType;
                     nd.operationWeight = n.operationWeight;
+                    if (n.operationCode) nd.operationCode = n.operationCode;
+
                     nd.concatenationAlignment = n.concatenationAlignment;
                     nd.transitionType = n.transitionType;
                     nd.transitionDuration = n.transitionDuration;
@@ -4407,6 +4411,8 @@
                     nd.satBlendChecked = n.satBlendChecked;
                     nd.valBlendChecked = n.valBlendChecked;
                     nd.concatenationChecked = n.concatenationChecked;
+                    if (n.skeletonCode) nd.skeletonCode = n.skeletonCode;
+                    if (n.backsubCode) nd.backsubCode = n.backsubCode;
 
                     nodes.push(nd);
                 });
