@@ -32,8 +32,8 @@
       "type": "Interactive",
       "x": 289,
       "y": 67,
-      "interEffectSize": 25,
-      "interEffectType": "Mesh Liquify"
+      "interEffectSize": 0.8,
+      "interEffectType": "Liquify"
     },
     {
       "id": 563108,
