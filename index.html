@@ -1610,9 +1610,7 @@
                     node.kValue = 8;
                 }
                 else if (title === 'Background Subtraction') {
-                    node.previousCode = '';
                     node.fgbg = new cv.BackgroundSubtractorMOG2();
-                    node.backsubCode = `cv.cvtColor(INPUT, INPUT, cv.COLOR_RGBA2RGB); let tmp = new cv.Mat(); node.fgbg.apply(INPUT, tmp); let rgb = new cv.Mat(); cv.cvtColor(tmp, rgb, cv.COLOR_GRAY2RGB); tmp.delete(); cv.bitwise_and(INPUT, rgb, OUTPUT); rgb.delete();`
                 }
                 let blackImage, previousImage;
 
@@ -2356,20 +2354,20 @@
                                     labels.delete(); centers.delete();
                                 }
                                 else if (title === 'Background Subtraction') {
-                                    if (node.lastState === mean && node.previousCode === node.backsubCode) {
+                                    if (node.lastState === mean) {
                                         src.delete(); dst.delete();
                                         return;
                                     }
                                     node.lastState = '';
 
-                                    try {
-                                        eval(node.backsubCode.replace(/INPUT/g, 'src').replace(/OUTPUT/g, 'dst'));
-                                        node.previousCode = node.backsubCode;
-                                    }
-                                    catch {
-                                        src.delete(); dst.delete();
-                                        return;
-                                    }
+                                    cv.cvtColor(src, src, cv.COLOR_RGBA2RGB);
+                                    let tmp = new cv.Mat();
+                                    node.fgbg.apply(src, tmp);
+                                    let rgb = new cv.Mat();
+                                    cv.cvtColor(tmp, rgb, cv.COLOR_GRAY2RGB);
+                                    tmp.delete();
+                                    cv.bitwise_and(src, rgb, dst);
+                                    rgb.delete();
                                 }
                                 else if (title === 'Optical Flow') {
                                     if (node.lastState === node.opticalFlowSize + mean) {
@@ -2542,16 +2540,13 @@
                     node.operationWeight = 0.5;
                     node.previousCode = '';
 
-                    const presetLeft = `temp1 = new cv.Mat(), temp2 = new cv.Mat(); INPUT1.convertTo(temp1, cv.CV_32F); INPUT2.convertTo(temp2, cv.CV_32F); let weight1 = new cv.Scalar(1 - WEIGHT, 1 - WEIGHT, 1 - WEIGHT, 1 - WEIGHT); let matrix1 = new cv.Mat(temp1.rows, temp1.cols, temp1.type(), weight1); cv.multiply(temp1, matrix1, temp1); matrix1.delete(); let weight2 = new cv.Scalar(WEIGHT, WEIGHT, WEIGHT, WEIGHT); let matrix2 = new cv.Mat(temp2.rows, temp2.cols, temp2.type(), weight2); cv.multiply(temp2, matrix2, temp2); matrix2.delete(); `;
-                    const presetRight = `temp1.delete(); temp2.delete(); cv.normalize(OUTPUT, OUTPUT, 0, 1, cv.NORM_MINMAX, -1); `;
-
                     node.operationCode = {
-                        Min: presetLeft + `cv.min(temp1, temp2, OUTPUT); ` + presetRight,
-                        Max: presetLeft + `cv.max(temp1, temp2, OUTPUT); ` + presetRight,
-                        Add: presetLeft + `cv.add(temp1, temp2, OUTPUT); ` + presetRight,
-                        Subtract: presetLeft + `cv.absdiff(temp1, temp2, OUTPUT); ` + presetRight,
-                        Multiply: presetLeft + `cv.multiply(temp1, temp2, OUTPUT); ` + presetRight,
-                        Divide: `cv.threshold(INPUT2, INPUT2, 1, 255, cv.THRESH_BINARY); cv.divide(INPUT1, INPUT2, OUTPUT); cv.normalize(OUTPUT, OUTPUT, 0, 255, cv.NORM_MINMAX);`
+                        Min: `cv.min(INPUT1, INPUT2, OUTPUT);`,
+                        Max: `cv.max(INPUT1, INPUT2, OUTPUT);`,
+                        Add: `cv.add(INPUT1, INPUT2, OUTPUT);`,
+                        Subtract: `cv.absdiff(INPUT1, INPUT2, OUTPUT);`,
+                        Multiply: `cv.multiply(INPUT1, INPUT2, OUTPUT);`,
+                        Divide: `cv.divide(INPUT1, INPUT2, OUTPUT); cv.normalize(OUTPUT, OUTPUT, 0, 1, cv.NORM_MINMAX, cv.CV_32F);`
                     };
                 }
                 else if (title === 'Color Blending') {
@@ -2620,7 +2615,7 @@
                                                 if (node.operationWeight < 0.01) node.operationWeight = 0.01;
                                                 if (node.operationWeight > 0.99) node.operationWeight = 0.99;
                                                 document.getElementById('weights' + node.id).value = node.operationWeight;
-                                                document.getElementById('weights' + node.id).title = 'Weights: ' + node.operationWeight + ', ' + (1 - node.operationWeight);
+                                                document.getElementById('weights' + node.id).title = 'Weights: ' + (1 - node.operationWeight) + ',' + node.operationWeight;
                                             }
                                         }
                                         catch { }
@@ -2633,14 +2628,14 @@
                                             controlParams = sourceControl[0];
                                         }
                                         document.getElementById('weights' + node.id).value = node.operationWeight;
-                                        document.getElementById('weights' + node.id).title = 'Weights: ' + node.operationWeight + ', ' + (1 - node.operationWeight);
+                                        document.getElementById('weights' + node.id).title = 'Weights: ' + (1 - node.operationWeight) + ',' + node.operationWeight;
                                     }
                                     else if (sourceControl && sourceControl.length == 3) {
                                         document.getElementById('weights' + node.id).style.accentColor = 'darkgoldenrod';
                                         node.operationWeight = (sourceControl[0] + sourceControl[1] + sourceControl[2]) / 3 + 0.01;
                                         controlParams = sourceControl[0] + sourceControl[1] + sourceControl[2];
                                         document.getElementById('weights' + node.id).value = node.operationWeight;
-                                        document.getElementById('weights' + node.id).title = 'Weights: ' + node.operationWeight + ', ' + (1 - node.operationWeight);
+                                        document.getElementById('weights' + node.id).title = 'Weights: ' + (1 - node.operationWeight) + ',' + node.operationWeight;
                                     }
                                     else document.getElementById('weights' + node.id).style.accentColor = '';
 
@@ -2651,7 +2646,11 @@
                                     node.lastState = controlParams + node.operationType + node.operationWeight;
 
                                     try {
-                                        eval(node.operationCode[node.operationType].replace(/INPUT1/g, 'src1').replace(/INPUT2/g, 'src2').replace(/OUTPUT/g, 'dst').replace(/WEIGHT/g, 'node.operationWeight'));
+                                        const presetLeft = `cv.normalize(INPUT1, INPUT1, 0, 255 * (1 - WEIGHT), cv.NORM_MINMAX, cv.CV_8U); cv.normalize(INPUT2, INPUT2, 0, 255 * WEIGHT, cv.NORM_MINMAX, cv.CV_8U); `;
+                                        const presetRight = ` cv.normalize(OUTPUT, OUTPUT, 0, 255, cv.NORM_MINMAX);`;
+                                        const opCode = presetLeft + node.operationCode[node.operationType] + presetRight;
+
+                                        eval(opCode.replace(/INPUT1/g, 'src1').replace(/INPUT2/g, 'src2').replace(/OUTPUT/g, 'dst').replace(/WEIGHT/g, 'node.operationWeight'));
                                         node.previousCode = node.operationCode[node.operationType];
                                     }
                                     catch {
@@ -3334,7 +3333,7 @@
                             <div class="node-content">
                                 <select class="node-select-field matrix-operation-selector" data-node-id="${nodeData.id}">${matrixOptions}</select>
                                 <p><textarea id="matrixInput${nodeData.id}" type="text" class="node-input-field custom-shader-field operation-code" data-node-id="${nodeData.id}">${nodeData.operationCode[nodeData.operationType].replace(/; /g, ';\n').replace(/} /g, '}\n')}</textarea></p>
-                                <input type="range" id="weights${nodeData.id}" data-node-id="${nodeData.id}" title="Weights: ${nodeData.operationWeight}, ${1 - nodeData.operationWeight}" class="node-input-range matrix-operation-range" min="0.01" max="0.99" step="0.01" value="${nodeData.operationWeight}">
+                                <input type="range" id="weights${nodeData.id}" data-node-id="${nodeData.id}" title="Weights: ${1 - nodeData.operationWeight}, ${nodeData.operationWeight}" class="node-input-range matrix-operation-range" min="0.01" max="0.99" step="0.01" value="${nodeData.operationWeight}" style="margin-top:15px">
                             </div>`;
                         break;
                     case 'Channel Mixer':
@@ -3399,12 +3398,6 @@
                         specificContentHTML = `
                             <div class="node-content">
                                 <input type="range" id="confidenceRange${nodeData.id}" data-node-id="${nodeData.id}" title="Detection confidence: ${nodeData.detectionConfidence}" class="node-input-range confidence-range" min="0" max="1" step="0.1" value="${nodeData.detectionConfidence}" ${nodeData.sliderDisabled}>
-                            </div>`;
-                        break;
-                    case 'Background Subtraction':
-                        specificContentHTML = `
-                            <div class="node-content">
-                                <p><textarea id="backInput${nodeData.id}" type="text" class="node-input-field custom-shader-field backsub-code" data-node-id="${nodeData.id}">${nodeData.backsubCode.replace(/; /g, ';\n').replace(/} /g, '}\n')}</textarea></p>
                             </div>`;
                         break;
                     case 'Optical Flow':
@@ -3887,7 +3880,7 @@
                 }
                 else if (event.target.classList.contains('matrix-operation-range')) {
                     nodeData.operationWeight = event.target.value * 1.0;
-                    event.target.title = "Weights: " + nodeData.operationWeight + ", " + (1 - nodeData.operationWeight);
+                    event.target.title = "Weights: " + (1 - nodeData.operationWeight) + "," + nodeData.operationWeight;
                 }
                 else if (event.target.classList.contains('channel-mixer-range')) {
                     let RR = document.getElementById('channelRR' + nodeId).value * 1.0;
@@ -4092,7 +4085,7 @@
                             nodeData.changeFont('custom');
                         }
                     }
-                    else if (nodeData && nodeData.title !== 'Convolution' && nodeData.title !== 'Transitions' && nodeData.title !== 'Image Warping' && nodeData.title !== 'Parametric Lines' && nodeData.title !== 'Skeleton' && nodeData.title !== 'Background Subtraction' && nodeData.title !== 'Matrix Operations') {
+                    else if (nodeData && nodeData.title !== 'Convolution' && nodeData.title !== 'Transitions' && nodeData.title !== 'Image Warping' && nodeData.title !== 'Parametric Lines' && nodeData.title !== 'Skeleton' && nodeData.title !== 'Matrix Operations') {
                         urlExists(inputEl.value).then(exists => {
                             if (exists) {
                                 nodeData.mediaElement.src = inputEl.value;
@@ -4132,13 +4125,6 @@
                     const nodeId = parseInt(nodeEl.dataset.nodeId);
                     const nodeData = nodes.find(n => n.id === nodeId);
                     nodeData.skeletonCode = event.target.value;
-                }
-                else if (event.target.classList.contains('backsub-code')) {
-                    const inputEl = event.target;
-                    const nodeEl = inputEl.closest('.node');
-                    const nodeId = parseInt(nodeEl.dataset.nodeId);
-                    const nodeData = nodes.find(n => n.id === nodeId);
-                    nodeData.backsubCode = event.target.value;
                 }
                 else if (event.target.classList.contains('operation-code')) {
                     const inputEl = event.target;
@@ -4256,7 +4242,7 @@
                         convolutionType: n.convolutionType, convolutionalFilterSize: n.convolutionalFilterSize, customKernel: n.customKernel,
                         morphologyType: n.morphologyType, morphologicalFilterSize: n.morphologicalFilterSize, morphologyKernelType: n.morphologyKernelType,
                         glitchEffectSize: n.glitchEffectSize, glitchEffectType: n.glitchEffectType, interEffectSize: n.interEffectSize, interEffectType: n.interEffectType, warpingShaders: n.warpingShaders,
-                        channelMixerValues: n.channelMixerValues, opticalFlowSize: n.opticalFlowSize, skeletonCode: n.skeletonCode, backsubCode: n.backsubCode,
+                        channelMixerValues: n.channelMixerValues, opticalFlowSize: n.opticalFlowSize, skeletonCode: n.skeletonCode,
                         thresholdValue: n.thresholdValue, thresholdingChecked: n.thresholdingChecked, kValue: n.kValue,
                         operationType: n.operationType, operationWeight: n.operationWeight, operationCode: n.operationCode, detectionConfidence: n.detectionConfidence,
                         hueBlendChecked: n.hueBlendChecked, satBlendChecked: n.satBlendChecked, valBlendChecked: n.valBlendChecked,
@@ -4412,7 +4398,6 @@
                     nd.valBlendChecked = n.valBlendChecked;
                     nd.concatenationChecked = n.concatenationChecked;
                     if (n.skeletonCode) nd.skeletonCode = n.skeletonCode;
-                    if (n.backsubCode) nd.backsubCode = n.backsubCode;
 
                     nodes.push(nd);
                 });
