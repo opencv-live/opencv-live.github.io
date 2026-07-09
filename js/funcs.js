@@ -139,7 +139,7 @@ function cameraControl(sourceControl, position, ix1, ix2) {
 function sliderControl(sourceControl, slid, sel, val, par, sens, low, high, target, res) {
     let value = val, params = par, slider = document.getElementById(slid);
 
-    if (sourceControl && sourceControl.length == 2) {
+    if (sourceControl.length == 2) {
         slider.style.accentColor = 'darkgoldenrod';
         try {
             let fx = calculateLandmarks(sourceControl);
@@ -153,14 +153,14 @@ function sliderControl(sourceControl, slid, sel, val, par, sens, low, high, targ
         }
         catch { }
     }
-    else if (sourceControl && sourceControl.length == 5 && sourceControl[3] === 'disabled') {
+    else if (sourceControl.length == 5 && sourceControl[3] === 'disabled') {
         slider.style.accentColor = 'darkgoldenrod';
         if (sourceControl[0] > 0) {
             value += (target - value) / Math.min(Math.pow(sourceControl[0], 3), 2000);
             params = sourceControl[0];
         }
     }
-    else if (sourceControl && sourceControl.length == 3) {
+    else if (sourceControl.length == 3) {
         slider.style.accentColor = 'darkgoldenrod';
         value = res;
         params = sourceControl[0] + sourceControl[1] + sourceControl[2];

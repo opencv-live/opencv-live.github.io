@@ -1237,7 +1237,7 @@ function createNodeData(id, title, type, x, y) {
                         else if (title === 'Gamma Correction') {
                             let controlParams = '';
                             const sourceControl = getInputData(node, 1);
-                            [node.gammaValue, controlParams] = sliderControl(sourceControl, 'gamma' + node.id, 'gammaCorrection', node.gammaValue, controlParams, 0.1, 0.01, 10, sourceControl[1] * 0.01, (sourceControl[0] + sourceControl[1] + sourceControl[2]) * 3);
+                            if (sourceControl) [node.gammaValue, controlParams] = sliderControl(sourceControl, 'gamma' + node.id, 'gammaCorrection', node.gammaValue, controlParams, 0.1, 0.01, 10, sourceControl[1] * 0.01, (sourceControl[0] + sourceControl[1] + sourceControl[2]) * 3);
 
                             if (node.lastState === controlParams + node.gammaValue + mean) {
                                 src.delete(); dst.delete();
@@ -1350,7 +1350,7 @@ function createNodeData(id, title, type, x, y) {
                         else if (title === 'Morphology / Rank') {
                             let controlParams = '';
                             const sourceControl = getInputData(node, 1);
-                            [node.morphologicalFilterSize, controlParams] = sliderControl(sourceControl, 'kernelSize' + node.id, 'morphRankSize', node.morphologicalFilterSize, controlParams, 1, 3, 25, Math.round(sourceControl[1] * 0.011) * 2 + 3, Math.round((sourceControl[0] + sourceControl[1] + sourceControl[2]) * 3.6) * 2 + 3);
+                            if (sourceControl) [node.morphologicalFilterSize, controlParams] = sliderControl(sourceControl, 'kernelSize' + node.id, 'morphRankSize', node.morphologicalFilterSize, controlParams, 1, 3, 25, Math.round(sourceControl[1] * 0.011) * 2 + 3, Math.round((sourceControl[0] + sourceControl[1] + sourceControl[2]) * 3.6) * 2 + 3);
 
                             if (node.lastState === controlParams + node.morphologyType + node.morphologicalFilterSize + node.morphologyKernelType + mean) {
                                 src.delete(); dst.delete();
@@ -1376,7 +1376,7 @@ function createNodeData(id, title, type, x, y) {
                         else if (title === 'Glitch Effects') {
                             let controlParams = '';
                             const sourceControl = getInputData(node, 1);
-                            [node.glitchEffectSize, controlParams] = sliderControl(sourceControl, 'glitch' + node.id, 'glitchSlider', node.glitchEffectSize, controlParams, 1, 1, 25, Math.round(sourceControl[1] * 0.012) * 2 + 1, Math.round((sourceControl[0] + sourceControl[1] + sourceControl[2]) * 4) * 2 + 1);
+                            if (sourceControl) [node.glitchEffectSize, controlParams] = sliderControl(sourceControl, 'glitch' + node.id, 'glitchSlider', node.glitchEffectSize, controlParams, 1, 1, 25, Math.round(sourceControl[1] * 0.012) * 2 + 1, Math.round((sourceControl[0] + sourceControl[1] + sourceControl[2]) * 4) * 2 + 1);
 
                             if (node.lastState === controlParams + node.glitchEffectType + node.glitchEffectSize + mean && (node.glitchEffectType === 'Fade' || node.glitchEffectType === 'Glass')) {
                                 src.delete(); dst.delete();
@@ -1925,7 +1925,7 @@ function createNodeData(id, title, type, x, y) {
                         if (title === 'Matrix Operations') {
                             let controlParams = '';
                             const sourceControl = getInputData(node, 2);
-                            [node.operationWeight, controlParams] = sliderControl(sourceControl, 'weights' + node.id, 'matrixSlider', node.operationWeight, controlParams, 0.1, 0.01, 0.99, sourceControl[1] * 0.001, (sourceControl[0] + sourceControl[1] + sourceControl[2]) / 3 + 0.01);
+                            if (sourceControl) [node.operationWeight, controlParams] = sliderControl(sourceControl, 'weights' + node.id, 'matrixSlider', node.operationWeight, controlParams, 0.1, 0.01, 0.99, sourceControl[1] * 0.001, (sourceControl[0] + sourceControl[1] + sourceControl[2]) / 3 + 0.01);
 
                             if (node.lastState === controlParams + node.operationType + node.operationWeight + mean2 + mean1 && node.previousCode === node.operationCode[node.operationType]) {
                                 src1.delete(); src2.delete(); dst.delete();
@@ -1978,7 +1978,7 @@ function createNodeData(id, title, type, x, y) {
                         else if (title === 'Concatenation') {
                             let controlParams = '';
                             const sourceControl = getInputData(node, 2);
-                            [node.concatenationAlignment, controlParams] = sliderControl(sourceControl, 'overlap' + node.id, 'concatSlider', node.concatenationAlignment, controlParams, 0.1, 0, 1, sourceControl[1] * 0.001, 1 - (sourceControl[0] + sourceControl[1] + sourceControl[2]) / 3);
+                            if (sourceControl) [node.concatenationAlignment, controlParams] = sliderControl(sourceControl, 'overlap' + node.id, 'concatSlider', node.concatenationAlignment, controlParams, 0.1, 0, 1, sourceControl[1] * 0.001, 1 - (sourceControl[0] + sourceControl[1] + sourceControl[2]) / 3);
 
                             if (node.lastState === controlParams + node.concatenationChecked + node.concatenationAlignment + mean2 + mean1) {
                                 src1.delete(); src2.delete(); dst.delete();
