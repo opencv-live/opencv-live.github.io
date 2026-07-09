@@ -1,0 +1,306 @@
+html,
+body {
+    margin: 0;
+    padding: 0;
+    background-color: #1a1a1a;
+    color: #eee;
+    font-family: sans-serif;
+    user-select: none;
+}
+
+#main-container {
+    display: flex;
+}
+
+#node-palette {
+    width: 200px;
+    background-image: linear-gradient(to bottom, #282828, #1a1a1a);
+    box-sizing: border-box;
+    z-index: 800;
+    text-align: center;
+    font-size: small;
+    overflow-x: hidden;
+    margin-top: 75px;
+}
+
+.palette-title {
+    cursor: pointer;
+    color: #aaa;
+}
+
+.palette-title:hover {
+    transform: scale(1.5);
+}
+
+.palette-node {
+    padding: 10px;
+    margin-bottom: 5px;
+    background-color: #4a4a4a;
+    border-radius: 5px;
+    cursor: grab;
+    display: none;
+}
+
+#graph-container {
+    flex-grow: 1;
+    position: relative;
+}
+
+.node {
+    position: absolute;
+    background-color: #333;
+    border: 2px solid #888;
+    width: 200px;
+    overflow: hidden;
+}
+
+.node.selected {
+    border-color: #aef;
+}
+
+.node-header {
+    padding: 5px;
+    background-color: #555;
+    cursor: move;
+    font-weight: bold;
+    font-size: 14px;
+}
+
+.node-content {
+    padding: 5px;
+}
+
+.node-ports-content {
+    padding: 5px;
+    display: flex;
+    justify-content: space-between;
+}
+
+canvas {
+    background-color: #000;
+}
+
+.media-preview {
+    width: 100%;
+    margin-top: 10px;
+}
+
+.inner-canvas {
+    display: none;
+}
+
+.fs-canvas {
+    position: absolute;
+    left: -10px;
+    top: -10px;
+    zoom: 0.001;
+}
+
+.name-input-field {
+    background-color: #222;
+    border: 1px solid #666;
+    color: #eee;
+    padding: 5px;
+    position: absolute;
+    top: 0;
+    z-index: 700;
+}
+
+.node-input-field {
+    width: 100%;
+    box-sizing: border-box;
+    background-color: #222;
+    border: 1px solid #666;
+    color: #eee;
+    padding: 5px;
+    margin-bottom: 5px;
+}
+
+.node-input-range {
+    width: 96%;
+    height: 1px;
+    vertical-align: middle;
+}
+
+.node-input-check {
+    margin-left: 5px;
+}
+
+.node-input-color {
+    width: 25px;
+    float: left;
+    margin: 6px;
+}
+
+.node-input-file {
+    color: rgba(0, 0, 0, 0);
+    margin-bottom: 5px;
+}
+
+.node-input-file::file-selector-button {
+    font-weight: bold;
+    width: 190px;
+}
+
+.load-save-button {
+    font-weight: bold;
+    position: absolute;
+    top: 0;
+    z-index: 700;
+    background-color: transparent;
+    border: 0;
+    cursor: pointer;
+    font-size: large;
+    text-decoration: none;
+}
+
+.node-button {
+    font-weight: bold;
+}
+
+.node-popout-button {
+    background-color: transparent;
+    cursor: pointer;
+    border: 0;
+    margin-top: -3px;
+    padding: 0;
+}
+
+.node-flip-button {
+    background-color: transparent;
+    cursor: pointer;
+    border: 0;
+    margin-right: 3px;
+    padding: 0;
+    font-weight: bold;
+}
+
+.node-hand-button {
+    background-color: transparent;
+    cursor: pointer;
+    border: 0;
+    margin-top: -1px;
+    padding: 0;
+    font-weight: bold;
+}
+
+.node-fullscreen-button {
+    font-weight: bold;
+    width: 100%;
+}
+
+.node-select-field {
+    width: 100%;
+    box-sizing: border-box;
+    background-color: #222;
+    border: 1px solid #666;
+    color: #eee;
+    padding: 5px;
+    margin-bottom: 5px;
+}
+
+.custom-kernel-field {
+    min-width: 100%;
+    max-width: 100%;
+    overflow: hidden;
+}
+
+.custom-shader-field {
+    min-width: 100%;
+    max-width: 100%;
+    min-height: 55px;
+    overflow: hidden;
+    margin-top: -20px;
+    margin-bottom: -20px;
+    background-color: transparent;
+    font-size: xx-small;
+    color: silver;
+    outline: none;
+}
+
+.ports {
+    display: flex;
+    flex-direction: column;
+}
+
+.port {
+    width: 10px;
+    height: 10px;
+    background-color: #ddd;
+    border: 1px solid #888;
+    border-radius: 10px;
+    margin: 5px;
+    cursor: pointer;
+}
+
+.port:hover {
+    background-color: white;
+}
+
+.port-label {
+    font-size: x-small;
+}
+
+#wire-svg {
+    position: absolute;
+    top: 0;
+    left: 0;
+    pointer-events: none;
+}
+
+.wire {
+    stroke-width: 3;
+    fill: none;
+}
+
+#opencv-status {
+    position: fixed;
+    bottom: 10px;
+    right: 10px;
+    background-color: goldenrod;
+    color: white;
+    padding: 5px 10px;
+    border-radius: 5px;
+    z-index: 600;
+}
+
+#logo {
+    position: absolute;
+    top: 0;
+    left: 0;
+    z-index: 900;
+    color: white;
+    width: 140px;
+    height: 67px;
+    background-color: #282828;
+    padding-left: 60px;
+    padding-top: 8px;
+}
+
+#examples,
+#settings {
+    position: absolute;
+    top: 33px;
+    right: 9px;
+    display: none;
+    background-color: #282828;
+    font-size: 11px;
+    padding: 0 10px 5px 10px;
+    border: dotted silver 1px;
+    cursor: pointer;
+}
+
+#examples p {
+    margin: 1px;
+}
+
+#examples p:hover {
+    color: indianred;
+}
+
+#settings table select {
+    background-color: #282828;
+    font-size: 11px;
+    color: white;
+    margin-right: -10px;
+}
