@@ -44,7 +44,7 @@ function initialize() {
         "Mix": [{ title: "Matrix Operations", type: "Mixer" }, { title: "Channel Mixer", type: "Throughput" }, { title: "Color Blending", type: "Mixer" }],
         "Merge": [{ title: "Concatenation", type: "Mixer" }, { title: "Transitions", type: "Transition" }, { title: "Image Stitching", type: "Features" }],
         "Detect": [{ title: "Superpixels", type: "Throughput" }, { title: "Human Pose", type: "MediaPipe" }, { title: "Background Subtraction", type: "Throughput" }],
-        "Visualize": [{ title: "Canvas Viewer", type: "Viewer" }, { title: "Optical Flow", type: "Throughput" }, { title: "Skeleton", type: "Throughput" }]
+        "Visualize": [{ title: "Canvas Viewer", type: "Viewer" }, { title: "Optical Flow", type: "Throughput" }, { title: "Live Editor", type: "Throughput" }]
     };
     for (const category in paletteNodes) {
         const categoryBlock = document.createElement("div");
@@ -562,7 +562,7 @@ function initialize() {
                     nodeData.changeFont('custom');
                 }
             }
-            else if (nodeData && nodeData.title !== 'Convolution' && nodeData.title !== 'Transitions' && nodeData.title !== 'Image Warping' && nodeData.title !== 'Parametric Lines' && nodeData.title !== 'Skeleton' && nodeData.title !== 'Matrix Operations') {
+            else if (nodeData && nodeData.title !== 'Convolution' && nodeData.title !== 'Transitions' && nodeData.title !== 'Image Warping' && nodeData.title !== 'Parametric Lines' && nodeData.title !== 'Live Editor' && nodeData.title !== 'Matrix Operations') {
                 urlExists(inputEl.value).then(exists => {
                     if (exists) {
                         nodeData.mediaElement.src = inputEl.value;

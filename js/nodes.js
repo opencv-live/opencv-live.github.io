@@ -1019,7 +1019,7 @@ function createNodeData(id, title, type, x, y) {
             node.thresholdValue = 128;
             node.thresholdingChecked = ["checked", "", ""];
         }
-        else if (title === 'Skeleton') {
+        else if (title === 'Live Editor') {
             node.previousCode = '';
             node.skeletonCode = `let channels = new cv.MatVector(); cv.split(INPUT, channels); let R = channels.get(0); let G = channels.get(1); let B = channels.get(2); channels.delete(); let final = new cv.MatVector(); let tmpR = new cv.Mat(), dstR = new cv.Mat(); cv.threshold(R, tmpR, 0, 255, cv.THRESH_BINARY_INV + cv.THRESH_OTSU); R.delete(); cv.distanceTransform(tmpR, dstR, cv.DIST_L2, 5); tmpR.delete(); cv.normalize(dstR, dstR, 1, 0, cv.NORM_INF); final.push_back(dstR); dstR.delete(); let tmpG = new cv.Mat(), dstG = new cv.Mat(); cv.threshold(G, tmpG, 0, 255, cv.THRESH_BINARY_INV + cv.THRESH_OTSU); G.delete(); cv.distanceTransform(tmpG, dstG, cv.DIST_L2, 5); tmpG.delete(); cv.normalize(dstG, dstG, 1, 0, cv.NORM_INF); final.push_back(dstG); dstG.delete(); let tmpB = new cv.Mat(), dstB = new cv.Mat(); cv.threshold(B, tmpB, 0, 255, cv.THRESH_BINARY_INV + cv.THRESH_OTSU); B.delete(); cv.distanceTransform(tmpB, dstB, cv.DIST_L2, 5); tmpB.delete(); cv.normalize(dstB, dstB, 1, 0, cv.NORM_INF); final.push_back(dstB); dstB.delete(); cv.merge(final, OUTPUT); final.delete();`;
         }
@@ -1616,7 +1616,7 @@ function createNodeData(id, title, type, x, y) {
                             cv.merge(final, dst);
                             final.delete();
                         }
-                        else if (title === 'Skeleton') {
+                        else if (title === 'Live Editor') {
                             if (node.lastState === mean && node.previousCode === node.skeletonCode) {
                                 src.delete(); dst.delete();
                                 return;

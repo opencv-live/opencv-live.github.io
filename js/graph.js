@@ -243,7 +243,7 @@ function renderGraph() {
                                 <input type="radio" data-node-id="${nodeData.id}" class="node-input-check adaptive-threshold-check" name="thresholdRadio${nodeData.id}" ${nodeData.thresholdingChecked[2]}><small style="margin:-1px">Adaptive</small></p>
                             </div>`;
                 break;
-            case 'Skeleton':
+            case 'Live Editor':
                 specificContentHTML = `
                             <div class="node-content">
                                 <p><textarea id="skelInput${nodeData.id}" type="text" class="node-input-field custom-shader-field skeleton-code" data-node-id="${nodeData.id}">${nodeData.skeletonCode.replace(/; /g, ';\n').replace(/} /g, '}\n')}</textarea></p>
