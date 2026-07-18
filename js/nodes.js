@@ -1623,14 +1623,47 @@ function createNodeData(id, title, type, x, y) {
                             }
                             node.lastState = '';
 
+                            let compiledUserFunc = null;
+                            const codeString = node.skeletonCode.replace(/INPUT/g, 'src').replace(/OUTPUT/g, 'dst');
+
                             try {
-                                eval(node.skeletonCode.replace(/INPUT/g, 'src').replace(/OUTPUT/g, 'dst'));
-                                node.previousCode = node.skeletonCode;
+                                compiledUserFunc = new Function('src', 'dst', 'cv', codeString);
                             }
-                            catch {
-                                src.delete(); dst.delete();
-                                return;
+                            catch (syntaxError) {
+                                console.warn(syntaxError.message);
+                                compiledUserFunc = null;
                             }
+                            if (compiledUserFunc) {
+                                const allocatedMats = [];
+                                const OriginalMat = cv.Mat;
+
+                                cv.Mat = function (...args) {
+                                    const instance = new OriginalMat(...args);
+                                    allocatedMats.push(instance);
+                                    return instance;
+                                };
+                                cv.Mat.prototype = OriginalMat.prototype;
+
+                                try {
+                                    compiledUserFunc(src, dst, cv);
+                                    if (dst.empty()) src.copyTo(dst);
+                                }
+                                catch (runtimeError) {
+                                    console.error(runtimeError.message);
+                                    src.copyTo(dst);
+                                }
+                                finally {
+                                    cv.Mat = OriginalMat;
+                                    allocatedMats.forEach(mat => {
+                                        if (mat && typeof mat.delete === 'function' && !mat.isDeleted()) {
+                                            mat.delete();
+                                        }
+                                    });
+                                }
+                            }
+                            else src.copyTo(dst);
+
+                            node.previousCode = node.skeletonCode;
                         }
                         else if (title === 'Superpixels') {
                             if (node.lastState === node.kValue + mean) {
